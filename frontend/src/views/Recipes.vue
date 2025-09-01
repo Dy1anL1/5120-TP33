@@ -12,9 +12,8 @@
           placeholder="Search for recipes..."
           class="search-input"
           v-model="searchQuery"
-          @keyup.enter="doSearch"
         />
-        <button class="search-button" @click="doSearch">
+        <button class="search-button">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path
               d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
@@ -22,8 +21,6 @@
           </svg>
         </button>
       </div>
-      <div v-if="loading" style="text-align:center;margin-top:1rem;">Loading...</div>
-      <div v-if="error" style="color:red;text-align:center;margin-top:1rem;">{{ error }}</div>
     </section>
 
     <section class="filters">
@@ -37,8 +34,7 @@
     </section>
 
     <section class="recipes-grid">
-      <div v-if="recipes.length === 0 && !loading && !error" style="text-align:center;color:#888;">No recipes found.</div>
-      <div class="recipe-card" v-for="recipe in recipes" :key="recipe.id">
+      <div class="recipe-card" v-for="recipe in sampleRecipes" :key="recipe.id">
         <div class="recipe-image">
           <div class="recipe-placeholder"></div>
         </div>
@@ -46,55 +42,51 @@
           <h3>{{ recipe.title }}</h3>
           <p class="recipe-description">{{ recipe.description }}</p>
           <div class="recipe-meta">
-            <span class="cook-time">{{ recipe.cookTime || recipe.cook_time || '--' }}</span>
-            <span class="difficulty">{{ recipe.difficulty || '--' }}</span>
+            <span class="cook-time">{{ recipe.cookTime }}</span>
+            <span class="difficulty">{{ recipe.difficulty }}</span>
           </div>
         </div>
       </div>
     </section>
-
-    <div v-if="loading" class="loading-indicator">Loading...</div>
-    <div v-if="error" class="error-message">{{ error }}</div>
   </div>
 </template>
 
 <script>
-import { searchRecipes, getRecipeById } from '../services/api';
-
 export default {
   name: 'Recipes',
   data() {
     return {
       searchQuery: '',
-      recipes: [],
-      loading: false,
-      error: '',
-    }
-  },
-  methods: {
-    async doSearch() {
-      if (!this.searchQuery.trim()) {
-        this.recipes = [];
-        return;
-      }
-      this.loading = true;
-      this.error = '';
-      try {
-        const res = await searchRecipes(this.searchQuery);
-        this.recipes = Array.isArray(res.recipes) ? res.recipes : (Array.isArray(res.items) ? res.items : []);
-      } catch (e) {
-        this.error = e.message || 'Search failed';
-        this.recipes = [];
-      } finally {
-        this.loading = false;
-      }
-    },
-    async fetchRecipeById(id) {
-      try {
-        return await getRecipeById(id);
-      } catch (e) {
-        return null;
-      }
+      sampleRecipes: [
+        {
+          id: 1,
+          title: 'Grilled Salmon with Vegetables',
+          description: 'A heart-healthy meal rich in omega-3 fatty acids',
+          cookTime: '25 min',
+          difficulty: 'Easy',
+        },
+        {
+          id: 2,
+          title: 'Quinoa Buddha Bowl',
+          description: 'Nutritious vegetarian bowl with protein-rich quinoa',
+          cookTime: '20 min',
+          difficulty: 'Easy',
+        },
+        {
+          id: 3,
+          title: 'Chicken and Vegetable Stir-Fry',
+          description: 'Low-sodium stir-fry with lean protein and colorful vegetables',
+          cookTime: '15 min',
+          difficulty: 'Medium',
+        },
+        {
+          id: 4,
+          title: 'Mediterranean Salad',
+          description: 'Fresh salad with olive oil, feta, and mixed greens',
+          cookTime: '10 min',
+          difficulty: 'Easy',
+        },
+      ],
     }
   },
 }
@@ -257,19 +249,6 @@ export default {
 .difficulty {
   color: #4caf50;
   font-weight: 500;
-}
-
-.loading-indicator {
-  text-align: center;
-  font-size: 1.2rem;
-  color: #4caf50;
-  margin: 2rem 0;
-}
-
-.error-message {
-  text-align: center;
-  color: red;
-  margin: 2rem 0;
 }
 
 @media (max-width: 768px) {
