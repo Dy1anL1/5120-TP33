@@ -1,255 +1,142 @@
-// Mobile menu toggle
-document.addEventListener('DOMContentLoaded', function() {
-    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-    const navLinks = document.querySelector('.nav-links');
-    
-    if (mobileMenuBtn && navLinks) {
-        mobileMenuBtn.addEventListener('click', function() {
-            navLinks.classList.toggle('show');
+// ====== Nutrition Dashboard Integration ======
+const NUTRITION_API = "https://0brixnxwq3.execute-api.ap-southeast-2.amazonaws.com/prod/match";
+const RECIPES_API = "https://97xkjqjeuc.execute-api.ap-southeast-2.amazonaws.com/prod/recipes";
+
+async function fetchNutrition(ingredients) {
+    const res = await fetch(NUTRITION_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ingredients })
+    });
+    if (!res.ok) throw new Error('Failed to fetch nutrition');
+    return await res.json();
+}
+
+function getQueryParam(name) {
+    const url = new URL(window.location.href);
+    return url.searchParams.get(name);
+}
+
+async function renderNutritionDashboard() {
+    const resultsDiv = document.getElementById('nutrition-results');
+    if (!resultsDiv) return;
+    resultsDiv.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition...</div>';
+    let ingredients = null;
+    try {
+        const recipeId = getQueryParam('id');
+        if (recipeId) {
+            // Step 1: fetch recipe by id
+            const url = `${RECIPES_API}?recipe_id=${encodeURIComponent(recipeId)}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Recipe not found');
+            const data = await res.json();
+            const recipe = (data.items && data.items[0]) || null;
+            if (!recipe || !recipe.ingredients) throw new Error('No ingredients found for this recipe');
+            ingredients = recipe.ingredients;
+        } else {
+            // (Optional: support manual input of ingredients)
+            resultsDiv.innerHTML = '<div style="color:#888;text-align:center;">No recipe selected. Please provide ?id=xxx in URL.</div>';
+            return;
+        }
+    // Step 2: fetch nutrition summary
+        const nutri = await fetchNutrition(ingredients);
+        const sum = nutri.summary_100g_sum || {};
+        const fields = [
+            { key: 'calories', label: 'Calories', icon: 'fa-fire' },
+            { key: 'protein', label: 'Protein', icon: 'fa-drumstick-bite' },
+            { key: 'fat', label: 'Fat', icon: 'fa-bacon' },
+            { key: 'sodium', label: 'Sodium', icon: 'fa-salt-shaker' },
+            { key: 'sugar', label: 'Sugar', icon: 'fa-cube' },
+        ];
+        resultsDiv.innerHTML = '<div class="nutrition-cards"></div>';
+        const cards = resultsDiv.querySelector('.nutrition-cards');
+        fields.forEach(f => {
+            const val = sum[f.key] != null ? sum[f.key] : '-';
+            const card = document.createElement('div');
+            card.className = 'nutrition-card';
+            card.innerHTML = `
+                <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
+                <div class="nutrition-label">${f.label}</div>
+                <div class="nutrition-value">${val}</div>
+            `;
+            cards.appendChild(card);
         });
+    } catch (e) {
+        resultsDiv.innerHTML = `<div style="color:#c00;text-align:center;">${e.message}</div>`;
     }
-    
-    // Search functionality for Explore Recipes page
+}
+
+// Auto-execute on page load
+if (window.location.pathname.includes('nutrition-dashboard')) {
+    document.addEventListener('DOMContentLoaded', renderNutritionDashboard);
+}
+
+async function fetchRecipes({ keyword, category, habit, limit = 10, nextToken = null }) {
+    const params = new URLSearchParams();
+    if (keyword) params.append('title_prefix', keyword);
+    if (category && category !== 'all') params.append('category', category);
+    if (habit && habit !== 'all') params.append('habit', habit);
+    if (limit) params.append('limit', limit);
+    if (nextToken) params.append('next_token', nextToken);
+    const url = `${RECIPES_API}?${params.toString()}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to fetch recipes');
+    return await res.json();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.querySelector('.search-input');
-    const recipeCards = document.querySelectorAll('.recipe-card');
-    const resultsHeader = document.querySelector('.results-header h2');
-    
-    if (searchInput && recipeCards.length > 0) {
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            let visibleCount = 0;
-            
-            recipeCards.forEach(card => {
-                const title = card.querySelector('.recipe-title').textContent.toLowerCase();
-                const description = card.querySelector('.recipe-description').textContent.toLowerCase();
-                const tags = Array.from(card.querySelectorAll('.tag')).map(tag => tag.textContent.toLowerCase());
-                
-                const isVisible = title.includes(searchTerm) || 
-                                description.includes(searchTerm) || 
-                                tags.some(tag => tag.includes(searchTerm));
-                
-                if (isVisible) {
-                    card.style.display = 'block';
-                    visibleCount++;
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-            
-            if (resultsHeader) {
-                resultsHeader.textContent = `${visibleCount} Recipe${visibleCount !== 1 ? 's' : ''} Found`;
-            }
-        });
-    }
-    
-    // Filter functionality
     const recipeCategorySelect = document.getElementById('recipe-category');
     const dietTypeSelect = document.getElementById('diet-type');
     const applyFiltersBtn = document.querySelector('.apply-filters-btn');
-    
-    if (applyFiltersBtn && recipeCards.length > 0) {
-        applyFiltersBtn.addEventListener('click', function() {
-            const category = recipeCategorySelect.value;
-            const dietType = dietTypeSelect.value;
-            
-            let visibleCount = 0;
-            
-            recipeCards.forEach(card => {
-                // This is a simplified filter - in a real app you'd have data attributes
-                // or API calls to filter by actual recipe data
-                const tags = Array.from(card.querySelectorAll('.tag')).map(tag => tag.textContent.toLowerCase());
-                
-                let isVisible = true;
-                
-                // Simple category filtering based on tags
-                if (category !== 'all') {
-                    const categoryMatch = {
-                        'breakfast': ['protein', 'iron', 'calcium'],
-                        'lunch': ['heart health', 'fiber', 'protein'],
-                        'dinner': ['heart health', 'complete protein', 'mediterranean'],
-                        'snacks': ['antioxidants', 'vitamin c', 'immunity'],
-                        'desserts': ['antioxidants', 'vitamin c']
-                    };
-                    
-                    if (categoryMatch[category]) {
-                        isVisible = tags.some(tag => categoryMatch[category].some(cat => tag.includes(cat)));
-                    }
-                }
-                
-                // Simple diet type filtering based on tags
-                if (dietType !== 'all' && isVisible) {
-                    const dietMatch = {
-                        'vegetarian': ['protein', 'iron', 'calcium', 'fiber'],
-                        'vegan': ['plant-based', 'fiber', 'antioxidants'],
-                        'gluten-free': ['protein', 'iron', 'calcium'],
-                        'low-sodium': ['low sodium', 'heart health'],
-                        'heart-healthy': ['heart health', 'omega-3', 'mediterranean']
-                    };
-                    
-                    if (dietMatch[dietType]) {
-                        isVisible = tags.some(tag => dietMatch[dietType].some(diet => tag.includes(diet)));
-                    }
-                }
-                
-                if (isVisible) {
-                    card.style.display = 'block';
-                    visibleCount++;
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-            
-            if (resultsHeader) {
-                resultsHeader.textContent = `${visibleCount} Recipe${visibleCount !== 1 ? 's' : ''} Found`;
-            }
-        });
-    }
-    
-    // Recipe card click functionality
-    recipeCards.forEach(card => {
-        card.addEventListener('click', function() {
-            const title = this.querySelector('.recipe-title').textContent;
-            alert(`Recipe: ${title}\n\nThis would open the full recipe details in a real application.`);
-        });
-    });
-    
-    // Smooth scrolling for navigation links
-    const anchorLinks = document.querySelectorAll('.nav-link[href^="#"]');
-    anchorLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href').substring(1);
-            const targetElement = document.getElementById(targetId);
-            
-            if (targetElement) {
-                targetElement.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
-        });
-    });
-    
-    // Nutrition Dashboard functionality
-    const nutritionCards = document.querySelectorAll('.nutrition-card');
-    const overallProgressFill = document.querySelector('.overall-progress-section .progress-fill');
-    
-    if (nutritionCards.length > 0) {
-        // Animate progress bars on page load
-        setTimeout(() => {
-            nutritionCards.forEach((card, index) => {
-                const progressFill = card.querySelector('.progress-fill');
-                if (progressFill) {
-                    const width = progressFill.style.width;
-                    progressFill.style.width = '0%';
-                    
-                    setTimeout(() => {
-                        progressFill.style.width = width;
-                    }, index * 200);
-                }
-            });
-            
-            // Animate overall progress bar
-            if (overallProgressFill) {
-                const width = overallProgressFill.style.width;
-                overallProgressFill.style.width = '0%';
-                
-                setTimeout(() => {
-                    overallProgressFill.style.width = width;
-                }, 1000);
-            }
-        }, 500);
-        
-        // Add click functionality to nutrition cards
-        nutritionCards.forEach(card => {
-            card.addEventListener('click', function() {
-                const title = this.querySelector('h3').textContent;
-                const currentValue = this.querySelector('.current-value').textContent;
-                const goalValue = this.querySelector('.goal-value').textContent;
-                const unit = this.querySelector('.unit').textContent;
-                
-                alert(`${title} Progress\n\nCurrent: ${currentValue} ${unit}\nGoal: ${goalValue} ${unit}\n\nThis would open detailed nutrition tracking in a real application.`);
-            });
-        });
-        
-        // Add hover effects for progress bars
-        nutritionCards.forEach(card => {
-            const progressBar = card.querySelector('.progress-bar');
-            const progressFill = card.querySelector('.progress-fill');
-            
-            if (progressBar && progressFill) {
-                card.addEventListener('mouseenter', function() {
-                    progressFill.style.transform = 'scaleY(1.2)';
-                });
-                
-                card.addEventListener('mouseleave', function() {
-                    progressFill.style.transform = 'scaleY(1)';
-                });
-            }
-        });
-    }
-    
-    // Goals section functionality
-    const goalItems = document.querySelectorAll('.goal-item');
-    
-    if (goalItems.length > 0) {
-        goalItems.forEach((item, index) => {
-            // Add staggered animation
-            item.style.opacity = '0';
-            item.style.transform = 'translateX(-20px)';
-            
-            setTimeout(() => {
-                item.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-                item.style.opacity = '1';
-                item.style.transform = 'translateX(0)';
-            }, index * 150);
-            
-            // Add click functionality
-            item.addEventListener('click', function() {
-                const goalName = this.querySelector('.goal-name').textContent;
-                const goalProgress = this.querySelector('.goal-progress').textContent;
-                
-                alert(`${goalName} Goal\n\nProgress: ${goalProgress}\n\nThis would open detailed goal tracking in a real application.`);
-            });
-            
-            // Animate progress bars in goals
-            const progressFill = item.querySelector('.progress-fill');
-            if (progressFill) {
-                const width = progressFill.style.width;
-                progressFill.style.width = '0%';
-                
-                setTimeout(() => {
-                    progressFill.style.width = width;
-                }, 1000 + (index * 200));
-            }
-        });
-    }
-});
+    const resultsHeader = document.querySelector('.results-header h2');
+    const cardsContainer = document.querySelector('.recipe-cards-container');
 
-// Add loading animation for recipe cards
-window.addEventListener('load', function() {
-    const recipeCards = document.querySelectorAll('.recipe-card');
-    recipeCards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        
-        setTimeout(() => {
-            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 100);
-    });
-    
-    // Add loading animation for nutrition dashboard
-    const nutritionCards = document.querySelectorAll('.nutrition-card');
-    nutritionCards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        
-        setTimeout(() => {
-            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 150);
-    });
+    async function updateRecipes() {
+        const keyword = searchInput ? searchInput.value.trim() : '';
+        const category = recipeCategorySelect ? recipeCategorySelect.value : '';
+        const habit = dietTypeSelect ? dietTypeSelect.value : '';
+        if (cardsContainer) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading...</div>';
+        try {
+            const { items = [] } = await fetchRecipes({ keyword, category, habit });
+            if (cardsContainer) {
+                cardsContainer.innerHTML = '';
+                if (items.length === 0) {
+                    cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">No recipes found.</div>';
+                } else {
+                    items.forEach(r => {
+                        const card = document.createElement('div');
+                        card.className = 'recipe-card';
+                        card.innerHTML = `
+                            <div class="recipe-title">${r.title || ''}</div>
+                            <div class="recipe-description">
+                                <b>Habits:</b> ${(r.habits || []).join(', ') || '-'}<br/>
+                                <b>Categories:</b> ${(r.categories || []).join(', ') || '-'}
+                            </div>
+                        `;
+                        cardsContainer.appendChild(card);
+                    });
+                }
+            }
+            if (resultsHeader) {
+                resultsHeader.textContent = `${items.length} Recipe${items.length !== 1 ? 's' : ''} Found`;
+            }
+        } catch (e) {
+            if (cardsContainer) cardsContainer.innerHTML = `<div style="color:#c00;text-align:center;">${e.message}</div>`;
+            if (resultsHeader) resultsHeader.textContent = '0 Recipes Found';
+        }
+    }
+
+    if (applyFiltersBtn) {
+        applyFiltersBtn.addEventListener('click', function () {
+            updateRecipes();
+        });
+    }
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function (e) {
+            if (e.key === 'Enter') updateRecipes();
+        });
+    }
+    // Optionally: fetch once on page load
+    updateRecipes();
 });
