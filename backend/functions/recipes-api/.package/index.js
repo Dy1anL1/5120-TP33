@@ -31,7 +31,7 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers, body: JSON.stringify(normalizeRecipe(Item)) };
     }
     if (title_prefix) {
-      // Prefix search: partition key is first letter, sort key uses begins_with
+      // 前缀搜索，分区键取首字母，排序键用 begins_with
       const prefix = title_prefix.trim().toLowerCase();
       if (!prefix) {
         return { statusCode: 400, headers, body: JSON.stringify({ error: 'title_prefix required' }) };
