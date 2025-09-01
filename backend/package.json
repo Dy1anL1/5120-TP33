@@ -9,6 +9,15 @@
   ],
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.879.0",
-    "@aws-sdk/lib-dynamodb": "^3.879.0"
-  }
+    "@aws-sdk/lib-dynamodb": "^3.879.0",
+    "csv-parser": "^3.2.0"
+  },
+  "description": "This directory contains serverless functions for recipes, foods, and nutrition matching APIs.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
