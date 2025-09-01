@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silver Spoon Society - Explore Healthy Recipes</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <div class="logo-icon">
+                    <!-- 使用图片logo -->
+                    <img src="logo.jpg" alt="Silver Spoon Society Logo" class="custom-logo">
+                </div>
+                <div class="logo-text">
+                    <h1>Silver Spoon Society</h1>
+                    <p>For Healthy Living</p>
+                </div>
+            </div>
+            
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="explore-recipes.html" class="nav-link active">
+                    <i class="fas fa-search"></i>
+                    <span>Explore Recipes</span>
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-heart"></i>
+                    <span>Daily Recommendations</span>
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-calendar"></i>
+                    <span>Meal Planning</span>
+                </a>
+                <a href="nutrition-dashboard.html" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Nutrition Dashboard</span>
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Shopping List</span>
+                </a>
+            </div>
+            
+            <div class="nav-right">
+                <button class="nav-icon-btn">
+                    <i class="fas fa-globe"></i>
+                </button>
+                <button class="nav-icon-btn">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+            </div>
+            
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <section class="page-header">
+            <div class="section-container">
+                <h1 class="page-title">Explore Healthy Recipes</h1>
+                <p class="page-subtitle">Discover nutritious meals designed specifically for your health needs and preferences</p>
+            </div>
+        </section>
+
+        <!-- Recipe Search and Filter Section -->
+        <section class="search-filter-section">
+            <div class="section-container">
+                <div class="search-filter-box">
+                    <div class="filter-header">
+                        <h2><i class="fas fa-filter"></i> Find Your Perfect Recipe</h2>
+                    </div>
+                    
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search recipes, ingredients, or health benefits..." class="search-input">
+                    </div>
+                    
+                    <div class="filter-options">
+                        <div class="filter-group">
+                            <label for="recipe-category">Recipe Category</label>
+                            <select id="recipe-category" class="filter-select">
+                                <option value="all">All</option>
+                                <option value="breakfast">Breakfast</option>
+                                <option value="lunch">Lunch</option>
+                                <option value="dinner">Dinner</option>
+                                <option value="snacks">Snacks</option>
+                                <option value="desserts">Desserts</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="diet-type">Diet Type</label>
+                            <select id="diet-type" class="filter-select">
+                                <option value="all">All</option>
+                                <option value="vegetarian">Vegetarian</option>
+                                <option value="vegan">Vegan</option>
+                                <option value="gluten-free">Gluten-Free</option>
+                                <option value="low-sodium">Low-Sodium</option>
+                                <option value="heart-healthy">Heart-Healthy</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary apply-filters-btn">
+                        <i class="fas fa-filter"></i>
+                        <span>Apply Filters</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recipe Results Section -->
+        <section class="recipe-results">
+            <div class="section-container">
+                <div class="results-header">
+                    <h2>6 Recipes Found</h2>
+                </div>
+                
+                <div class="recipe-cards-container">
+                    <div class="recipe-card">
+                        <div class="recipe-image">
+                            <i class="fas fa-fish"></i>
+                        </div>
+                        <div class="recipe-content">
+                            <h3 class="recipe-title">Heart-Healthy Salmon with Vegetables</h3>
+                            <p class="recipe-description">Rich in omega-3 fatty acids, perfect for cardiovascular health</p>
+                            <div class="recipe-tags">
+                                <span class="tag">Heart Health</span>
+                                <span class="tag">Brain Function</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recipe-card">
+                        <div class="recipe-image">
+                            <i class="fas fa-egg"></i>
+                        </div>
+                        <div class="recipe-content">
+                            <h3 class="recipe-title">Calcium-Rich Spinach and Cheese Omelet</h3>
+                            <p class="recipe-description">High in calcium and protein for strong bones</p>
+                            <div class="recipe-tags">
+                                <span class="tag">Bone Health</span>
+                                <span class="tag">Protein</span>
+                                <span class="tag">Iron</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recipe-card">
+                        <div class="recipe-image">
+                            <i class="fas fa-soup"></i>
+                        </div>
+                        <div class="recipe-content">
+                            <h3 class="recipe-title">Fiber-Rich Vegetable Soup</h3>
+                            <p class="recipe-description">Gentle on digestion, packed with nutrients</p>
+                            <div class="recipe-tags">
+                                <span class="tag">Digestive Health</span>
+                                <span class="tag">Immunity</span>
+                                <span class="tag">Low Sodium</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recipe-card">
+                        <div class="recipe-image">
+                            <i class="fas fa-apple-alt"></i>
+                        </div>
+                        <div class="recipe-content">
+                            <h3 class="recipe-title">Antioxidant Berry Smoothie Bowl</h3>
+                            <p class="recipe-description">Packed with vitamins and antioxidants for immune support</p>
+                            <div class="recipe-tags">
+                                <span class="tag">Immunity</span>
+                                <span class="tag">Antioxidants</span>
+                                <span class="tag">Vitamin C</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recipe-card">
+                        <div class="recipe-image">
+                            <i class="fas fa-seedling"></i>
+                        </div>
+                        <div class="recipe-content">
+                            <h3 class="recipe-title">Quinoa and Roasted Vegetable Bowl</h3>
+                            <p class="recipe-description">Complete protein with fiber-rich vegetables</p>
+                            <div class="recipe-tags">
+                                <span class="tag">Complete Protein</span>
+                                <span class="tag">Fiber</span>
+                                <span class="tag">Plant-Based</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recipe-card">
+                        <div class="recipe-image">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <div class="recipe-content">
+                            <h3 class="recipe-title">Mediterranean Chickpea Salad</h3>
+                            <p class="recipe-description">Light and refreshing with heart-healthy fats</p>
+                            <div class="recipe-tags">
+                                <span class="tag">Heart Health</span>
+                                <span class="tag">Mediterranean</span>
+                                <span class="tag">Low Calorie</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
