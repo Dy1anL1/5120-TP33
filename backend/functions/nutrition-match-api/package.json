@@ -1,0 +1,18 @@
+{
+  "name": "nutrition-match-api",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "zip": "bash deploy.sh",
+    "deploy": "bash deploy.sh --deploy",
+    "fmt": "npx prettier -w .",
+    "test": "node -e \"console.log('ok')\""
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.632.0",
+    "@aws-sdk/lib-dynamodb": "^3.632.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
+  }
+}
