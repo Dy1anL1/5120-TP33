@@ -220,7 +220,92 @@
                 </div>
             </div>
         </section>
-    </main>
+        <!-- Recipe Modal -->
+        <div id="recipe-modal" class="modal" aria-hidden="true" style="display:none">
+            <div class="modal-backdrop"></div>
+            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
+                <button class="modal-close" aria-label="Close">&times;</button>
+                <h2 id="recipe-modal-title" class="recipe-title"></h2>
+                <p class="recipe-brief" id="recipe-brief"></p>
+
+                <div class="modal-cols">
+                    <div class="modal-col">
+                        <h3>Ingredients</h3>
+                        <ul id="recipe-ingredients" class="ingredients-list"></ul>
+
+                        <h3>Instructions</h3>
+                        <ol id="recipe-directions" class="directions-list"></ol>
+                    </div>
+
+                    <div class="modal-col">
+                        <h3>Nutrition (est. per 100g each ingredient)</h3>
+                        <div id="nutrition-summary" class="nutri-grid">
+                            <!-- nutrition cards inserted by JS -->
+                        </div>
+                        <button id="add-to-dashboard" class="btn btn-primary" style="margin-top:1rem;">
+                            Add to Nutrition Dashboard
+                        </button>
+                        <p class="fine-print" style="color:#777;margin-top:.5rem;">
+                            Iteration 1 demo: nutrition is approximated per 100g per matched ingredient.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+            <div id="recipe-modal" class="modal" aria-hidden="true">
+                <div class="modal-backdrop"></div>
+                <div class="modal-card">
+                    <button class="modal-close" aria-label="Close">&times;</button>
+                    <h2 class="modal-title"></h2>
+                    <p class="modal-description"></p>
+                    <div class="modal-cols">
+                        <div>
+                            <h3>Ingredients</h3>
+                            <!-- Recipe Modal -->
+                            <div id="recipe-modal" class="modal" aria-hidden="true" style="display:none">
+                                <div class="modal-backdrop"></div>
+                                <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
+                                    <button class="modal-close" aria-label="Close">&times;</button>
+
+                                    <h2 id="recipe-modal-title"></h2>
+                                    <p id="recipe-brief" class="recipe-brief"></p>
+
+                                    <div class="modal-cols">
+                                        <div class="modal-col">
+                                            <h3>Ingredients</h3>
+                                            <ul id="recipe-ingredients" class="ingredients-list"></ul>
+
+                                            <h3>Instructions</h3>
+                                            <ol id="recipe-directions" class="directions-list"></ol>
+                                        </div>
+
+                                        <div class="modal-col">
+                                            <h3>Nutrition</h3>
+                                            <div id="nutrition-summary" class="nutri-grid"></div>
+
+                                            <button id="add-to-dashboard" class="btn btn-primary" style="margin-top:1rem;">
+                                                Add to Nutrition Dashboard
+                                            </button>
+
+                                            <p class="fine-print" style="color:#777;margin-top:.5rem;">
+                                                Iteration 1 demo: nutrition is approximated per 100g per matched ingredient.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <h3>Instructions</h3>
+                            <ol class="modal-instructions"></ol>
+                        </div>
+                        <div>
+                            <h3>Nutrition</h3>
+                            <div class="modal-nutrition"></div>
+                            <button class="btn btn-primary modal-dashboard-btn">Add to Dashboard</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
 
     <script src="script.js"></script>
 </body>

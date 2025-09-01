@@ -1,3 +1,42 @@
+/* Modal styles for recipe details */
+.modal { position: fixed; inset: 0; z-index: 1000; display:none; }
+.modal[aria-hidden="false"] { display:block; }
+.modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.5); }
+.modal-card {
+    position: relative; z-index:1001; background:#fff; margin:4rem auto; max-width:960px;
+    padding:1.25rem 1.5rem; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+.modal-close { position:absolute; top:.6rem; right:.7rem; background:none; border:0; font-size:1.6rem; cursor:pointer; }
+.modal-cols { display:grid; grid-template-columns:1.3fr .7fr; gap:1.25rem; }
+@media (max-width: 900px){ .modal-cols{ grid-template-columns:1fr; } }
+.ingredients-list, .directions-list { margin:.5rem 0 0; padding-left:1.25rem; }
+.nutri-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:.6rem; }
+.nutri-grid .card { background:#f7faf7; border:1px solid #e5eee5; border-radius:12px; padding:.7rem; }
+.nutri-grid .key { font-size:.85rem; color:#666; }
+.nutri-grid .val { font-size:1.1rem; color:#2e7d32; font-weight:600; }
+/* Modal styles for recipe details */
+.modal { position: fixed; inset:0; z-index:1000; display:none; }
+.modal[aria-hidden="false"] { display:block; }
+.modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.5); }
+.modal-card { position:relative; z-index:1001; background:#fff; margin:4rem auto; max-width:900px; padding:1.5rem; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,.2); }
+.modal-close { position:absolute; top:.5rem; right:.5rem; background:none; border:0; font-size:1.5rem; cursor:pointer; }
+.modal-cols { display:grid; grid-template-columns:2fr 1fr; gap:1rem; }
+@media(max-width:800px){ .modal-cols{grid-template-columns:1fr;} }
+/* Modal styles for recipe details */
+.modal { position: fixed; inset: 0; z-index: 1000; }
+.modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
+.modal-card {
+    position: relative; max-width: 980px; margin: 4rem auto; background: #fff;
+    border-radius: 16px; padding: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+.modal-close { position: absolute; top: .75rem; right: .75rem; font-size: 1.5rem; background: none; border: 0; cursor: pointer; }
+.modal-cols { display: grid; gap: 1.25rem; grid-template-columns: 1.2fr .8fr; }
+@media (max-width: 900px){ .modal-cols{ grid-template-columns: 1fr; } }
+.ingredients-list, .directions-list { margin: .5rem 0 0; padding-left: 1.25rem; }
+.nutri-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .5rem; }
+.nutri-grid .card { background:#f8faf8; border:1px solid #e6eee6; border-radius:12px; padding:.75rem; }
+.nutri-grid .key { font-size:.85rem; color:#666; }
+.nutri-grid .val { font-size:1.1rem; color:#2e7d32; font-weight:600; }
 /* Reset default styles */
 * {
     margin: 0;
