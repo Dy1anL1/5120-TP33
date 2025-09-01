@@ -74,7 +74,7 @@ async function openRecipeModal(recipe) {
             const li = document.createElement('li'); li.textContent = s; dirEl.appendChild(li);
         });
     }
-    if (sumEl) sumEl.innerHTML = '<div class="card"><div class="key">Loading…</div><div class="val">…</div></div>';
+    if (sumEl) sumEl.innerHTML = '<div class="card"><div class="key">Loading...</div><div class="val">...</div></div>';
 
     openModal();
 
@@ -135,6 +135,19 @@ async function renderDashboardNutrition() {
     const dashDiv = document.getElementById('dashboard-nutrition');
     if (!dashDiv) return;
     dashDiv.innerHTML = '<div style="text-align:center;color:#888;">Loading dashboard nutrition...</div>';
+    // Main card hooks
+    const caloriesCurrent = document.getElementById('calories-current');
+    const caloriesGoal = document.getElementById('calories-goal');
+    const proteinCurrent = document.getElementById('protein-current');
+    const proteinGoal = document.getElementById('protein-goal');
+    const fiberCurrent = document.getElementById('fiber-current');
+    const fiberGoal = document.getElementById('fiber-goal');
+    const waterCurrent = document.getElementById('water-current');
+    const waterGoal = document.getElementById('water-goal');
+    const overallProgress = document.getElementById('overall-progress');
+    const overallProgressText = document.getElementById('overall-progress-text');
+    // Progress bar
+    const progressFill = document.querySelector('.progress-fill');
     let allIngredients = [];
     try {
         // Read dashboard from localStorage
@@ -160,7 +173,28 @@ async function renderDashboardNutrition() {
         const nutri = await fetchNutrition(allIngredients);
         const sum = nutri.summary_100g_sum || {};
         const details = nutri.details || [];
-        // Render summary
+        // Update main cards
+        if (caloriesCurrent) caloriesCurrent.textContent = sum.calories != null ? Number(sum.calories).toFixed(0) : '0';
+        if (proteinCurrent) proteinCurrent.textContent = sum.protein != null ? Number(sum.protein).toFixed(0) : '0';
+        if (fiberCurrent) fiberCurrent.textContent = sum.fiber != null ? Number(sum.fiber).toFixed(0) : '0';
+        if (waterCurrent) waterCurrent.textContent = sum.water != null ? Number(sum.water).toFixed(0) : '0';
+        // Goals (can be static or configurable)
+        const calGoal = caloriesGoal ? Number(caloriesGoal.textContent) : 2000;
+        const proGoal = proteinGoal ? Number(proteinGoal.textContent) : 80;
+        const fibGoal = fiberGoal ? Number(fiberGoal.textContent) : 30;
+        const watGoal = waterGoal ? Number(waterGoal.textContent) : 8;
+        // Progress calculation (simple average)
+        let percent = 0;
+        let count = 0;
+        if (sum.calories != null) { percent += Math.min(sum.calories / calGoal, 1); count++; }
+        if (sum.protein != null) { percent += Math.min(sum.protein / proGoal, 1); count++; }
+        if (sum.fiber != null) { percent += Math.min(sum.fiber / fibGoal, 1); count++; }
+        if (sum.water != null) { percent += Math.min(sum.water / watGoal, 1); count++; }
+        percent = count ? Math.round((percent / count) * 100) : 0;
+        if (overallProgress) overallProgress.textContent = percent + '%';
+        if (overallProgressText) overallProgressText.textContent = percent + '%';
+        if (progressFill) progressFill.style.width = percent + '%';
+        // Render dashboard summary below
         const fields = [
             { key: 'calories', label: 'Calories', icon: 'fa-fire' },
             { key: 'protein', label: 'Protein', icon: 'fa-drumstick-bite' },
@@ -539,6 +573,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         card.className = 'recipe-card';
                         card.tabIndex = 0;
                         card.style.cursor = 'pointer';
+                        card.setAttribute('data-id', r.recipe_id || r.id || '');
+                        card._recipe = r;
                         card.innerHTML = `
                             <div class="recipe-title">${r.title || ''}</div>
                             <div class="recipe-description">
@@ -546,14 +582,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <b>Categories:</b> ${(r.categories || []).join(', ') || '-'}
                             </div>
                         `;
-                        card.addEventListener('click', function() {
-                            openModal(r);
-                        });
-                        card.addEventListener('keydown', function(e) {
-                            if ((e.key === 'Enter' || e.key === ' ')) {
-                                openModal(r);
-                            }
-                        });
+                        // Event delegated to container
                         cardsContainer.appendChild(card);
                     });
                 }
