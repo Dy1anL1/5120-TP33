@@ -316,22 +316,11 @@ body {
     position: relative;
 }
 
-.section-title::before,
-.section-title::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: 60px;
-    height: 2px;
-    background: #e0e0e0;
-}
 
-.section-title::before {
-    left: calc(50% - 80px);
-}
-
-.section-title::after {
-    right: calc(50% - 80px);
+.features-section .section-title::before,
+.features-section .section-title::after {
+    display: none !important;
+    content: none !important;
 }
 
 .cards-container {
@@ -413,7 +402,18 @@ body {
     transition: all 0.3s ease;
     cursor: pointer;
     opacity: 0.7;
+    text-decoration: none;
 }
+
+.feature-item,
+.feature-item:visited,
+.feature-item:active,
+.feature-item:focus,
+.feature-item:hover {
+    text-decoration: none !important;
+    color: inherit;
+}
+
 
 .feature-item:hover {
     opacity: 1;

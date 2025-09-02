@@ -322,6 +322,13 @@ async function fetchRecipes({ keyword, category, habit, limit = 10, nextToken = 
 
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Features section routing
+    const mealPlanning = document.getElementById('feature-meal-planning');
+    const shoppingList = document.getElementById('feature-shopping-list');
+    const recommendations = document.getElementById('feature-recommendations');
+    if (mealPlanning) mealPlanning.addEventListener('click', function(e) { e.preventDefault(); window.location.href = 'meal-planning.html'; });
+    if (shoppingList) shoppingList.addEventListener('click', function(e) { e.preventDefault(); window.location.href = 'shopping-list.html'; });
+    if (recommendations) recommendations.addEventListener('click', function(e) { e.preventDefault(); window.location.href = 'daily-recommendations.html'; });
     // Modal logic
     const modal = document.getElementById('recipe-modal');
     const modalBackdrop = modal ? modal.querySelector('.modal-backdrop') : null;
