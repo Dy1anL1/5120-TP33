@@ -1,6 +1,6 @@
 // recipes-api entry point
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, GetCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, GetCommand, QueryCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 
 const REGION = process.env.AWS_REGION || 'ap-southeast-2';
 const TABLE = process.env.RECIPES_TABLE || 'Recipes_i1';
@@ -108,7 +108,7 @@ exports.handler = async (event) => {
         Limit: limit ? Number(limit) : 10,
         ExclusiveStartKey: next_token ? JSON.parse(Buffer.from(next_token, 'base64').toString()) : undefined,
       };
-      const data = await ddb.send(new QueryCommand(queryParams));
+            const data = await ddb.send(new ScanCommand(queryParams));
       const items = (data.Items || []).map(normalizeRecipe);
       let filtered = items;
       if (habit)    filtered = filtered.filter(r => Array.isArray(r.habits) && r.habits.includes(habit));
@@ -122,22 +122,43 @@ exports.handler = async (event) => {
     }
     // Only category/habit filtering, scan table if no title_prefix
     if (category || habit) {
-      // DynamoDB scan, supports pagination and limit
-      const scanParams = {
-        TableName: TABLE,
-        Limit: limit ? Number(limit) : 10,
-        ExclusiveStartKey: next_token ? JSON.parse(Buffer.from(next_token, 'base64').toString()) : undefined,
-      };
-      const data = await ddb.send(new QueryCommand(scanParams));
-      let items = (data.Items || []).map(normalizeRecipe);
-      if (habit)    items = items.filter(r => Array.isArray(r.habits) && r.habits.includes(habit));
-      if (category) items = items.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
-      const nextToken = data.LastEvaluatedKey ? Buffer.from(JSON.stringify(data.LastEvaluatedKey)).toString('base64') : undefined;
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ items, count: items.length, next_token: nextToken })
-      };
+      // Scan multiple pages until enough results collected
+      let items = [];
+      let scanned = 0;
+      let lastKey = next_token ? JSON.parse(Buffer.from(next_token, 'base64').toString()) : undefined;
+      const pageLimit = 100; // scan max items per page
+      const resultLimit = limit ? Number(limit) : 10;
+      let nextToken = undefined;
+      while (items.length < resultLimit && scanned < 10000) { // Scan up to 10,000 items to prevent infinite loop
+        const scanParams = {
+          TableName: TABLE,
+          Limit: pageLimit,
+          ExclusiveStartKey: lastKey,
+        };
+        const data = await ddb.send(new ScanCommand(scanParams));
+        let pageItems = (data.Items || []).map(normalizeRecipe);
+        if (habit)    pageItems = pageItems.filter(r => Array.isArray(r.habits) && r.habits.includes(habit));
+        if (category) pageItems = pageItems.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
+        items = items.concat(pageItems);
+        scanned += (data.Items || []).length;
+        if (!data.LastEvaluatedKey) break;
+        lastKey = data.LastEvaluatedKey;
+        nextToken = Buffer.from(JSON.stringify(lastKey)).toString('base64');
+      }
+      // Only return next_token if limit is reached and there is more data
+      if (items.length >= resultLimit && nextToken) {
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ items: items.slice(0, resultLimit), count: resultLimit, next_token: nextToken })
+        };
+      } else {
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ items, count: items.length, next_token: null })
+        };
+      }
     }
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing query' }) };
   } catch (e) {
