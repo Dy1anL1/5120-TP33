@@ -120,6 +120,25 @@ exports.handler = async (event) => {
         body: JSON.stringify({ items: filtered, count: filtered.length, next_token: nextToken })
       };
     }
+    // Only category/habit filtering, scan table if no title_prefix
+    if (category || habit) {
+      // DynamoDB scan, supports pagination and limit
+      const scanParams = {
+        TableName: TABLE,
+        Limit: limit ? Number(limit) : 10,
+        ExclusiveStartKey: next_token ? JSON.parse(Buffer.from(next_token, 'base64').toString()) : undefined,
+      };
+      const data = await ddb.send(new QueryCommand(scanParams));
+      let items = (data.Items || []).map(normalizeRecipe);
+      if (habit)    items = items.filter(r => Array.isArray(r.habits) && r.habits.includes(habit));
+      if (category) items = items.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
+      const nextToken = data.LastEvaluatedKey ? Buffer.from(JSON.stringify(data.LastEvaluatedKey)).toString('base64') : undefined;
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ items, count: items.length, next_token: nextToken })
+      };
+    }
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing query' }) };
   } catch (e) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
