@@ -643,7 +643,7 @@ document.addEventListener('DOMContentLoaded', function () {
             let filteredItems = items;
             // Strict category match: only show recipes whose categories exactly match the selected category
             if (category && category !== 'all') {
-                filteredItems = items.filter(r => Array.isArray(r.categories) && r.categories.length === 1 && r.categories[0] === category);
+                filteredItems = items.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
             }
             if (cardsContainer) {
                 if (reset) cardsContainer.innerHTML = '';
