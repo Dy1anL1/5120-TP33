@@ -315,9 +315,79 @@ async function fetchRecipes({ keyword, category, habit, limit = 10, nextToken = 
     if (limit) params.append('limit', limit);
     if (nextToken) params.append('next_token', nextToken);
     const url = `${RECIPES_API}?${params.toString()}`;
-    const res = await fetch(url);
+    // 3s timeout handling
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    let res;
+    try {
+        res = await fetch(url, { signal: controller.signal });
+    } catch (e) {
+        if (e.name === 'AbortError') throw new Error('Search timeout, please try again.');
+        throw e;
+    } finally {
+        clearTimeout(timeout);
+    }
     if (!res.ok) throw new Error('Failed to fetch recipes');
-    return await res.json();
+    const data = await res.json();
+    // Fuzzy matching (tolerate typos) on frontend
+    if (keyword && data.items) {
+        const fuse = getFuseInstance(data.items);
+        let fuzzyResults = fuse.search(keyword, 3); // allow up to 3 typos
+        if (fuzzyResults.length === 0) {
+            // fallback: partial match (includes)
+            const kw = keyword.toLowerCase();
+            fuzzyResults = data.items.map(item => {
+                let fields = [];
+                if (item.title) fields.push(item.title);
+                if (Array.isArray(item.ingredients)) fields = fields.concat(item.ingredients);
+                for (const field of fields) {
+                    if (String(field).toLowerCase().includes(kw)) return { item, score: 0 };
+                }
+                return null;
+            }).filter(Boolean);
+        }
+        data.items = fuzzyResults.map(r => r.item);
+    }
+    return data;
+// Simple fuzzy matching tool (Levenshtein distance)
+function getFuseInstance(items) {
+    // Only load Fuse.js implementation on first call
+    if (!window.Fuse) {
+        class Fuse {
+            constructor(list) { this.list = list; }
+            search(pattern, maxTypos = 3) {
+                pattern = pattern.toLowerCase();
+                return this.list.map(item => {
+                    let minDist = 99;
+                    let fields = [];
+                    if (item.title) fields.push(item.title);
+                    if (Array.isArray(item.ingredients)) fields = fields.concat(item.ingredients);
+                    for (const field of fields) {
+                        const dist = levenshtein(pattern, String(field).toLowerCase());
+                        if (dist < minDist) minDist = dist;
+                        if (String(field).toLowerCase().includes(pattern)) minDist = 0;
+                    }
+                    return { item, score: minDist };
+                }).filter(r => r.score <= maxTypos)
+                  .sort((a,b)=>a.score-b.score);
+            }
+        }
+        function levenshtein(a, b) {
+            const matrix = [];
+            for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+            for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i-1) === a.charAt(j-1)) matrix[i][j] = matrix[i-1][j-1];
+                    else matrix[i][j] = Math.min(matrix[i-1][j-1]+1, matrix[i][j]+1, matrix[i-1][j]+1);
+                }
+            }
+            return matrix[b.length][a.length];
+        }
+        window.Fuse = Fuse;
+    }
+    return new window.Fuse(items);
+}
 }
 
 
@@ -570,12 +640,17 @@ document.addEventListener('DOMContentLoaded', function () {
         if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading...</div>';
         try {
             const { items = [], next_token } = await fetchRecipes({ keyword, category, habit, nextToken: reset ? null : nextToken });
+            let filteredItems = items;
+            // Strict category match: only show recipes whose categories exactly match the selected category
+            if (category && category !== 'all') {
+                filteredItems = items.filter(r => Array.isArray(r.categories) && r.categories.length === 1 && r.categories[0] === category);
+            }
             if (cardsContainer) {
                 if (reset) cardsContainer.innerHTML = '';
-                if (items.length === 0 && reset) {
-                    cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">No recipes found.</div>';
+                if (filteredItems.length === 0 && reset) {
+                    cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">No related recipes provided</div>';
                 } else {
-                    items.forEach(r => {
+                    filteredItems.forEach(r => {
                         const card = document.createElement('div');
                         card.className = 'recipe-card';
                         card.tabIndex = 0;
@@ -607,6 +682,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 loadMoreBtn.style.margin = '1.5rem auto';
                 loadMoreBtn.onclick = function() { updateRecipes(false); };
                 cardsContainer.appendChild(loadMoreBtn);
+            } else if (!nextToken && filteredItems.length > 0 && cardsContainer) {
+                // Show "No more recipe available" when there is no more data
+                const endDiv = document.createElement('div');
+                endDiv.style.textAlign = 'center';
+                endDiv.style.color = '#888';
+                endDiv.style.margin = '1.5rem auto';
+                endDiv.textContent = 'No more recipe available';
+                cardsContainer.appendChild(endDiv);
             }
             if (resultsHeader) {
                 const total = cardsContainer.querySelectorAll('.recipe-card').length;

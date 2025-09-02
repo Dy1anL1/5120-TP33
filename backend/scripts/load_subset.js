@@ -25,40 +25,31 @@ function joinTexts(title, ingredients, directions) {
 function deriveCategoriesStrict(title, ingredients, directions) {
   const text = joinTexts(title, ingredients, directions);
   const tl = W(title);
+  const ingText = normalizeArray(ingredients).join(' ').toLowerCase();
 
-  const isSoup = (
-    anyWord(tl, ['soup','broth','bisque','chowder','gumbo','consommé']) ||
-    (anyWord(normalizeArray(ingredients).join(' ').toLowerCase(), ['broth','stock']) && notAnyWord(tl, ['smoothie','juice','tea','coffee']))
-  );
-  const isSalad = anyWord(tl, ['salad']);
-  const isDessert = (
-    anyWord(tl, ['dessert','pudding','brownie','cheesecake','cupcake','mousse','tart','pie','cookie','cake','ice cream']) &&
-    notAnyWord(tl, ['chicken','beef','pork','shrimp','fish','burger','steak'])
-  );
-  const isDrink = (
-    anyWord(tl, ['smoothie','milkshake','shake','juice','tea','coffee','latte','mocha','lemonade','punch','cocktail']) &&
-    notAnyWord(tl, ['soup','broth','stock'])
-  );
-  const isBreakfast = anyWord(tl, ['breakfast','omelet','omelette','oatmeal','granola','pancake','waffle','scramble','muffin','toast']);
-  const isLunch = anyWord(tl, ['sandwich','burger','wrap','burrito']);
-  const isDinner = anyWord(tl, ['stew','roast','casserole','pasta','noodles','stir-fry','stir fry','bake'])
-                 || (!isBreakfast && !isDrink && !isDessert && !isSoup && !isSalad);
-
-  const cats = new Set();
-  if (isSoup) cats.add('soup');
-  if (isSalad) cats.add('salad');
-  if (isDessert) cats.add('dessert');
-  if (isDrink) cats.add('drink');
-  if (isBreakfast) cats.add('breakfast');
-  if (isLunch) cats.add('lunch');
-  if (isDinner) cats.add('dinner');
-
-  // conflict cleanup
-  if (cats.has('drink')) { cats.delete('lunch'); cats.delete('dinner'); }
-  if (cats.has('dessert')) { cats.delete('dinner'); }
-
-  const order = ['soup','salad','dessert','drink','breakfast','lunch','dinner'];
-  return order.filter(c => cats.has(c)).slice(0, 3);
+  // Strict mutually exclusive category priority: soup > salad > dessert > breakfast > lunch > dinner
+  if (anyWord(tl, ['soup','broth','bisque','chowder','gumbo','consommé']) ||
+      (anyWord(ingText, ['broth','stock']) && notAnyWord(tl, ['smoothie','juice','tea','coffee']))) {
+    return ['soup'];
+  }
+  if (anyWord(tl, ['salad'])) {
+    return ['salad'];
+  }
+  if (anyWord(tl, ['dessert','pudding','brownie','cheesecake','cupcake','mousse','tart','pie','cookie','cake','ice cream']) &&
+      notAnyWord(tl, ['chicken','beef','pork','shrimp','fish','burger','steak'])) {
+    return ['dessert'];
+  }
+  if (anyWord(tl, ['breakfast','omelet','omelette','oatmeal','granola','pancake','waffle','scramble','muffin','toast'])) {
+    return ['breakfast'];
+  }
+  if (anyWord(tl, ['sandwich','burger','wrap','burrito'])) {
+    return ['lunch'];
+  }
+  if (anyWord(tl, ['stew','roast','casserole','pasta','noodles','stir-fry','stir fry','bake'])) {
+    return ['dinner'];
+  }
+  // Default to dinner
+  return ['dinner'];
 }
 
 function deriveHabitsStrict(title, ingredients) {
