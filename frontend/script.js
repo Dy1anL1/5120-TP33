@@ -255,7 +255,7 @@ function getQueryParam(name) {
 async function renderNutritionDashboard() {
     const resultsDiv = document.getElementById('nutrition-results');
     if (!resultsDiv) return;
-    resultsDiv.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition...</div>';
+    // resultsDiv.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition...</div>';
     let ingredients = null;
     try {
         const recipeId = getQueryParam('id');
@@ -293,7 +293,7 @@ async function renderNutritionDashboard() {
             });
         } else {
             // No ?id=, show dashboard nutrition
-            resultsDiv.innerHTML = '<div style="color:#888;text-align:center;">No recipe selected. Showing dashboard summary below.</div>';
+            // resultsDiv.innerHTML = '<div style="color:#888;text-align:center;">No recipe selected. Showing dashboard summary below.</div>';
             renderDashboardNutrition();
             return;
         }
@@ -365,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         // Nutrition
         if (modalNutrition) {
-            modalNutrition.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition...</div>';
+            // modalNutrition.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition...</div>';
             fetchNutrition(recipe.ingredients).then(nutri => {
                 const sum = nutri.summary_100g_sum || {};
                 const fields = [
@@ -506,7 +506,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const nutritionResults = modal.querySelector('.nutrition-modal-results');
         nutritionBtn.onclick = async function() {
             nutritionBtn.disabled = true;
-            nutritionResults.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition...</div>';
+            // nutritionResults.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition...</div>';
             try {
                 const nutri = await fetchNutrition(recipe.ingredients);
                 const sum = nutri.summary_100g_sum || {};
