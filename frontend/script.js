@@ -657,14 +657,17 @@ document.addEventListener('DOMContentLoaded', function () {
                         card.style.cursor = 'pointer';
                         card.setAttribute('data-id', r.recipe_id || r.id || '');
                         card._recipe = r;
+                        // Group tags: health (habits) and category
+                        const healthTags = (r.habits || []).map(h => `<span class="tag health-tag">${h}</span>`).join('');
+                        const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
                         card.innerHTML = `
                             <div class="recipe-title">${r.title || ''}</div>
-                            <div class="recipe-description">
-                                <b>Habits:</b> ${(r.habits || []).join(', ') || '-'}<br/>
-                                <b>Categories:</b> ${(r.categories || []).join(', ') || '-'}
+                            <div class="recipe-description">${r.description || ''}</div>
+                            <div class="recipe-tags-row">
+                                <div class="recipe-tags health-tags-group">${healthTags}</div>
+                                <div class="recipe-tags category-tags-group">${categoryTags}</div>
                             </div>
                         `;
-                        // Event delegated to container
                         cardsContainer.appendChild(card);
                     });
                 }

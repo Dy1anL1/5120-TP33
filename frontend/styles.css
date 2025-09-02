@@ -315,7 +315,7 @@ body {
 }
 
 .section-container {
-    max-width: 1200px;
+    max-width: 80%;
     margin: 0 auto;
 }
 
@@ -520,6 +520,8 @@ body {
 .search-filter-section {
     padding: 40px 20px;
     background: white;
+    max-width: 90%;
+    margin: 0 auto;
 }
 
 .search-filter-box {
@@ -626,16 +628,27 @@ body {
 
 .recipe-cards-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 25px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    width: 100%;
+    margin: 0 auto;
 }
 
 .recipe-card {
-    background: white;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 18px rgba(76,175,80,0.10);
+    margin: 13px;
+    padding: 2rem 1.5rem 1.5rem 1.5rem;
+    transition: box-shadow 0.2s;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    min-width: 0;
+    width: 100%;
+    height: 280px;
 }
 
 .recipe-card:hover {
@@ -658,33 +671,81 @@ body {
 }
 
 .recipe-title {
-    font-size: 1.3rem;
-    color: #333;
-    margin-bottom: 12px;
+    font-size: 1.45rem;
     font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-align: left;
+    color: #333;
     line-height: 1.3;
 }
 
 .recipe-description {
+    font-size: 1.08rem;
     color: #666;
-    margin-bottom: 20px;
+    margin-bottom: 0.7rem;
+    text-align: left;
     line-height: 1.5;
 }
 
 .recipe-tags {
+    margin-top: 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    align-items: flex-start;
+.recipe-tags-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.7rem;
+    align-items: flex-start;
+}
+.health-tags-group {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 0.3rem;
+    flex-direction: row;
+    align-items: center;
+}
+.category-tags-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    flex-direction: row;
+    align-items: center;
+}
+}
+.health-tags-group,
+.category-tags-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    flex-direction: row;
+    align-items: center;
 }
 
 .tag {
-    background: #f0f8f0;
-    color: #4CAF50;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 500;
-    border: 1px solid #e0f0e0;
+    background: #f5f8f5;
+    color: #333;
+    border-radius: 12px;
+    padding: 0.18rem 0.5rem;
+    font-size: 1rem;
+    font-weight: 400;
+    margin: 0.12rem 0.12rem;
+    display: inline-block;
+    box-shadow: 0 1px 4px rgba(76,175,80,0.07);
+    letter-spacing: 0.2px;
+    border: 1px solid #e0e0e0;
+}
+.health-tag {
+    background: #e8f5e9;
+    color: #43a047;
+    font-weight: 400;
+}
+.category-tag {
+    background: #f5f8f5;
+    color: #222;
+    font-weight: 400;
 }
 
 /* Nutrition Dashboard Page Styles */
