@@ -3,7 +3,7 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, GetCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 
 const REGION = process.env.AWS_REGION || 'ap-southeast-2';
-const TABLE = process.env.RECIPES_TABLE || 'Recipes_v2';
+const TABLE = process.env.RECIPES_TABLE || 'Recipes_i1';
 const GSI_TITLE_PREFIX = 'gsi_title_prefix';
 
 const client = new DynamoDBClient({ region: REGION });
