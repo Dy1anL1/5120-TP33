@@ -161,6 +161,7 @@ async function openRecipeModal(recipe) {
         };
     }
 }
+
 // ====== Nutrition Dashboard Integration ======
 // ====== Dashboard Nutrition Rendering ======
 const DASHBOARD_KEY = 'nss_dashboard';
