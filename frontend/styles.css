@@ -4,52 +4,222 @@
     font-weight: bold;
     letter-spacing: 1px;
 }
+
 .logo-text p {
     font-size: 1.1rem;
     margin-top: 0.2em;
     color: #666;
 }
+
 /* Modal styles for recipe details */
-.modal { position: fixed; inset: 0; z-index: 1000; display:none; }
-.modal[aria-hidden="false"] { display:block; }
-.modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.5); }
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+}
+
+.modal[aria-hidden="false"] {
+    display: block;
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .5);
+}
+
 .modal-card {
-    position: relative; z-index:1001; background:#fff; margin:4rem auto; max-width:960px;
-    padding:1.25rem 1.5rem; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.25);
+    position: relative;
+    z-index: 1001;
+    background: #fff;
+    margin: 4rem auto;
+    max-width: 960px;
+    padding: 1.25rem 1.5rem;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
     max-height: 80vh;
     overflow-y: auto;
 }
-.modal-close { position:absolute; top:.6rem; right:.7rem; background:none; border:0; font-size:1.6rem; cursor:pointer; }
-.modal-cols { display:grid; grid-template-columns:1.3fr .7fr; gap:1.25rem; }
-@media (max-width: 900px){ .modal-cols{ grid-template-columns:1fr; } }
-.ingredients-list, .directions-list { margin:.5rem 0 0; padding-left:1.25rem; }
-.nutri-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:.6rem; }
-.nutri-grid .card { background:#f7faf7; border:1px solid #e5eee5; border-radius:12px; padding:.7rem; }
-.nutri-grid .key { font-size:.85rem; color:#666; }
-.nutri-grid .val { font-size:1.1rem; color:#2e7d32; font-weight:600; }
-/* Modal styles for recipe details */
-.modal { position: fixed; inset:0; z-index:1000; display:none; }
-.modal[aria-hidden="false"] { display:block; }
-.modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.5); }
-.modal-card { position:relative; z-index:1001; background:#fff; margin:4rem auto; max-width:900px; padding:1.5rem; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,.2); }
-.modal-close { position:absolute; top:.5rem; right:.5rem; background:none; border:0; font-size:1.5rem; cursor:pointer; }
-.modal-cols { display:grid; grid-template-columns:2fr 1fr; gap:1rem; }
-@media(max-width:800px){ .modal-cols{grid-template-columns:1fr;} }
-/* Modal styles for recipe details */
-.modal { position: fixed; inset: 0; z-index: 1000; }
-.modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
-.modal-card {
-    position: relative; max-width: 980px; margin: 4rem auto; background: #fff;
-    border-radius: 16px; padding: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,.2);
+
+.modal-close {
+    position: absolute;
+    top: .6rem;
+    right: .7rem;
+    background: none;
+    border: 0;
+    font-size: 1.6rem;
+    cursor: pointer;
 }
-.modal-close { position: absolute; top: .75rem; right: .75rem; font-size: 1.5rem; background: none; border: 0; cursor: pointer; }
-.modal-cols { display: grid; gap: 1.25rem; grid-template-columns: 1.2fr .8fr; }
-@media (max-width: 900px){ .modal-cols{ grid-template-columns: 1fr; } }
-.ingredients-list, .directions-list { margin: .5rem 0 0; padding-left: 1.25rem; }
-.nutri-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .5rem; }
-.nutri-grid .card { background:#f8faf8; border:1px solid #e6eee6; border-radius:12px; padding:.75rem; }
-.nutri-grid .key { font-size:.85rem; color:#666; }
-.nutri-grid .val { font-size:1.1rem; color:#2e7d32; font-weight:600; }
+
+.modal-cols {
+    display: grid;
+    grid-template-columns: 1.3fr .7fr;
+    gap: 1.25rem;
+}
+
+@media (max-width: 900px) {
+    .modal-cols {
+        grid-template-columns: 1fr;
+    }
+}
+
+.ingredients-list,
+.directions-list {
+    margin: .5rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.nutri-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .6rem;
+}
+
+.nutri-grid .card {
+    background: #f7faf7;
+    border: 1px solid #e5eee5;
+    border-radius: 12px;
+    padding: .7rem;
+}
+
+.nutri-grid .key {
+    font-size: .85rem;
+    color: #666;
+}
+
+.nutri-grid .val {
+    font-size: 1.1rem;
+    color: #2e7d32;
+    font-weight: 600;
+}
+
+/* Modal styles for recipe details */
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+}
+
+.modal[aria-hidden="false"] {
+    display: block;
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-card {
+    position: relative;
+    z-index: 1001;
+    background: #fff;
+    margin: 4rem auto;
+    max-width: 900px;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, .2);
+}
+
+.modal-close {
+    position: absolute;
+    top: .5rem;
+    right: .5rem;
+    background: none;
+    border: 0;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.modal-cols {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1rem;
+}
+
+@media(max-width:800px) {
+    .modal-cols {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Modal styles for recipe details */
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+}
+
+.modal-card {
+    position: relative;
+    max-width: 980px;
+    margin: 4rem auto;
+    background: #fff;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .2);
+}
+
+.modal-close {
+    position: absolute;
+    top: .75rem;
+    right: .75rem;
+    font-size: 1.5rem;
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+.modal-cols {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: 1.2fr .8fr;
+}
+
+@media (max-width: 900px) {
+    .modal-cols {
+        grid-template-columns: 1fr;
+    }
+}
+
+.ingredients-list,
+.directions-list {
+    margin: .5rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.nutri-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .5rem;
+}
+
+.nutri-grid .card {
+    background: #f8faf8;
+    border: 1px solid #e6eee6;
+    border-radius: 12px;
+    padding: .75rem;
+}
+
+.nutri-grid .key {
+    font-size: .85rem;
+    color: #666;
+}
+
+.nutri-grid .val {
+    font-size: 1.1rem;
+    color: #2e7d32;
+    font-weight: 600;
+}
+
 /* Reset default styles */
 * {
     margin: 0;
@@ -76,13 +246,14 @@ body {
 }
 
 .nav-container {
-    max-width: 1200px;
+    max-width: 100%;
+    width: 100%;
     margin: 0 auto;
     padding: 0 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 70px;
+    height: 110px;
 }
 
 .nav-logo {
@@ -93,8 +264,8 @@ body {
 
 .logo-icon {
     position: relative;
-    width: 50px;
-    height: 50px;
+    width: 80px;
+    height: 80px;
     background: #4CAF50;
     border-radius: 50%;
     display: flex;
@@ -116,17 +287,17 @@ body {
 }
 
 .text-logo {
-    font-size: 18px;
+    font-size: 22px;
     font-weight: bold;
     color: white;
     text-align: center;
-    line-height: 50px;
+    line-height: 80px;
 }
 
 .logo-text h1 {
     color: #4CAF50;
-    font-size: 25px;
-    font-weight: 600;
+    font-size: 30px;
+    font-weight: 700;
     margin: 0;
 }
 
@@ -139,6 +310,7 @@ body {
 .nav-links {
     display: flex;
     gap: 30px;
+    margin: 0 auto;
 }
 
 .nav-link {
@@ -147,7 +319,7 @@ body {
     align-items: center;
     text-decoration: none;
     color: #666;
-    font-size: 14px;
+    font-size: 21px;
     transition: color 0.3s ease;
     gap: 5px;
 }
@@ -204,7 +376,7 @@ body {
     background: white;
     flex-direction: column;
     padding: 20px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     border-top: 1px solid #e0e0e0;
 }
 
@@ -213,7 +385,7 @@ body {
         flex-direction: column;
         gap: 15px;
     }
-    
+
     .nav-links.show .nav-link {
         flex-direction: row;
         justify-content: flex-start;
@@ -244,7 +416,7 @@ body {
     color: #4CAF50;
     margin-bottom: 20px;
     line-height: 1.2;
-    white-space: nowrap;   
+    white-space: nowrap;
     margin-left: -50px;
     margin-right: auto;
 }
@@ -642,7 +814,7 @@ body {
 .recipe-card {
     background: #fff;
     border-radius: 18px;
-    box-shadow: 0 4px 18px rgba(76,175,80,0.10);
+    box-shadow: 0 4px 18px rgba(76, 175, 80, 0.10);
     margin: 13px;
     padding: 2rem 1.5rem 1.5rem 1.5rem;
     transition: box-shadow 0.2s;
@@ -698,28 +870,32 @@ body {
     flex-direction: column;
     gap: 0.3rem;
     align-items: flex-start;
-.recipe-tags-row {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    margin-top: 0.7rem;
-    align-items: flex-start;
+
+    .recipe-tags-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        margin-top: 0.7rem;
+        align-items: flex-start;
+    }
+
+    .health-tags-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .category-tags-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+        flex-direction: row;
+        align-items: center;
+    }
 }
-.health-tags-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
-    flex-direction: row;
-    align-items: center;
-}
-.category-tags-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
-    flex-direction: row;
-    align-items: center;
-}
-}
+
 .health-tags-group,
 .category-tags-group {
     display: flex;
@@ -728,6 +904,7 @@ body {
     flex-direction: row;
     align-items: center;
 }
+
 /* Load More Button */
 #load-more-btn {
     height: 48px;
@@ -743,6 +920,7 @@ body {
     cursor: pointer;
     transition: background 0.2s;
 }
+
 #load-more-btn:hover {
     background: #45a049;
 }
@@ -756,15 +934,17 @@ body {
     font-weight: 400;
     margin: 0.12rem 0.12rem;
     display: inline-block;
-    box-shadow: 0 1px 4px rgba(76,175,80,0.07);
+    box-shadow: 0 1px 4px rgba(76, 175, 80, 0.07);
     letter-spacing: 0.2px;
     border: 1px solid #e0e0e0;
 }
+
 .health-tag {
     background: #e8f5e9;
     color: #43a047;
     font-weight: 400;
 }
+
 .category-tag {
     background: #f5f8f5;
     color: #222;
@@ -1113,108 +1293,108 @@ body {
     .nav-links {
         display: none;
     }
-    
+
     .mobile-menu-btn {
         display: block;
     }
-    
+
     .hero-title {
         font-size: 2.5rem;
     }
-    
+
     .hero-subtitle {
         font-size: 1.2rem;
     }
-    
+
     .hero-description {
         font-size: 1rem;
     }
-    
+
     .hero-buttons {
         flex-direction: column;
         align-items: center;
     }
-    
+
     .btn {
         width: 100%;
         max-width: 300px;
         justify-content: center;
     }
-    
+
     .section-title {
         font-size: 2rem;
     }
-    
+
     .section-title::before,
     .section-title::after {
         width: 40px;
     }
-    
+
     .section-title::before {
         left: calc(50% - 60px);
     }
-    
+
     .section-title::after {
         right: calc(50% - 60px);
     }
-    
+
     .cards-container {
         grid-template-columns: 1fr;
         gap: 20px;
     }
-    
+
     .card {
         padding: 30px 20px;
     }
-    
+
     .page-title {
         font-size: 2.2rem;
     }
-    
+
     .search-filter-box {
         padding: 30px 20px;
     }
-    
+
     .filter-options {
         grid-template-columns: 1fr;
     }
-    
+
     .recipe-cards-container {
         grid-template-columns: 1fr;
     }
-    
+
     .progress-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 15px;
     }
-    
+
     .progress-info {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
     }
-    
+
     .nutrition-cards-container {
         grid-template-columns: 1fr;
     }
-    
+
     .goals-list {
         gap: 10px;
     }
-    
+
     .goal-progress-bar {
         min-width: 100px;
     }
-    
+
     .goal-progress-bar .progress-bar {
         width: 80px;
     }
-    
+
     .features-container {
         gap: 20px;
     }
-    
+
     .feature-item {
         padding: 15px;
     }
@@ -1224,117 +1404,117 @@ body {
     .nav-container {
         padding: 0 15px;
     }
-    
+
     .hero-section {
         padding: 60px 15px;
     }
-    
+
     .hero-title {
         font-size: 2rem;
     }
-    
+
     .hero-subtitle {
         font-size: 1.1rem;
     }
-    
+
     .how-it-works {
         padding: 60px 15px;
     }
-    
+
     .section-title {
         font-size: 1.8rem;
     }
-    
+
     .section-title::before,
     .section-title::after {
         display: none;
     }
-    
+
     .page-header {
         padding: 40px 15px;
     }
-    
+
     .page-title {
         font-size: 1.8rem;
     }
-    
+
     .search-filter-section {
         padding: 20px 15px;
     }
-    
+
     .search-filter-box {
         padding: 25px 20px;
     }
-    
+
     .recipe-results {
         padding: 20px 15px;
     }
-    
+
     .overall-progress-section {
         padding: 20px 15px;
     }
-    
+
     .progress-box {
         padding: 20px;
     }
-    
+
     .nutrition-cards-section {
         padding: 20px 15px;
     }
-    
+
     .nutrition-card {
         padding: 20px;
     }
-    
+
     .goals-section {
         padding: 20px 15px;
     }
-    
+
     .goals-container {
         padding: 20px;
     }
-    
+
     .health-tip-section {
         padding: 20px 15px;
     }
-    
+
     .health-tip-container {
         padding: 20px;
     }
-    
+
     .goal-progress-bar {
         min-width: 80px;
     }
-    
+
     .goal-progress-bar .progress-bar {
         width: 60px;
     }
-    
+
     .goal-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
     }
-    
+
     .goal-progress-bar {
         align-items: flex-start;
         width: 100%;
     }
-    
+
     .features-container {
         gap: 15px;
     }
-    
+
     .feature-item {
         padding: 10px;
     }
-    
+
     .feature-icon {
         width: 50px;
         height: 50px;
         font-size: 20px;
     }
-    
+
     .footer {
         padding: 30px 15px;
     }
@@ -1346,6 +1526,7 @@ body {
         opacity: 0;
         transform: translateY(30px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
