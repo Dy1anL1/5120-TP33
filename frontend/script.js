@@ -196,6 +196,8 @@ async function renderDashboardNutrition() {
             dashDiv.innerHTML = '<div style="color:#888;text-align:center;">No dashboard recipes found.</div>';
             return;
         }
+        //思考
+        
         // Merge all ingredients
         for (const item of dashboard) {
             if (Array.isArray(item.ingredients)) {
@@ -206,7 +208,6 @@ async function renderDashboardNutrition() {
             dashDiv.innerHTML = '<div style="color:#888;text-align:center;">No ingredients found in dashboard recipes.</div>';
             return;
         }
-        //思考
 
         // POST to MATCH_API
         const nutri = await fetchNutrition(allIngredients);
