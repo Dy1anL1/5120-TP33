@@ -238,9 +238,9 @@ async function renderDashboardNutrition() {
         if (fiberCurrent) fiberCurrent.textContent = sum.fiber != null ? Number(sum.fiber).toFixed(0) : '0';
         if (waterCurrent) waterCurrent.textContent = sum.water != null ? Number(sum.water).toFixed(0) : '0';
         // Goals (can be static or configurable)
-        const calGoal = caloriesGoal ? Number(caloriesGoal.textContent) : 2000;
-        const proGoal = proteinGoal ? Number(proteinGoal.textContent) : 80;
-        const fibGoal = fiberGoal ? Number(fiberGoal.textContent) : 30;
+        const calGoal = caloriesGoal ? Number(caloriesGoal.textContent) : 2200;
+        const proGoal = proteinGoal ? Number(proteinGoal.textContent) : 56;
+        const fibGoal = fiberGoal ? Number(fiberGoal.textContent) : 28;
         const watGoal = waterGoal ? Number(waterGoal.textContent) : 8;
         // Progress calculation (simple average)
         let percent = 0;
