@@ -1,0 +1,13 @@
+# Netlify redirects file
+# This ensures that all routes are handled by the main index.html file
+# which is necessary for single-page applications
+
+# Handle root route by serving cta.html
+/    /cta.html   200
+
+# Handle all other routes by serving index.html
+/*    /index.html   200
+
+# Optional: Handle specific API routes if you have backend endpoints
+# /api/*  https://your-backend-url.com/api/:splat  200
+

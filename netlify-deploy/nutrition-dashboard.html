@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silver Spoon Society - Nutrition Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <div class="logo-icon">
+                    <img src="logo.jpg" alt="Silver Spoon Society Logo" class="custom-logo">
+                </div>
+                <div class="logo-text">
+                    <h1>Silver Spoon Society</h1>
+                </div>
+            </div>
+            
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="explore-recipes.html" class="nav-link">
+                    <i class="fas fa-search"></i>
+                    <span>Explore Recipes</span>
+                </a>
+                <a href="daily-recommendations.html" class="nav-link">
+                    <i class="fas fa-heart"></i>
+                    <span>Daily Recommendations</span>
+                </a>
+                <a href="meal-planning.html" class="nav-link">
+                    <i class="fas fa-calendar"></i>
+                    <span>Meal Planning</span>
+                </a>
+                <a href="nutrition-dashboard.html" class="nav-link active">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Nutrition Dashboard</span>
+                </a>
+                <a href="shopping-list.html" class="nav-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Shopping List</span>
+                </a>
+            </div>
+            
+            <!--
+            <div class="nav-right">
+                <button class="nav-icon-btn">
+                    <i class="fas fa-globe"></i>
+                </button>
+                <button class="nav-icon-btn">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+            </div>
+            -->
+
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <section class="page-header">
+            <div class="section-container">
+                <h1 class="page-title">Nutrition Dashboard</h1>
+                <p class="page-subtitle">Track your daily nutrition intake and monitor your health goals</p>
+                <p class="page-description">Track your daily nutrition goals at a glance</p>
+            </div>
+        </section>
+
+        <!-- Overall Progress Section -->
+        <section class="overall-progress-section">
+            <div class="section-container">
+                <div class="progress-box">
+                    <div class="progress-header">
+                        <div class="progress-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Keep logging meals to reach your goals</span>
+                        </div>
+                        <div class="progress-info">
+                            <span class="progress-text">Overall Progress: <span id="overall-progress-text">0%</span> of daily goals</span>
+                            <span class="progress-percentage" id="overall-progress">0%</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 21%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Nutrition Cards Section -->
+        <section class="nutrition-cards-section">
+            <div class="section-container">
+                <div class="nutrition-cards-container">
+                    <div class="nutrition-card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                            <div class="card-title">
+                                <h3>Calories</h3>
+                                <span class="status-tag low">low</span>
+                            </div>
+                        </div>
+                        <div class="card-value">
+                            <span class="current-value" id="calories-current">0</span>
+                            <span class="separator">/</span>
+                            <span class="goal-value" id="calories-goal">2000</span>
+                            <span class="unit">kcal</span>
+                        </div>
+                        <p class="card-description">Energy for daily activities</p>
+                        <div class="card-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 16%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="nutrition-card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-heartbeat"></i>
+                            </div>
+                            <div class="card-title">
+                                <h3>Protein</h3>
+                                <span class="status-tag low">low</span>
+                            </div>
+                        </div>
+                        <div class="card-value">
+                            <span class="current-value" id="protein-current">0</span>
+                            <span class="separator">/</span>
+                            <span class="goal-value" id="protein-goal">80</span>
+                            <span class="unit">g</span>
+                        </div>
+                        <p class="card-description">Muscle maintenance & repair</p>
+                        <div class="card-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 15%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="nutrition-card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="card-title">
+                                <h3>Fiber</h3>
+                                <span class="status-tag low">low</span>
+                            </div>
+                        </div>
+                        <div class="card-value">
+                            <span class="current-value" id="fiber-current">0</span>
+                            <span class="separator">/</span>
+                            <span class="goal-value" id="fiber-goal">30</span>
+                            <span class="unit">g</span>
+                        </div>
+                        <p class="card-description">Digestive health support</p>
+                        <div class="card-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 27%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="nutrition-card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <div class="card-title">
+                                <h3>Water</h3>
+                                <span class="status-tag low">low</span>
+                            </div>
+                        </div>
+                        <div class="card-value">
+                            <span class="current-value" id="water-current">0</span>
+                            <span class="separator">/</span>
+                            <span class="goal-value" id="water-goal">8</span>
+                            <span class="unit">glasses</span>
+                        </div>
+                        <p class="card-description">Hydration & body function</p>
+                        <div class="card-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 25%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Today's Goals Section -->
+        <section class="goals-section">
+            <div class="section-container">
+                <div class="goals-container">
+                    <div class="goals-header">
+                        <h2><i class="fas fa-bullseye"></i> Today's Goals</h2>
+                    </div>
+                    <div class="goals-list">
+                        <section>
+                            <div class="section-container">
+                                <div id="nutrition-results"></div>
+                                <div id="dashboard-nutrition"></div>
+                            </div>
+                        </section>
+                <div class="health-tip-container">
+                    <div class="health-tip-header">
+                        <h2><i class="fas fa-heart"></i> Today's Health Tip</h2>
+                    </div>
+                    <div class="health-tip-content">
+                        <p><strong>Tracking Tip:</strong> Remember to log all your meals and snacks throughout the day. Even small items like a piece of fruit or handful of nuts contribute to your daily nutrition goals. Consistent logging helps you build healthier eating habits!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
