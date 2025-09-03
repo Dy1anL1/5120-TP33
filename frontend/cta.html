@@ -15,7 +15,8 @@
 			justify-content: center;
 			background-color: #f3f4f6; /* fallback while loading */
 			background-size: cover;
-			background-position: center;
+			/* moved down to show more of the plate/person lower in the image */
+			background-position: center 40%;
 			text-align: center;
 			padding: 2rem;
 		}
@@ -47,18 +48,21 @@
             position: relative; 
             max-width: 1200px; 
             margin: 0 auto; 
+            height: 85vh;       
+            overflow: hidden;
         }
 		.hero-img { 
             width: 100%; 
             height: auto; 
             display: block; 
             border-radius: 8px; 
+            transform: translateY(-8%);
         }
 		/* place the CTA card at the image's top-left on larger screens */
 		.cta-card { 
             position: absolute; 
             top: 5rem; 
-            left: 7rem; 
+            right: 10rem; 
             width: min(520px, 85%); 
         }
 
@@ -108,7 +112,7 @@
 		(function(){
 			const hero = document.querySelector('.cta-hero');
 			const card = document.querySelector('.cta-card');
-			const imgUrl = 'hero-bg.jpg';
+			const imgUrl = 'cta2.jpg';
 
 			function reveal() {
 				// slightly longer delay so background feels settled before card appears
