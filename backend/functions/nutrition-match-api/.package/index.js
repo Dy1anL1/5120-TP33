@@ -1,53 +1,3 @@
-// nutrition-match-api entry point
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const { DynamoDBDocumentClient, QueryCommand } = require("@aws-sdk/lib-dynamodb");
-
-const REGION = process.env.AWS_REGION || "ap-southeast-2";
-const TABLE = process.env.TABLE_NAME || process.env.FOODS_TABLE || "Foods_v2";
-const GSI = process.env.GSI_NAME || "gsi_name_prefix";
-
-const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({ region: REGION }));
-
-function first1(s = "") {
-  s = (s || "").trim().toLowerCase();
-  const c = s[0];
-  return (c >= "a" && c <= "z") ? c : "#";
-}
-
-function parseMaybeJson(v) {
-  if (!v) return v;
-  if (typeof v === "object") return v;
-  try {
-    return JSON.parse(v);
-  } catch {
-    return v;
-  }
-}
-
-function normNameForQuery(s = "") {
-  return String(s)
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, " ") // remove all punctuation (including , .)
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-// Remove stopwords and unit words from ingredient name
-function cleanIngredientName(name = "") {
-  return name.replace(/\b(clove|cloves|slice|slices|of|fresh|large|small|extra|virgin)\b/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function addInto(sum, obj) {
-  if (!obj) return;
-  for (const [k, v] of Object.entries(obj)) {
-    const n = Number(v);
-    if (!Number.isFinite(n)) continue;
-    sum[k] = (sum[k] || 0) + n;
-  }
-}
-
 // Unit conversion table (approximate)
 const UNIT_TO_GRAM = {
   g: 1,
@@ -87,6 +37,50 @@ function parseAmountUnit(str) {
   const name = m[3].trim();
   return { amount, unit, name };
 }
+// nutrition-match-api entry point
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocumentClient, QueryCommand } = require("@aws-sdk/lib-dynamodb");
+
+const REGION = process.env.AWS_REGION || "ap-southeast-2";
+const TABLE = process.env.TABLE_NAME || process.env.FOODS_TABLE || "Foods_v2";
+const GSI = process.env.GSI_NAME || "gsi_name_prefix";
+
+const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({ region: REGION }));
+
+function first1(s = "") {
+  s = (s || "").trim().toLowerCase();
+  const c = s[0];
+  return (c >= "a" && c <= "z") ? c : "#";
+}
+
+function parseMaybeJson(v) {
+  if (!v) return v;
+  if (typeof v === "object") return v;
+  try {
+    return JSON.parse(v);
+  } catch {
+    return v;
+  }
+}
+
+function norm(s = "") {
+  return String(s)
+    .toLowerCase()
+    .replace(/[\d./-]+/g, " ")
+    .replace(/\b(cups?|cup|tbsp|tablespoons?|tsp|teaspoons?|g|kg|oz|ml|l|pounds?|lb|slice|slices|cloves?)\b/g, " ")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function addInto(sum, obj) {
+  if (!obj) return;
+  for (const [k, v] of Object.entries(obj)) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) continue;
+    sum[k] = (sum[k] || 0) + n;
+  }
+}
 
 exports.handler = async (event) => {
   const headers = {
@@ -107,8 +101,7 @@ exports.handler = async (event) => {
     for (const raw of ingredients) {
       // Parse amount, unit, and main ingredient
       const { amount, unit, name } = parseAmountUnit(raw);
-      const cleaned = cleanIngredientName(name);
-      const q = normNameForQuery(cleaned);
+      const q = norm(name);
       if (!q) { results.push({ ingredient: raw, query: q, match: null }); continue; }
 
       // Query by prefix, take the first match
@@ -121,22 +114,6 @@ exports.handler = async (event) => {
       }));
 
       let candidate = (data.Items || [])[0];
-      // Fallback: contains query if prefix fails (DynamoDB limitation: only works if name_lc is not a key)
-      if (!candidate) {
-        try {
-          const data2 = await ddb.send(new QueryCommand({
-            TableName: TABLE,
-            IndexName: GSI,
-            KeyConditionExpression: "name_lc_first1 = :pk",
-            FilterExpression: "contains(name_lc, :pfx)",
-            ExpressionAttributeValues: { ":pk": first1(q), ":pfx": q },
-            Limit: 25,
-          }));
-          candidate = (data2.Items || [])[0];
-        } catch (e) {
-          // fallback failed, ignore
-        }
-      }
       if (candidate) {
         const nutrition = parseMaybeJson(candidate.nutrition_100g);
         // Convert unit to grams
