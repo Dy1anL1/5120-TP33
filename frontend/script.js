@@ -741,7 +741,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         // ignore fallback failure, fall through to show original error
                     }
                 }
-                if (cardsContainer) cardsContainer.innerHTML = `<div style="color:#c00;text-align:center;">${e.message}</div>`;
+                if (cardsContainer) cardsContainer.innerHTML = `<div style="color:#c00;text-align:center;">Please enter a keyword or select a filter before searching.</div>`;
                 if (resultsHeader) resultsHeader.textContent = '0 Recipes Found';
             }
     }
