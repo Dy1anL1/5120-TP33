@@ -418,10 +418,11 @@ body {
 
 /* Hero Section Styles */
 .hero-section {
-    background: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)), url('WechatIMG1763.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    /* background: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)), url('WechatIMG1763.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat; */
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     padding: 120px 20px;
     text-align: center;
     min-height: 80vh;
