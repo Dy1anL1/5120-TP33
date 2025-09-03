@@ -1,8 +1,7 @@
-# Netlify redirects file
-# This ensures that all routes are handled by the main index.html file
-# which is necessary for single-page applications
+# Netlify redirects file for Silver Spoon Society
+# This ensures proper routing for the website
 
-# Handle root route by serving cta.html
+# Handle root route by serving cta.html (landing page)
 /    /cta.html   200
 
 # Handle all other routes by serving index.html
@@ -10,4 +9,3 @@
 
 # Optional: Handle specific API routes if you have backend endpoints
 # /api/*  https://your-backend-url.com/api/:splat  200
-
