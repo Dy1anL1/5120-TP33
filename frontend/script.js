@@ -80,6 +80,7 @@ document.addEventListener('click', (e)=>{
     }
 });
 
+// Open recipe modal and fetch nutrition summary
 async function openRecipeModal(recipe) {
     const m = ensureRecipeModal();
     const titleEl = m.querySelector('#recipe-modal-title');
