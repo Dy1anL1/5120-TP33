@@ -87,20 +87,25 @@ async function openRecipeModal(recipe) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ingredients })
             });
-            const { summary_100g_sum } = await res.json();
-            if (sumEl) {
-                sumEl.innerHTML = '';
-                const pairs = [
-                    ['calories','kcal'],['protein','g'],['total_fat','g'],
-                    ['carbohydrates','g'],['sodium','mg'],['total_sugars','g'],['saturated_fats','g']
-                ];
-                pairs.forEach(([k,u])=>{
-                    const v = summary_100g_sum?.[k];
-                    if (v==null) return;
-                    const card = document.createElement('div'); card.className='card';
-                    card.innerHTML = `<div class="key">${k.replace('_',' ')}</div><div class="val">${Number(v).toFixed(1)} ${u}</div>`;
-                    sumEl.appendChild(card);
-                });
+            const body = await res.json();
+            const summary = body.summary_100g_sum || {};
+            if (Object.keys(summary).length === 0) {
+                if (sumEl) sumEl.innerHTML = '<div style="color:#888;">No nutrition matches found for listed ingredients.</div>';
+            } else {
+                if (sumEl) {
+                    sumEl.innerHTML = '';
+                    const pairs = [
+                        ['calories','kcal'],['protein','g'],['total_fat','g'],
+                        ['carbohydrates','g'],['sodium','mg'],['total_sugars','g'],['saturated_fats','g']
+                    ];
+                    pairs.forEach(([k,u])=>{
+                        const v = summary?.[k];
+                        if (v==null) return;
+                        const card = document.createElement('div'); card.className='card';
+                        card.innerHTML = `<div class="key">${k.replace('_',' ')}</div><div class="val">${Number(v).toFixed(1)} ${u}</div>`;
+                        sumEl.appendChild(card);
+                    });
+                }
             }
         } else if (sumEl) {
             sumEl.innerHTML = '<div class="card"><div class="key">No ingredients</div><div class="val">-</div></div>';
@@ -193,7 +198,50 @@ async function renderDashboardNutrition() {
         percent = count ? Math.round((percent / count) * 100) : 0;
         if (overallProgress) overallProgress.textContent = percent + '%';
         if (overallProgressText) overallProgressText.textContent = percent + '%';
-        if (progressFill) progressFill.style.width = percent + '%';
+        if (progressFill) {
+            // set width and color when exceeding 100%
+            progressFill.style.width = Math.min(100, percent) + '%';
+            progressFill.style.background = percent > 100 ? '#e53935' : '';
+        }
+
+        // Update progress header message when goals reached
+        const progWarnSpan = document.querySelector('.progress-warning span');
+        if (progWarnSpan) {
+            if (percent >= 100) progWarnSpan.textContent = 'Great job - you\'ve reached your daily goals!';
+            else progWarnSpan.textContent = 'Keep logging meals to reach your goals';
+        }
+
+        // Per-card visual: mark numbers/progress red when current > goal
+        const cardFields = [
+            { curId: 'calories-current', goalId: 'calories-goal' },
+            { curId: 'protein-current', goalId: 'protein-goal' },
+            { curId: 'fiber-current', goalId: 'fiber-goal' },
+            { curId: 'water-current', goalId: 'water-goal' },
+        ];
+        cardFields.forEach(({curId, goalId}) => {
+            const curEl = document.getElementById(curId);
+            const goalEl = document.getElementById(goalId);
+            if (!curEl || !goalEl) return;
+            const cur = Number(String(curEl.textContent).replace(/[^0-9\.\-]/g, '')) || 0;
+            const goal = Number(String(goalEl.textContent).replace(/[^0-9\.\-]/g, '')) || 0 || 1;
+            const card = curEl.closest('.nutrition-card');
+            if (card) {
+                const fill = card.querySelector('.progress-fill');
+                const pct = goal ? (cur / goal) * 100 : 0;
+                if (fill) {
+                    fill.style.width = Math.min(100, pct) + '%';
+                    fill.style.background = pct > 100 ? '#e53935' : '';
+                }
+                if (cur > goal) {
+                    // red number
+                    curEl.style.color = '#e53935';
+                    card.classList.add('over-goal');
+                } else {
+                    curEl.style.color = '';
+                    card.classList.remove('over-goal');
+                }
+            }
+        });
         // Render dashboard summary below
         const fields = [
             { key: 'calories', label: 'Calories', icon: 'fa-fire' },
@@ -440,32 +488,35 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
         // Nutrition
-        if (modalNutrition) {
-            // modalNutrition.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition...</div>';
-            fetchNutrition(recipe.ingredients).then(nutri => {
-                const sum = nutri.summary_100g_sum || {};
-                const fields = [
-                    { key: 'calories', label: 'Calories', icon: 'fa-fire' },
-                    { key: 'protein', label: 'Protein', icon: 'fa-drumstick-bite' },
-                    { key: 'fat', label: 'Fat', icon: 'fa-bacon' },
-                    { key: 'sodium', label: 'Sodium', icon: 'fa-salt-shaker' },
-                    { key: 'sugar', label: 'Sugar', icon: 'fa-cube' },
-                ];
-                let html = '<div class="nutrition-cards">';
-                fields.forEach(f => {
-                    const val = sum[f.key] != null ? sum[f.key] : '-';
-                    html += `<div class="nutrition-card">
-                        <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
-                        <div class="nutrition-label">${f.label}</div>
-                        <div class="nutrition-value">${val}</div>
-                    </div>`;
+            if (modalNutrition) {
+                fetchNutrition(recipe.ingredients).then(nutri => {
+                    const sum = nutri.summary_100g_sum || {};
+                    if (Object.keys(sum).length === 0) {
+                        modalNutrition.innerHTML = '<div style="color:#888;text-align:center;">No nutrition matches found for listed ingredients.</div>';
+                        return;
+                    }
+                    const fields = [
+                        { key: 'calories', label: 'Calories', icon: 'fa-fire' },
+                        { key: 'protein', label: 'Protein', icon: 'fa-drumstick-bite' },
+                        { key: 'fat', label: 'Fat', icon: 'fa-bacon' },
+                        { key: 'sodium', label: 'Sodium', icon: 'fa-salt-shaker' },
+                        { key: 'sugar', label: 'Sugar', icon: 'fa-cube' },
+                    ];
+                    let html = '<div class="nutrition-cards">';
+                    fields.forEach(f => {
+                        const val = sum[f.key] != null ? sum[f.key] : '-';
+                        html += `<div class="nutrition-card">
+                            <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
+                            <div class="nutrition-label">${f.label}</div>
+                            <div class="nutrition-value">${val}</div>
+                        </div>`;
+                    });
+                    html += '</div>';
+                    modalNutrition.innerHTML = html;
+                }).catch(e => {
+                    modalNutrition.innerHTML = `<div style="color:#c00;text-align:center;">${e.message}</div>`;
                 });
-                html += '</div>';
-                modalNutrition.innerHTML = html;
-            }).catch(e => {
-                modalNutrition.innerHTML = `<div style="color:#c00;text-align:center;">${e.message}</div>`;
-            });
-        }
+            }
         // Dashboard button
         if (modalDashboardBtn) {
             modalDashboardBtn.onclick = function() {
@@ -583,34 +634,38 @@ document.addEventListener('DOMContentLoaded', function () {
         nutritionBtn.onclick = async function() {
             nutritionBtn.disabled = true;
             // nutritionResults.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition...</div>';
-            try {
-                const nutri = await fetchNutrition(recipe.ingredients);
-                const sum = nutri.summary_100g_sum || {};
-                const fields = [
-                    { key: 'calories', label: 'Calories', icon: 'fa-fire' },
-                    { key: 'protein', label: 'Protein', icon: 'fa-drumstick-bite' },
-                    { key: 'fat', label: 'Fat', icon: 'fa-bacon' },
-                    { key: 'sodium', label: 'Sodium', icon: 'fa-salt-shaker' },
-                    { key: 'sugar', label: 'Sugar', icon: 'fa-cube' },
-                ];
-                nutritionResults.innerHTML = '<div class="nutrition-cards"></div>';
-                const cards = nutritionResults.querySelector('.nutrition-cards');
-                fields.forEach(f => {
-                    const val = sum[f.key] != null ? sum[f.key] : '-';
-                    const card = document.createElement('div');
-                    card.className = 'nutrition-card';
-                    card.innerHTML = `
-                        <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
-                        <div class="nutrition-label">${f.label}</div>
-                        <div class="nutrition-value">${val}</div>
-                    `;
-                    cards.appendChild(card);
-                });
-            } catch (e) {
-                nutritionResults.innerHTML = `<div style="color:#c00;text-align:center;">${e.message}</div>`;
-            } finally {
-                nutritionBtn.disabled = false;
-            }
+                try {
+                    const nutri = await fetchNutrition(recipe.ingredients);
+                    const sum = nutri.summary_100g_sum || {};
+                    if (Object.keys(sum).length === 0) {
+                        nutritionResults.innerHTML = '<div style="color:#888;text-align:center;">No nutrition matches found for listed ingredients.</div>';
+                        return;
+                    }
+                    const fields = [
+                        { key: 'calories', label: 'Calories', icon: 'fa-fire' },
+                        { key: 'protein', label: 'Protein', icon: 'fa-drumstick-bite' },
+                        { key: 'fat', label: 'Fat', icon: 'fa-bacon' },
+                        { key: 'sodium', label: 'Sodium', icon: 'fa-salt-shaker' },
+                        { key: 'sugar', label: 'Sugar', icon: 'fa-cube' },
+                    ];
+                    nutritionResults.innerHTML = '<div class="nutrition-cards"></div>';
+                    const cards = nutritionResults.querySelector('.nutrition-cards');
+                    fields.forEach(f => {
+                        const val = sum[f.key] != null ? sum[f.key] : '-';
+                        const card = document.createElement('div');
+                        card.className = 'nutrition-card';
+                        card.innerHTML = `
+                            <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
+                            <div class="nutrition-label">${f.label}</div>
+                            <div class="nutrition-value">${val}</div>
+                        `;
+                        cards.appendChild(card);
+                    });
+                } catch (e) {
+                    nutritionResults.innerHTML = `<div style="color:#c00;text-align:center;">${e.message}</div>`;
+                } finally {
+                    nutritionBtn.disabled = false;
+                }
         };
 
         // Favorite (dashboard) button logic
