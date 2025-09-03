@@ -238,8 +238,11 @@ body {
     left: 0;
     right: 0;
     z-index: 1000;
-    transform: translateY(-100%);
-    transition: transform 0.3s ease 1s;
+    /* Always show navbar, no hover effect */
+    transform: translateY(0);
+    transition: none;
+    /* Move navbar down to avoid covering page title */
+    margin-top: 0;
 }
 
 .navbar:hover {
@@ -249,13 +252,7 @@ body {
 
 /* Hover trigger area for navbar */
 .navbar-trigger {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 20px;
-    z-index: 1001;
-    background: transparent;
+    display: none;
 }
 
 .navbar-trigger:hover + .navbar {
@@ -337,7 +334,7 @@ body {
     align-items: center;
     text-decoration: none;
     color: #666;
-    font-size: 16px;
+    font-size: 20px;
     transition: color 0.3s ease;
     gap: 5px;
 }
@@ -413,7 +410,7 @@ body {
 
 /* Main content area */
 .main-content {
-    margin-top: 0;
+    margin-top: 110px;
 }
 
 /* Hero Section Styles */
@@ -425,7 +422,7 @@ body {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     padding: 120px 20px;
     text-align: center;
-    min-height: 80vh;
+    min-height: 60vh;
 }
 
 .hero-container {
@@ -693,6 +690,7 @@ body {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     padding: 60px 20px;
     text-align: center;
+    margin-top: 110px;
 }
 
 .page-title {
