@@ -315,9 +315,9 @@ async function fetchRecipes({ keyword, category, habit, limit = 10, nextToken = 
     if (limit) params.append('limit', limit);
     if (nextToken) params.append('next_token', nextToken);
     const url = `${RECIPES_API}?${params.toString()}`;
-    // 3s timeout handling
+    // 8s timeout handling (backend sometimes slower) -> more tolerant
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
+    const timeout = setTimeout(() => controller.abort(), 8000);
     let res;
     try {
         res = await fetch(url, { signal: controller.signal });
@@ -327,7 +327,13 @@ async function fetchRecipes({ keyword, category, habit, limit = 10, nextToken = 
     } finally {
         clearTimeout(timeout);
     }
-    if (!res.ok) throw new Error('Failed to fetch recipes');
+    if (!res.ok) {
+        const txt = await res.text().catch(()=>res.statusText || '');
+        const message = `Recipes API ${res.status} ${res.statusText} ${txt ? '- '+txt.slice(0,120) : ''}`;
+        const err = new Error(message);
+        err.status = res.status;
+        throw err;
+    }
     const data = await res.json();
     // Fuzzy matching (tolerate typos) on frontend
     if (keyword && data.items) {
@@ -699,9 +705,45 @@ document.addEventListener('DOMContentLoaded', function () {
                 resultsHeader.textContent = `${total} Recipe${total !== 1 ? 's' : ''} Found`;
             }
         } catch (e) {
-            if (cardsContainer) cardsContainer.innerHTML = `<div style="color:#c00;text-align:center;">${e.message}</div>`;
-            if (resultsHeader) resultsHeader.textContent = '0 Recipes Found';
-        }
+                // If server error 5xx try a graceful fallback (no title_prefix) once
+                if (e && e.status && String(e.status).startsWith('5')) {
+                    try {
+                        const fallback = await fetchRecipes({ keyword: '', category, habit, limit });
+                        if (fallback && fallback.items && fallback.items.length) {
+                            // render fallback results by reusing logic
+                            const tempItems = fallback.items;
+                            if (cardsContainer) {
+                                cardsContainer.innerHTML = '';
+                                tempItems.forEach(r => {
+                                    const card = document.createElement('div');
+                                    card.className = 'recipe-card';
+                                    card.tabIndex = 0;
+                                    card.style.cursor = 'pointer';
+                                    card.setAttribute('data-id', r.recipe_id || r.id || '');
+                                    card._recipe = r;
+                                    const healthTags = (r.habits || []).map(h => `<span class="tag health-tag">${h}</span>`).join('');
+                                    const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
+                                    card.innerHTML = `
+                                        <div class="recipe-title">${r.title || ''}</div>
+                                        <div class="recipe-description">${r.description || ''}</div>
+                                        <div class="recipe-tags-row">
+                                            <div class="recipe-tags health-tags-group">${healthTags}</div>
+                                            <div class="recipe-tags category-tags-group">${categoryTags}</div>
+                                        </div>
+                                    `;
+                                    cardsContainer.appendChild(card);
+                                });
+                            }
+                            if (resultsHeader) resultsHeader.textContent = `${cardsContainer.querySelectorAll('.recipe-card').length} Recipes Found`;
+                            return; // done
+                        }
+                    } catch (inner) {
+                        // ignore fallback failure, fall through to show original error
+                    }
+                }
+                if (cardsContainer) cardsContainer.innerHTML = `<div style="color:#c00;text-align:center;">${e.message}</div>`;
+                if (resultsHeader) resultsHeader.textContent = '0 Recipes Found';
+            }
     }
 
     if (applyFiltersBtn) {

@@ -108,7 +108,8 @@ exports.handler = async (event) => {
         Limit: limit ? Number(limit) : 10,
         ExclusiveStartKey: next_token ? JSON.parse(Buffer.from(next_token, 'base64').toString()) : undefined,
       };
-            const data = await ddb.send(new ScanCommand(queryParams));
+      // Use QueryCommand when using KeyConditionExpression against the GSI
+      const data = await ddb.send(new QueryCommand(queryParams));
       const items = (data.Items || []).map(normalizeRecipe);
       let filtered = items;
       if (habit)    filtered = filtered.filter(r => Array.isArray(r.habits) && r.habits.includes(habit));
