@@ -185,7 +185,27 @@ async function renderDashboardNutrition() {
     const progressFill = document.querySelector('.progress-fill');
     let allIngredients = [];
 
-    // 思考
+    /* 思考（要不要加）
+    // ====== Auto-reference recommended values ======
+    // 默认 female_51，可根据实际需求切换
+    const userType = window.localStorage.getItem('nss_user_type') || 'female_51';
+    const goals = NUTRIENT_GOALS[userType] || NUTRIENT_GOALS['female_51'];
+    // Map compact goals to DOM elements (if present)
+    if (caloriesGoal) caloriesGoal.textContent = goals.calories_kcal;
+    if (proteinGoal) proteinGoal.textContent = goals.protein_g;
+    if (fiberGoal) fiberGoal.textContent = goals.fiber_g;
+    // Optional goal elements: create or set sodium/calcium/vitD/vitB12 if present
+    const sodiumGoalEl = document.getElementById('sodium-goal');
+    if (sodiumGoalEl) sodiumGoalEl.textContent = goals.sodium_mg;
+    const calciumGoalEl = document.getElementById('calcium-goal');
+    if (calciumGoalEl) calciumGoalEl.textContent = goals.calcium_mg;
+    const potassiumGoalEl = document.getElementById('potassium-goal');
+    if (potassiumGoalEl) potassiumGoalEl.textContent = goals.potassium_mg;
+    const vitDGoalEl = document.getElementById('vitaminD-goal');
+    if (vitDGoalEl) vitDGoalEl.textContent = goals.vitaminD_IU;
+    const vitB12GoalEl = document.getElementById('vitaminB12-goal');
+    if (vitB12GoalEl) vitB12GoalEl.textContent = goals.vitaminB12_mcg;
+    */
     try {
         // Read dashboard from localStorage
         let dashboard = [];
