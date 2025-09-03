@@ -1,3 +1,31 @@
+// ====== Compact Nutrition Goals (10 key nutrients for dashboard) ======
+const NUTRIENT_GOALS = {
+    female_51: {
+        calories_kcal: 1800,
+        protein_g: 46,
+        carbohydrate_g: 130,
+        total_fat_pct_range: '20-35',
+        fiber_g: 22.4,
+        calcium_mg: 1200,
+        potassium_mg: 4700,
+        sodium_mg: 2300,
+        vitaminD_IU: 600,
+        vitaminB12_mcg: 2.4
+    },
+    male_51: {
+        calories_kcal: 2200,
+        protein_g: 56,
+        carbohydrate_g: 130,
+        total_fat_pct_range: '20-35',
+        fiber_g: 28,
+        calcium_mg: 1200,
+        potassium_mg: 4700,
+        sodium_mg: 2300,
+        vitaminD_IU: 600,
+        vitaminB12_mcg: 2.4
+    }
+};
+
 // Modal helpers
 function ensureRecipeModal() {
     let m = document.getElementById('recipe-modal');
