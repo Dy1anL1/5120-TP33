@@ -185,6 +185,7 @@ async function renderDashboardNutrition() {
     const progressFill = document.querySelector('.progress-fill');
     let allIngredients = [];
 
+    // 思考
     try {
         // Read dashboard from localStorage
         let dashboard = [];
