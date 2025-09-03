@@ -314,6 +314,7 @@ async function renderDashboardNutrition() {
         dashDiv.innerHTML = `<div style="color:#c00;text-align:center;">${e.message}</div>`;
     }
 }
+
 const NUTRITION_API = "https://0brixnxwq3.execute-api.ap-southeast-2.amazonaws.com/prod/match";
 const RECIPES_API = "https://97xkjqjeuc.execute-api.ap-southeast-2.amazonaws.com/prod/recipes";
 
