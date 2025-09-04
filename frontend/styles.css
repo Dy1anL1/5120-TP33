@@ -1056,6 +1056,19 @@ body {
     gap: 25px;
 }
 
+/* Container used by JS-rendered summary cards (adds spacing between cards) */
+.nutrition-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px; /* spacing between cards */
+    align-items: start;
+    margin-top: 12px;
+}
+
+.nutrition-cards .nutrition-card {
+    margin: 0; /* remove any inline margins from JS templates */
+}
+
 .nutrition-card {
     background: white;
     border-radius: 15px;
