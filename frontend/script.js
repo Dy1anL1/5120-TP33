@@ -341,13 +341,33 @@ const NUTRITION_API = "https://0brixnxwq3.execute-api.ap-southeast-2.amazonaws.c
 const RECIPES_API = "https://97xkjqjeuc.execute-api.ap-southeast-2.amazonaws.com/prod/recipes";
 
 async function fetchNutrition(ingredients) {
+    // Accept either array of strings or array of objects { text }
+    const normalized = (ingredients || []).map(s => typeof s === 'string' ? { text: s } : s || { text: '' });
+    // Infer labels for each ingredient (if not provided)
+    normalized.forEach(it => { if (!it.label) it.label = inferLabelFromText(it.text || it.name || ''); });
     const res = await fetch(NUTRITION_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ingredients })
+        body: JSON.stringify({ ingredients: normalized })
     });
     if (!res.ok) throw new Error('Failed to fetch nutrition');
     return await res.json();
+}
+
+// Infer simple label from ingredient text
+function inferLabelFromText(text) {
+    if (!text) return null;
+    const s = String(text).toLowerCase();
+    if (/\b(canned|tin|in brine|in oil|drained)\b/.test(s)) return 'canned';
+    if (/\b(frozen|flash frozen)\b/.test(s)) return 'frozen';
+    if (/\b(dried|dehydrated|dry|raisins|dried apricot|sun-dried)\b/.test(s)) return 'dry';
+    if (/\b(cooked|boiled|steamed|roasted|grilled|baked|stir[- ]fry|saute|pan fried)\b/.test(s)) return 'cooked';
+    if (/\b(raw|fresh)\b/.test(s)) return 'raw';
+    if (/\b(unsweetened|no sugar|no added sugar)\b/.test(s)) return 'unsweetened';
+    if (/\b(sweetened|sugared|with sugar|honey|syrup|sweet)\b/.test(s)) return 'sweetened';
+    if (/\b(enriched|fortified)\b/.test(s)) return 'enriched';
+    if (/\b(caffeine|coffee|caffeinated)\b/.test(s)) return 'caffeine';
+    return null;
 }
 
 function getQueryParam(name) {
