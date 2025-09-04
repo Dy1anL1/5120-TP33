@@ -175,10 +175,10 @@ async function renderDashboardNutrition() {
     const caloriesGoal = document.getElementById('calories-goal');
     const proteinCurrent = document.getElementById('protein-current');
     const proteinGoal = document.getElementById('protein-goal');
-    const fiberCurrent = document.getElementById('fiber-current');
-    const fiberGoal = document.getElementById('fiber-goal');
-    const waterCurrent = document.getElementById('water-current');
-    const waterGoal = document.getElementById('water-goal');
+    const carbohydratesCurrent = document.getElementById('carbohydrates-current');
+    const carbohydratesGoal = document.getElementById('carbohydrates-goal');
+    const sodiumCurrent = document.getElementById('sodium-current');
+    const sodiumGoal = document.getElementById('sodium-goal');
     const overallProgress = document.getElementById('overall-progress');
     const overallProgressText = document.getElementById('overall-progress-text');
     // Progress bar
@@ -232,23 +232,26 @@ async function renderDashboardNutrition() {
         const nutri = await fetchNutrition(allIngredients);
         const sum = nutri.summary_100g_sum || {};
         const details = nutri.details || [];
+        
         // Update main cards
         if (caloriesCurrent) caloriesCurrent.textContent = sum.calories != null ? Number(sum.calories).toFixed(0) : '0';
         if (proteinCurrent) proteinCurrent.textContent = sum.protein != null ? Number(sum.protein).toFixed(0) : '0';
-        if (fiberCurrent) fiberCurrent.textContent = sum.fiber != null ? Number(sum.fiber).toFixed(0) : '0';
-        if (waterCurrent) waterCurrent.textContent = sum.water != null ? Number(sum.water).toFixed(0) : '0';
+    if (carbohydratesCurrent) carbohydratesCurrent.textContent = sum.carbohydrates != null ? Number(sum.carbohydrates).toFixed(0) : '0';
+    if (sodiumCurrent) sodiumCurrent.textContent = sum.sodium != null ? Number(sum.sodium).toFixed(0) : '0';
         // Goals (can be static or configurable)
         const calGoal = caloriesGoal ? Number(caloriesGoal.textContent) : 2200;
         const proGoal = proteinGoal ? Number(proteinGoal.textContent) : 56;
-        const fibGoal = fiberGoal ? Number(fiberGoal.textContent) : 28;
-        const watGoal = waterGoal ? Number(waterGoal.textContent) : 8;
+    // Carbohydrates and sodium goals
+    const carbGoal = carbohydratesGoal ? Number(carbohydratesGoal.textContent) : 130;
+    const sodiumGoalVal = sodiumGoal ? Number(sodiumGoal.textContent) : 2300;
+        
         // Progress calculation (simple average)
         let percent = 0;
         let count = 0;
         if (sum.calories != null) { percent += Math.min(sum.calories / calGoal, 1); count++; }
         if (sum.protein != null) { percent += Math.min(sum.protein / proGoal, 1); count++; }
-        if (sum.fiber != null) { percent += Math.min(sum.fiber / fibGoal, 1); count++; }
-        if (sum.water != null) { percent += Math.min(sum.water / watGoal, 1); count++; }
+    if (sum.carbohydrates != null) { percent += Math.min(sum.carbohydrates / carbGoal, 1); count++; }
+    if (sum.sodium != null) { percent += Math.min(sum.sodium / sodiumGoalVal, 1); count++; }
         percent = count ? Math.round((percent / count) * 100) : 0;
         if (overallProgress) overallProgress.textContent = percent + '%';
         if (overallProgressText) overallProgressText.textContent = percent + '%';
@@ -269,10 +272,10 @@ async function renderDashboardNutrition() {
         const cardFields = [
             { curId: 'calories-current', goalId: 'calories-goal' },
             { curId: 'protein-current', goalId: 'protein-goal' },
-            { curId: 'fiber-current', goalId: 'fiber-goal' },
-            { curId: 'water-current', goalId: 'water-goal' },
+            { curId: 'carbohydrates-current', goalId: 'carbohydrates-goal' },
+            { curId: 'sodium-current', goalId: 'sodium-goal' },
         ];
-        cardFields.forEach(({curId, goalId}) => {
+        cardFields.forEach(({ curId, goalId }) => {
             const curEl = document.getElementById(curId);
             const goalEl = document.getElementById(goalId);
             if (!curEl || !goalEl) return;
