@@ -1191,6 +1191,7 @@ body {
     border-radius: 15px;
     padding: 30px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    max-width: 100%;
 }
 
 .goals-header h2 {
@@ -1324,6 +1325,47 @@ body {
     color: #333;
     font-weight: 600;
 }
+
+/* Goals row: left side Today's Goals list, right side Today's Meals Added panel */
+.goals-row {
+    display: grid;
+    grid-template-columns: 1fr 340px; /* left side flexible, right side fixed width */
+    gap: 20px;
+    align-items: start;
+    margin-top: 12px;
+}
+
+/* On narrow screens, collapse to single column: Meals panel moves below */
+@media (max-width: 900px) {
+    .goals-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Ensure goals-list fills the left side */
+.goals-list { width: 100%; }
+
+/* Right panel styles */
+.meals-added-section {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    padding: 14px;
+    min-width: 260px;
+}
+
+/* meals list item styles */
+.meals-added-header { display:flex; align-items:center; gap:10px; font-weight:600; color:#222; margin-bottom:10px; }
+.meals-added-list { list-style:none; margin:0; padding:0; }
+.meal-item { display:flex; align-items:center; justify-content:space-between; padding:10px 6px; border-bottom:1px solid #f3f3f3; }
+.meal-item:last-child { border-bottom:none; }
+.meal-left { display:flex; flex-direction:column; gap:4px; }
+.meal-name { font-weight:600; color:#222; }
+.meal-meta { font-size:0.92rem; color:#666; }
+.meal-right { display:flex; align-items:center; gap:10px; }
+.meal-kcal { color:#4caf50; font-weight:600; font-size:0.95rem; }
+.meal-delete { background:none; border:0; color:#999; cursor:pointer; font-size:1rem; padding:6px; border-radius:6px; }
+.meal-delete:hover { color:#e53935; }
 
 /* Responsive Design */
 @media (max-width: 768px) {

@@ -211,19 +211,38 @@
                     <div class="goals-header">
                         <h2><i class="fas fa-bullseye"></i> Today's Goals</h2>
                     </div>
-                    <div class="goals-list">
-                        <section>
-                            <div class="section-container">
-                                <div id="nutrition-results"></div>
-                                <div id="dashboard-nutrition"></div>
+
+                    <!-- Left: goals-list, Right: meals-added-section -->
+                    <div class="goals-row">
+                        <div class="goals-list">
+                            <section>
+                                <div class="section-container">
+                                    <div id="nutrition-results"></div>
+                                    <div id="dashboard-nutrition"></div>
+                                </div>
+                            </section>
+
+                            <div class="health-tip-container">
+                                <div class="health-tip-header">
+                                    <h2><i class="fas fa-heart"></i> Today's Health Tip</h2>
+                                </div>
+                                <div class="health-tip-content">
+                                    <p><strong>Tracking Tip:</strong> Remember to log all your meals and snacks throughout the day. Even small items like a piece of fruit or handful of nuts contribute to your daily nutrition goals. Consistent logging helps you build healthier eating habits!</p>
+                                </div>
                             </div>
-                        </section>
-                <div class="health-tip-container">
-                    <div class="health-tip-header">
-                        <h2><i class="fas fa-heart"></i> Today's Health Tip</h2>
-                    </div>
-                    <div class="health-tip-content">
-                        <p><strong>Tracking Tip:</strong> Remember to log all your meals and snacks throughout the day. Even small items like a piece of fruit or handful of nuts contribute to your daily nutrition goals. Consistent logging helps you build healthier eating habits!</p>
+                        </div>
+
+                        <!-- Today's Meals Added -->
+                        <aside class="meals-added-section" aria-label="Today's Meals Added">
+                            <div class="meals-added">
+                                <div class="meals-added-header">
+                                    <i class="fas fa-calendar-check"></i> <strong>Today's Meals Added</strong>
+                                </div>
+                                <ul class="meals-added-list" style="margin-top:12px;">
+                                    <!-- JS rendered items -->
+                                </ul>
+                            </div>
+                        </aside>
                     </div>
                 </div>
             </div>

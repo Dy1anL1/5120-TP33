@@ -151,25 +151,68 @@ async function openRecipeModal(recipe) {
     // Add to Dashboard
     const addBtn = m.querySelector('#add-to-dashboard');
     if (addBtn) {
-        addBtn.onclick = () => {
-            const key = 'nss_dashboard';
-            const list = JSON.parse(localStorage.getItem(key) || '[]');
-            list.push({
-                id: recipe.recipe_id,
-                title: recipe.title,
-                ingredients: recipe.ingredients,
-                added_at: Date.now()
-            });
-            localStorage.setItem(key, JSON.stringify(list));
-            addBtn.textContent = 'Added!';
-            setTimeout(() => addBtn.textContent = 'Add to Nutrition Dashboard', 1200);
-        };
+      addBtn.onclick = () => {
+        const day = todayKey();
+        // Get nutrition summary, use calories if available, otherwise null
+        let calories = null;
+        const sumEl = m.querySelector('#nutrition-summary');
+        if (sumEl) {
+          const calCard = sumEl.querySelector('.card .key')?.textContent?.toLowerCase() === 'calories'
+            ? sumEl.querySelector('.card .val')?.textContent
+            : null;
+          if (calCard && !isNaN(Number(calCard))) calories = Number(calCard);
+        }
+        addToDashboard({
+          recipe_id: recipe.recipe_id,
+          title: recipe.title,
+          ingredients: recipe.ingredients || [],
+          calories,
+          added_at: Date.now(),
+          day
+        });
+        addBtn.textContent = 'Added!';
+        addBtn.disabled = true;
+        setTimeout(() => {
+          addBtn.textContent = 'Add to Nutrition Dashboard';
+          addBtn.disabled = false;
+        }, 1200);
+      };
     }
 }
 
 // ====== Nutrition Dashboard Integration ======
 // ====== Dashboard Nutrition Rendering ======
 const DASHBOARD_KEY = 'nss_dashboard';
+
+function todayKey() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function readDashboard() {
+  try { return JSON.parse(localStorage.getItem(DASHBOARD_KEY)) || []; }
+  catch { return []; }
+}
+
+function writeDashboard(list) {
+  localStorage.setItem(DASHBOARD_KEY, JSON.stringify(list || []));
+}
+
+function addToDashboard(item) {
+  const list = readDashboard();
+  list.push(item);
+  writeDashboard(list);
+}
+
+function removeFromDashboardByIdAndDay(recipe_id, day) {
+  const list = readDashboard();
+  const next = list.filter(x => !(String(x.recipe_id) === String(recipe_id) && x.day === day));
+  writeDashboard(next);
+  return
+}
 
 async function renderDashboardNutrition() {
     const dashDiv = document.getElementById('dashboard-nutrition');
@@ -483,7 +526,12 @@ async function renderNutritionDashboard() {
 
 // Auto-execute on page load
 if (window.location.pathname.includes('nutrition-dashboard')) {
-    document.addEventListener('DOMContentLoaded', renderNutritionDashboard);
+  document.addEventListener('DOMContentLoaded', () => {
+    renderMealsAddedList();
+    if (typeof renderDashboardNutrition === 'function') {
+      renderDashboardNutrition();
+    }
+  });
 }
 
 async function fetchRecipes({ keyword, category, habit, limit = 10, nextToken = null }) {
@@ -957,3 +1005,61 @@ document.addEventListener('DOMContentLoaded', function () {
     // Optionally: fetch once on page load
     updateRecipes(true);
 });
+
+function renderMealsAddedList() {
+  const ul = document.querySelector('.meals-added-list');
+  if (!ul) return;
+
+  const day = todayKey();
+  const all = readDashboard();
+  const todays = all.filter(x => x.day === day);
+
+  ul.innerHTML = '';
+
+  if (todays.length === 0) {
+    ul.innerHTML = `<li class="meal-item"><div class="meal-left">
+        <div class="meal-name" style="color:#888;">No meals added yet</div>
+      </div></li>`;
+    return;
+  }
+
+  todays.forEach(item => {
+    const li = document.createElement('li');
+    li.className = 'meal-item';
+    li.dataset.id = item.recipe_id;
+    li.dataset.day = item.day;
+
+    const kcal = (typeof item.calories === 'number' && !Number.isNaN(item.calories))
+      ? `${item.calories.toFixed(0)} kcal`
+      : '-';
+
+    li.innerHTML = `
+      <div class="meal-left">
+        <div class="meal-name">${item.title || 'Untitled recipe'}</div>
+        <div class="meal-meta">Added today</div>
+      </div>
+      <div class="meal-right">
+        <div class="meal-kcal">${kcal}</div>
+        <button class="meal-delete" title="Remove">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+    `;
+    ul.appendChild(li);
+  });
+
+  // Bind delete event
+  ul.querySelectorAll('.meal-delete').forEach(btn => {
+    btn.onclick = function() {
+      const li = btn.closest('.meal-item');
+      const id = li?.dataset?.id;
+      const day = li?.dataset?.day;
+      if (!id || !day) return;
+      removeFromDashboardByIdAndDay(id, day);
+      renderMealsAddedList(); // refresh list
+      if (typeof renderDashboardNutrition === 'function') {
+        renderDashboardNutrition(); // refresh nutrition summary
+      }
+    };
+  });
+}
