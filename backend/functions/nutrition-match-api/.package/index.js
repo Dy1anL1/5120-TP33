@@ -89,20 +89,43 @@ exports.handler = async (event) => {
     "access-control-allow-headers": "*",
   };
   try {
-    if (!event.body) return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing body" }) };
-    const { ingredients } = JSON.parse(event.body);
+    // Accept either a stringified `body` (API Gateway) or top-level `ingredients` (Lambda console)
+    let body = null;
+    if (event && event.body) {
+      try {
+        body = JSON.parse(event.body);
+      } catch (err) {
+        console.log('Could not JSON.parse(event.body), using raw body:', err && err.message);
+        body = event.body;
+      }
+    } else if (event && event.ingredients) {
+      body = { ingredients: event.ingredients };
+    } else if (event) {
+      // fallback: maybe payload was provided directly
+      body = event;
+    }
+
+    if (!body) {
+      console.log('Missing body / ingredients in event:', JSON.stringify(event).slice(0, 1000));
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing body' }) };
+    }
+
+    const { ingredients } = body;
     if (!Array.isArray(ingredients) || ingredients.length === 0) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: "ingredients[] required" }) };
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'ingredients[] required' }) };
     }
 
     const results = [];
     const summary = {};
 
-    for (const raw of ingredients) {
+    for (const rawItem of ingredients) {
+      // rawItem can be string or object { text, label }
+      const raw = typeof rawItem === 'string' ? rawItem : (rawItem.text || '');
+      const providedLabel = typeof rawItem === 'object' ? (rawItem.label || null) : null;
       // Parse amount, unit, and main ingredient
       const { amount, unit, name } = parseAmountUnit(raw);
       const q = norm(name);
-      if (!q) { results.push({ ingredient: raw, query: q, match: null }); continue; }
+      if (!q) { results.push({ ingredient: rawItem, query: q, match: null }); continue; }
 
       // Query by prefix, take the first match
       let data = await ddb.send(new QueryCommand({
@@ -113,8 +136,35 @@ exports.handler = async (event) => {
         Limit: 5,
       }));
 
-      let candidate = (data.Items || [])[0];
+      // Prefer a candidate whose labels match providedLabel (if any) - be tolerant to labels stored as object/array/string
+      let candidate = null;
+      const items = data.Items || [];
+      console.log('Query:', q, 'candidates:', items.length, 'providedLabel:', providedLabel);
+      if (providedLabel && items.length > 0) {
+        for (const it of items) {
+          const rawLabels = parseMaybeJson(it.labels);
+          let labelKeys = [];
+          if (Array.isArray(rawLabels)) {
+            labelKeys = rawLabels.map(String);
+          } else if (rawLabels && typeof rawLabels === 'object') {
+            labelKeys = Object.keys(rawLabels).map(String);
+          } else if (typeof rawLabels === 'string') {
+            // try parse JSON string
+            try {
+              const p = JSON.parse(rawLabels);
+              if (Array.isArray(p)) labelKeys = p.map(String);
+              else if (p && typeof p === 'object') labelKeys = Object.keys(p).map(String);
+              else labelKeys = [String(p)];
+            } catch (e) {
+              labelKeys = [rawLabels];
+            }
+          }
+          if (labelKeys.includes(String(providedLabel))) { candidate = it; break; }
+        }
+      }
+      if (!candidate && items.length > 0) candidate = items[0];
       if (candidate) {
+        console.log('Selected id:', candidate.id, 'name:', candidate.name);
         const nutrition = parseMaybeJson(candidate.nutrition_100g);
         // Convert unit to grams
         const gram = amount * (UNIT_TO_GRAM[unit] || 1);
@@ -125,12 +175,12 @@ exports.handler = async (event) => {
           summary[k] = (summary[k] || 0) + n;
         }
         results.push({
-          ingredient: raw,
+          ingredient: rawItem,
           query: q,
-          match: { id: candidate.id, name: candidate.name, nutrition_100g: nutrition, gram_used: gram }
+          match: { id: candidate.id, name: candidate.name, nutrition_100g: nutrition, gram_used: gram, matched_label: providedLabel || null }
         });
       } else {
-        results.push({ ingredient: raw, query: q, match: null });
+        results.push({ ingredient: rawItem, query: q, match: null });
       }
     }
 
