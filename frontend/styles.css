@@ -1744,16 +1744,23 @@ body {
 
 /* Shine animation for CTA title */
 @keyframes shine {
-    0% { background-position: -200px; }
-    100% { background-position: 200px; }
+    0% { background-position: -400px 0; }
 }
 
 .shine-animate {
     display: inline-block;
-    background: linear-gradient(120deg, #ffffff 0%, #2dc29d 48%, #fff 55%, #2dc29d 58%, #2dc29d 100%);
-    background-size: 400px 100%;
+    background: linear-gradient(
+        120deg,
+        #2dc29d 0%,
+        #2dc29d 47%,
+        #fff 49%,
+        #fff 51%,
+        #2dc29d 53%,
+        #2dc29d 100%
+    );
+    background-size: 800px 100%;
     background-repeat: no-repeat;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: shine 3s linear infinite;
+    animation: shine 5s linear infinite;
 }
