@@ -1751,12 +1751,12 @@ body {
     display: inline-block;
     background: linear-gradient(
         120deg,
-        #2dc29d 0%,
-        #2dc29d 47%,
-        #fff 49%,
-        #fff 51%,
-        #2dc29d 53%,
-        #2dc29d 100%
+        #4caf50 0%,
+        #4caf50 47%,
+        #ace7c3 49%,
+        #ace7c3 51%,
+        #64c267 53%,
+        #64c267 100%
     );
     background-size: 800px 100%;
     background-repeat: no-repeat;
