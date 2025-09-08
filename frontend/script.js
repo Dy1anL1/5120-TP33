@@ -49,6 +49,7 @@ function ensureRecipeModal() {
                     <h3>Nutrition</h3>
                     <div id="nutrition-summary"></div>
                     <button id="add-to-dashboard" class="btn btn-primary" style="margin-top:1rem;">Add to Nutrition Dashboard</button>
+                    <button id="view-dashboard" class="btn btn-secondary" style="margin-top:0.5rem;">View Nutrition Dashboard</button>
                 </div>
             </div>
         </div>
@@ -209,6 +210,14 @@ async function openRecipeModal(recipe) {
         setTimeout(() => {
           updateButtonText();
         }, 1200);
+      };
+    }
+
+    // View Dashboard button
+    const viewBtn = m.querySelector('#view-dashboard');
+    if (viewBtn) {
+      viewBtn.onclick = () => {
+        window.location.href = 'nutrition-dashboard.html';
       };
     }
 }
@@ -827,9 +836,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const resultsHeader = document.querySelector('.results-header h2');
     const cardsContainer = document.querySelector('.recipe-cards-container');
 
-    // Delegate click to recipe cards
+    // Delegate click to recipe cards and dashboard buttons
     if (cardsContainer) {
         cardsContainer.addEventListener('click', async (e) => {
+            // Handle dashboard link button click
+            if (e.target.closest('.dashboard-link-btn')) {
+                e.stopPropagation(); // Prevent card click
+                window.location.href = 'nutrition-dashboard.html';
+                return;
+            }
+            
             const card = e.target.closest('.recipe-card');
             if (!card) return;
             const id = card.dataset.id;
@@ -1084,6 +1100,11 @@ document.addEventListener('DOMContentLoaded', function () {
                             <div class="recipe-tags-row">
                                 <div class="recipe-tags health-tags-group">${healthTags}</div>
                                 <div class="recipe-tags category-tags-group">${categoryTags}</div>
+                            </div>
+                            <div class="recipe-actions">
+                                <button class="dashboard-link-btn" data-recipe-id="${r.recipe_id}" title="Go to Nutrition Dashboard">
+                                    <i class="fas fa-chart-line"></i> Dashboard
+                                </button>
                             </div>
                         `;
                         cardsContainer.appendChild(card);

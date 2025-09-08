@@ -322,8 +322,10 @@ body {
 
 .nav-links {
     display: flex;
-    gap: 30px;
+    gap: 40px;
     margin: 0 auto;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
 .nav-link {
@@ -333,20 +335,27 @@ body {
     text-decoration: none;
     color: #666;
     font-size: 20px;
-    transition: color 0.3s ease;
-    gap: 5px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    gap: 10px;
+    padding: 10px 15px;
+    border-radius: 8px;
+    min-width: 80px;
 }
 
 .nav-link i {
-    font-size: 16px;
+    font-size: 18px;
 }
 
 .nav-link.active {
     color: #4CAF50;
+    background: rgba(76, 175, 80, 0.1);
 }
 
 .nav-link:hover {
     color: #4CAF50;
+    background: rgba(76, 175, 80, 0.05);
+    transform: translateY(-1px);
 }
 
 .nav-right {
@@ -873,6 +882,38 @@ body {
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     margin-bottom: 0.25rem;
+}
+
+.recipe-actions {
+    margin-top: auto;
+    padding-top: 0.75rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.dashboard-link-btn {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.dashboard-link-btn:hover {
+    background: #45a049;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.dashboard-link-btn i {
+    font-size: 0.75rem;
 }
 
 .recipe-image {
