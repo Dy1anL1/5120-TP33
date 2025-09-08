@@ -1666,6 +1666,344 @@ body {
     }
 }
 
+/* Daily Recommendations Page Styles */
+.featured-tip-section {
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+}
+
+.featured-tip-card {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.tip-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 30px;
+    flex-shrink: 0;
+}
+
+.tip-content h2 {
+    color: #4CAF50;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.tip-content h3 {
+    color: #333;
+    font-size: 2rem;
+    margin-bottom: 15px;
+    font-weight: 700;
+}
+
+.tip-content p {
+    color: #666;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    margin-bottom: 25px;
+}
+
+.tip-btn {
+    font-size: 1rem;
+    padding: 12px 25px;
+}
+
+.recommendations-section {
+    padding: 60px 20px;
+    background: white;
+}
+
+.section-title-wrapper {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.section-title-wrapper .section-title {
+    font-size: 2.5rem;
+    color: #4CAF50;
+    margin-bottom: 15px;
+}
+
+.section-title-wrapper .section-subtitle {
+    font-size: 1.2rem;
+    color: #666;
+}
+
+.recommendations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.recommendation-card {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: 1px solid #f0f0f0;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.recommendation-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.recommendation-card .card-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: white;
+}
+
+.nutrition-icon { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); }
+.exercise-icon { background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); }
+.hydration-icon { background: linear-gradient(135deg, #00BCD4 0%, #0097A7 100%); }
+.sleep-icon { background: linear-gradient(135deg, #673AB7 0%, #512DA8 100%); }
+.mental-icon { background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); }
+.health-icon { background: linear-gradient(135deg, #E91E63 0%, #C2185B 100%); }
+
+.recommendation-card .card-category {
+    font-size: 0.9rem;
+    color: #4CAF50;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.recommendation-card .card-title {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 700;
+}
+
+.recommendation-card .card-description {
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    font-size: 1rem;
+}
+
+.recommendation-card .card-stats {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.recommendation-card .stat {
+    text-align: center;
+}
+
+.recommendation-card .stat-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #4CAF50;
+}
+
+.recommendation-card .stat-label {
+    font-size: 0.9rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.recommendation-card .action-link {
+    color: #4CAF50;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: color 0.3s ease;
+}
+
+.recommendation-card .action-link:hover {
+    color: #45a049;
+    text-decoration: underline;
+}
+
+.weekly-focus-section {
+    padding: 60px 20px;
+    background: #f8f9fa;
+}
+
+.weekly-focus-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.focus-header {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    padding: 30px 40px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.focus-header h2 {
+    font-size: 2rem;
+    margin: 0;
+    font-weight: 700;
+}
+
+.focus-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.focus-content {
+    padding: 40px;
+}
+
+.focus-description p {
+    font-size: 1.1rem;
+    color: #666;
+    line-height: 1.7;
+    margin-bottom: 30px;
+}
+
+.focus-goals {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.goal-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.goal-item i {
+    color: #4CAF50;
+    font-size: 1.2rem;
+}
+
+.goal-item span {
+    color: #333;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.quick-tips-section {
+    padding: 60px 20px;
+    background: white;
+}
+
+.tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-top: 40px;
+}
+
+.tip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border-left: 4px solid #4CAF50;
+}
+
+.tip-icon-small {
+    width: 40px;
+    height: 40px;
+    background: #4CAF50;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.tip-text {
+    color: #333;
+    line-height: 1.6;
+}
+
+.tip-text strong {
+    color: #4CAF50;
+}
+
+/* Responsive Design for Recommendations */
+@media (max-width: 768px) {
+    .featured-tip-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 30px;
+        gap: 20px;
+    }
+    
+    .tip-content h3 {
+        font-size: 1.5rem;
+    }
+    
+    .recommendations-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .focus-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .focus-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .tips-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Animation Effects */
 @keyframes fadeInUp {
     from {
