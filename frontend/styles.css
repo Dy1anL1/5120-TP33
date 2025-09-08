@@ -854,6 +854,25 @@ body {
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
 }
 
+.recipe-nutrition-info {
+    margin: 0.75rem 0;
+    padding: 0.5rem;
+    background: rgba(76, 175, 80, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(76, 175, 80, 0.1);
+}
+
+.nutrition-item {
+    display: inline-block;
+    margin-right: 0.75rem;
+    font-size: 0.85rem;
+    color: #555;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.25rem;
+}
+
 .recipe-image {
     background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
     height: 120px;

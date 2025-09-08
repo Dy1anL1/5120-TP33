@@ -736,6 +736,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.querySelector('.search-input');
     const recipeCategorySelect = document.getElementById('recipe-category');
     const dietTypeSelect = document.getElementById('diet-type');
+    const sortBySelect = document.getElementById('sort-by');
     const applyFiltersBtn = document.querySelector('.apply-filters-btn');
     const resultsHeader = document.querySelector('.results-header h2');
     const cardsContainer = document.querySelector('.recipe-cards-container');
@@ -881,13 +882,72 @@ document.addEventListener('DOMContentLoaded', function () {
     let nextToken = null;
     let lastQuery = {};
 
+    // Sort recipes by nutrition values
+    async function sortRecipesByNutrition(recipes, sortBy) {
+        if (sortBy === 'default' || !recipes.length) return recipes;
+        
+        // Fetch nutrition data for all recipes
+        const recipesWithNutrition = await Promise.all(
+            recipes.map(async (recipe) => {
+                try {
+                    const nutrition = await fetchNutrition(recipe.ingredients || []);
+                    const sum = nutrition.summary_100g_sum || {};
+                    return {
+                        ...recipe,
+                        nutritionData: {
+                            calories: getAny(sum, ['calories', 'energy_kcal', 'energy']) || 0,
+                            protein: getAny(sum, ['protein', 'protein_g']) || 0,
+                            fat: getAny(sum, ['total_fat', 'fat', 'fat_g']) || 0,
+                            sodium: getAny(sum, ['sodium', 'sodium_mg']) || 0
+                        }
+                    };
+                } catch (error) {
+                    return {
+                        ...recipe,
+                        nutritionData: { calories: 0, protein: 0, fat: 0, sodium: 0 }
+                    };
+                }
+            })
+        );
+        
+        // Sort based on the selected option
+        const sorted = recipesWithNutrition.sort((a, b) => {
+            const aNutrition = a.nutritionData;
+            const bNutrition = b.nutritionData;
+            
+            switch (sortBy) {
+                case 'calories-high':
+                    return bNutrition.calories - aNutrition.calories;
+                case 'calories-low':
+                    return aNutrition.calories - bNutrition.calories;
+                case 'protein-high':
+                    return bNutrition.protein - aNutrition.protein;
+                case 'protein-low':
+                    return aNutrition.protein - bNutrition.protein;
+                case 'fat-high':
+                    return bNutrition.fat - aNutrition.fat;
+                case 'fat-low':
+                    return aNutrition.fat - bNutrition.fat;
+                case 'sodium-high':
+                    return bNutrition.sodium - aNutrition.sodium;
+                case 'sodium-low':
+                    return aNutrition.sodium - bNutrition.sodium;
+                default:
+                    return 0;
+            }
+        });
+        
+        return sorted;
+    }
+
     async function updateRecipes(reset = true) {
         const keyword = searchInput ? searchInput.value.trim() : '';
         const category = recipeCategorySelect ? recipeCategorySelect.value : '';
         const habit = dietTypeSelect ? dietTypeSelect.value : '';
+        const sortBy = sortBySelect ? sortBySelect.value : 'default';
         if (reset) {
             nextToken = null;
-            lastQuery = { keyword, category, habit };
+            lastQuery = { keyword, category, habit, sortBy };
         }
         if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading...</div>';
         try {
@@ -896,6 +956,12 @@ document.addEventListener('DOMContentLoaded', function () {
             // Strict category match: only show recipes whose categories exactly match the selected category
             if (category && category !== 'all') {
                 filteredItems = items.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
+            }
+            
+            // Apply sorting by nutrition values
+            if (sortBy !== 'default') {
+                if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition data for sorting...</div>';
+                filteredItems = await sortRecipesByNutrition(filteredItems, sortBy);
             }
             if (cardsContainer) {
                 if (reset) cardsContainer.innerHTML = '';
@@ -912,9 +978,23 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Group tags: health (habits) and category
                         const healthTags = (r.habits || []).map(h => `<span class="tag health-tag">${h}</span>`).join('');
                         const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
+                        
+                        // Add nutrition info if available from sorting
+                        let nutritionInfo = '';
+                        if (r.nutritionData) {
+                            const data = r.nutritionData;
+                            nutritionInfo = `<div class="recipe-nutrition-info">
+                                <span class="nutrition-item">🔥 ${data.calories.toFixed(0)} kcal</span>
+                                <span class="nutrition-item">💪 ${data.protein.toFixed(1)}g protein</span>
+                                <span class="nutrition-item">🥑 ${data.fat.toFixed(1)}g fat</span>
+                                <span class="nutrition-item">🧂 ${data.sodium.toFixed(0)}mg sodium</span>
+                            </div>`;
+                        }
+                        
                         card.innerHTML = `
                             <div class="recipe-title">${r.title || ''}</div>
                             <div class="recipe-description">${r.description || ''}</div>
+                            ${nutritionInfo}
                             <div class="recipe-tags-row">
                                 <div class="recipe-tags health-tags-group">${healthTags}</div>
                                 <div class="recipe-tags category-tags-group">${categoryTags}</div>
