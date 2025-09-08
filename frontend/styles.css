@@ -723,7 +723,7 @@ body {
 .search-filter-box {
     background: #f8f9fa;
     border-radius: 15px;
-    padding: 40px;
+    padding: 50px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
 }
 
@@ -772,9 +772,9 @@ body {
 
 .filter-options {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+    margin-bottom: 40px;
 }
 
 .filter-group {
@@ -796,6 +796,7 @@ body {
     font-size: 20px;
     background: white;
     transition: border-color 0.3s ease;
+    margin-bottom: 30px;
 }
 
 .filter-select:focus {
@@ -826,10 +827,11 @@ body {
 .recipe-cards-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 32px;
+    gap: 40px;
     width: 100%;
     margin: 0 auto;
     align-items: center;
+    padding: 20px;
 }
 
 .recipe-card {
@@ -846,7 +848,7 @@ body {
     justify-content: flex-start;
     min-width: 0;
     width: 100%;
-    height: 300px;
+    height: 400px;
 }
 
 .recipe-card:hover {
@@ -1372,7 +1374,10 @@ body {
 }
 
 /* meals list item styles */
-.meals-added-header { display:flex; align-items:center; gap:10px; font-weight:600; color:#222; margin-bottom:10px; }
+.meals-added-header { display:flex; align-items:center; justify-content:space-between; gap:10px; font-weight:600; color:#222; margin-bottom:10px; }
+.clear-all-btn { background:#e53935; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:0.8rem; cursor:pointer; transition:background 0.2s; }
+.clear-all-btn:hover { background:#c62828; }
+.clear-all-btn i { margin-right:4px; font-size:0.7rem; }
 .meals-added-list { list-style:none; margin:0; padding:0; }
 .meal-item { display:flex; align-items:center; justify-content:space-between; padding:10px 6px; border-bottom:1px solid #f3f3f3; }
 .meal-item:last-child { border-bottom:none; }
@@ -1381,8 +1386,11 @@ body {
 .meal-meta { font-size:0.92rem; color:#666; }
 .meal-right { display:flex; align-items:center; gap:10px; }
 .meal-kcal { color:#4caf50; font-weight:600; font-size:0.95rem; }
-.meal-delete { background:none; border:0; color:#999; cursor:pointer; font-size:1rem; padding:6px; border-radius:6px; }
-.meal-delete:hover { color:#e53935; }
+.meal-controls { display:flex; align-items:center; gap:4px; }
+.meal-add, .meal-delete { background:none; border:0; color:#999; cursor:pointer; font-size:0.9rem; padding:6px; border-radius:4px; transition:color 0.2s; }
+.meal-add:hover:not(:disabled) { color:#4caf50; background:rgba(76, 175, 80, 0.1); }
+.meal-delete:hover { color:#e53935; background:rgba(229, 57, 53, 0.1); }
+.meal-add:disabled { color:#ccc; cursor:not-allowed; }
 
 /* Responsive Design */
 @media (max-width: 768px) {
