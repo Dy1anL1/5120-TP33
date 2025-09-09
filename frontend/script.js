@@ -49,6 +49,7 @@ function ensureRecipeModal() {
                     <h3>Nutrition</h3>
                     <div id="nutrition-summary"></div>
                     <button id="add-to-dashboard" class="btn btn-primary" style="margin-top:1rem;">Add to Nutrition Dashboard</button>
+                    <button id="view-dashboard" class="btn btn-secondary" style="margin-top:0.5rem;">View Nutrition Dashboard</button>
                 </div>
             </div>
         </div>
@@ -151,8 +152,37 @@ async function openRecipeModal(recipe) {
     // Add to Dashboard
     const addBtn = m.querySelector('#add-to-dashboard');
     if (addBtn) {
+      // Update button text based on current count for this specific recipe
+      const updateButtonText = () => {
+        const day = todayKey();
+        const todaysRecipes = readDashboard().filter(x => x.day === day);
+        const thisRecipeCount = todaysRecipes.filter(x => x.recipe_id === recipe.recipe_id).length;
+        
+        if (thisRecipeCount >= 3) {
+          addBtn.textContent = `Recipe Limit Reached (${thisRecipeCount}/3)`;
+          addBtn.disabled = true;
+          addBtn.style.background = '#888';
+        } else {
+          addBtn.textContent = `Add to Dashboard (${thisRecipeCount}/3)`;
+          addBtn.disabled = false;
+          addBtn.style.background = '';
+        }
+      };
+      
+      // Initial update
+      updateButtonText();
+      
       addBtn.onclick = () => {
         const day = todayKey();
+        const todaysRecipes = readDashboard().filter(x => x.day === day);
+        const thisRecipeCount = todaysRecipes.filter(x => x.recipe_id === recipe.recipe_id).length;
+        
+        // Check if this recipe limit reached
+        if (thisRecipeCount >= 3) {
+          addBtn.textContent = 'Recipe Limit Reached (3/3)';
+          return;
+        }
+        
         // Get nutrition summary, use calories if available, otherwise null
         let calories = null;
         const sumEl = m.querySelector('#nutrition-summary');
@@ -170,12 +200,24 @@ async function openRecipeModal(recipe) {
           added_at: Date.now(),
           day
         });
-        addBtn.textContent = 'Added!';
+        
+        // Update button text with new count for this recipe
+        const newCount = thisRecipeCount + 1;
+        addBtn.textContent = `Added! (${newCount}/3)`;
         addBtn.disabled = true;
+        addBtn.style.background = '#4CAF50';
+        
         setTimeout(() => {
-          addBtn.textContent = 'Add to Nutrition Dashboard';
-          addBtn.disabled = false;
+          updateButtonText();
         }, 1200);
+      };
+    }
+
+    // View Dashboard button
+    const viewBtn = m.querySelector('#view-dashboard');
+    if (viewBtn) {
+      viewBtn.onclick = () => {
+        window.location.href = 'nutrition-dashboard.html';
       };
     }
 }
@@ -203,13 +245,32 @@ function writeDashboard(list) {
 
 function addToDashboard(item) {
   const list = readDashboard();
-  list.push(item);
+  // Add unique identifier to each dashboard entry
+  const uniqueItem = {
+    ...item,
+    dashboard_entry_id: Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+  };
+  list.push(uniqueItem);
   writeDashboard(list);
 }
 
 function removeFromDashboardByIdAndDay(recipe_id, day) {
   const list = readDashboard();
   const next = list.filter(x => !(String(x.recipe_id) === String(recipe_id) && x.day === day));
+  writeDashboard(next);
+  return
+}
+
+function removeFromDashboardByEntryId(dashboard_entry_id) {
+  const list = readDashboard();
+  const next = list.filter(x => x.dashboard_entry_id !== dashboard_entry_id);
+  writeDashboard(next);
+  return
+}
+
+function clearAllMealsForDay(day) {
+  const list = readDashboard();
+  const next = list.filter(x => x.day !== day);
   writeDashboard(next);
   return
 }
@@ -262,6 +323,40 @@ async function renderDashboardNutrition() {
         } catch { }
         if (!Array.isArray(dashboard) || dashboard.length === 0) {
             dashDiv.innerHTML = '<div style="color:#888;text-align:center;">No dashboard recipes found.</div>';
+            
+            // Reset all nutrition values to zero when no meals
+            if (caloriesCurrent) caloriesCurrent.textContent = '0';
+            if (proteinCurrent) proteinCurrent.textContent = '0';
+            if (carbohydratesCurrent) carbohydratesCurrent.textContent = '0';
+            if (sodiumCurrent) sodiumCurrent.textContent = '0';
+            if (overallProgress) overallProgress.textContent = '0%';
+            if (overallProgressText) overallProgressText.textContent = '0%';
+            if (progressFill) {
+                progressFill.style.width = '0%';
+                progressFill.style.background = '';
+            }
+            
+            // Reset progress bars in cards
+            const cardFields = [
+                { curId: 'calories-current', goalId: 'calories-goal' },
+                { curId: 'protein-current', goalId: 'protein-goal' },
+                { curId: 'carbohydrates-current', goalId: 'carbohydrates-goal' },
+                { curId: 'sodium-current', goalId: 'sodium-goal' },
+            ];
+            cardFields.forEach(({ curId, goalId }) => {
+                const curEl = document.getElementById(curId);
+                const card = curEl?.closest('.nutrition-card');
+                if (card) {
+                    const fill = card.querySelector('.progress-fill');
+                    if (fill) {
+                        fill.style.width = '0%';
+                        fill.style.background = '';
+                    }
+                    curEl.style.color = '';
+                    card.classList.remove('over-goal');
+                }
+            });
+            
             return;
         }
 
@@ -625,6 +720,55 @@ async function fetchRecipes({ keyword, category, habit, limit = 10, nextToken = 
 
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Mobile menu functionality
+    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+    const navLinks = document.querySelector('.nav-links');
+    
+    if (mobileMenuBtn && navLinks) {
+        mobileMenuBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            navLinks.classList.toggle('show');
+            
+            // Update aria-expanded for accessibility
+            const isExpanded = navLinks.classList.contains('show');
+            mobileMenuBtn.setAttribute('aria-expanded', isExpanded);
+            
+            // Change icon
+            const icon = mobileMenuBtn.querySelector('i');
+            if (icon) {
+                if (isExpanded) {
+                    icon.className = 'fas fa-times';
+                } else {
+                    icon.className = 'fas fa-bars';
+                }
+            }
+        });
+        
+        // Close mobile menu when clicking on a nav link
+        navLinks.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('show');
+                mobileMenuBtn.setAttribute('aria-expanded', 'false');
+                const icon = mobileMenuBtn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-bars';
+                }
+            });
+        });
+        
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!mobileMenuBtn.contains(e.target) && !navLinks.contains(e.target)) {
+                navLinks.classList.remove('show');
+                mobileMenuBtn.setAttribute('aria-expanded', 'false');
+                const icon = mobileMenuBtn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-bars';
+                }
+            }
+        });
+    }
+    
     // Features section routing
     const mealPlanning = document.getElementById('feature-meal-planning');
     const shoppingList = document.getElementById('feature-shopping-list');
@@ -736,13 +880,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.querySelector('.search-input');
     const recipeCategorySelect = document.getElementById('recipe-category');
     const dietTypeSelect = document.getElementById('diet-type');
+    const sortBySelect = document.getElementById('sort-by');
     const applyFiltersBtn = document.querySelector('.apply-filters-btn');
     const resultsHeader = document.querySelector('.results-header h2');
     const cardsContainer = document.querySelector('.recipe-cards-container');
 
-    // Delegate click to recipe cards
+    // Delegate click to recipe cards and dashboard buttons
     if (cardsContainer) {
         cardsContainer.addEventListener('click', async (e) => {
+            // Handle dashboard link button click
+            if (e.target.closest('.dashboard-link-btn')) {
+                e.stopPropagation(); // Prevent card click
+                window.location.href = 'nutrition-dashboard.html';
+                return;
+            }
+            
             const card = e.target.closest('.recipe-card');
             if (!card) return;
             const id = card.dataset.id;
@@ -881,13 +1033,72 @@ document.addEventListener('DOMContentLoaded', function () {
     let nextToken = null;
     let lastQuery = {};
 
+    // Sort recipes by nutrition values
+    async function sortRecipesByNutrition(recipes, sortBy) {
+        if (sortBy === 'default' || !recipes.length) return recipes;
+        
+        // Fetch nutrition data for all recipes
+        const recipesWithNutrition = await Promise.all(
+            recipes.map(async (recipe) => {
+                try {
+                    const nutrition = await fetchNutrition(recipe.ingredients || []);
+                    const sum = nutrition.summary_100g_sum || {};
+                    return {
+                        ...recipe,
+                        nutritionData: {
+                            calories: getAny(sum, ['calories', 'energy_kcal', 'energy']) || 0,
+                            protein: getAny(sum, ['protein', 'protein_g']) || 0,
+                            fat: getAny(sum, ['total_fat', 'fat', 'fat_g']) || 0,
+                            sodium: getAny(sum, ['sodium', 'sodium_mg']) || 0
+                        }
+                    };
+                } catch (error) {
+                    return {
+                        ...recipe,
+                        nutritionData: { calories: 0, protein: 0, fat: 0, sodium: 0 }
+                    };
+                }
+            })
+        );
+        
+        // Sort based on the selected option
+        const sorted = recipesWithNutrition.sort((a, b) => {
+            const aNutrition = a.nutritionData;
+            const bNutrition = b.nutritionData;
+            
+            switch (sortBy) {
+                case 'calories-high':
+                    return bNutrition.calories - aNutrition.calories;
+                case 'calories-low':
+                    return aNutrition.calories - bNutrition.calories;
+                case 'protein-high':
+                    return bNutrition.protein - aNutrition.protein;
+                case 'protein-low':
+                    return aNutrition.protein - bNutrition.protein;
+                case 'fat-high':
+                    return bNutrition.fat - aNutrition.fat;
+                case 'fat-low':
+                    return aNutrition.fat - bNutrition.fat;
+                case 'sodium-high':
+                    return bNutrition.sodium - aNutrition.sodium;
+                case 'sodium-low':
+                    return aNutrition.sodium - bNutrition.sodium;
+                default:
+                    return 0;
+            }
+        });
+        
+        return sorted;
+    }
+
     async function updateRecipes(reset = true) {
         const keyword = searchInput ? searchInput.value.trim() : '';
         const category = recipeCategorySelect ? recipeCategorySelect.value : '';
         const habit = dietTypeSelect ? dietTypeSelect.value : '';
+        const sortBy = sortBySelect ? sortBySelect.value : 'default';
         if (reset) {
             nextToken = null;
-            lastQuery = { keyword, category, habit };
+            lastQuery = { keyword, category, habit, sortBy };
         }
         if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading...</div>';
         try {
@@ -896,6 +1107,12 @@ document.addEventListener('DOMContentLoaded', function () {
             // Strict category match: only show recipes whose categories exactly match the selected category
             if (category && category !== 'all') {
                 filteredItems = items.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
+            }
+            
+            // Apply sorting by nutrition values
+            if (sortBy !== 'default') {
+                if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition data for sorting...</div>';
+                filteredItems = await sortRecipesByNutrition(filteredItems, sortBy);
             }
             if (cardsContainer) {
                 if (reset) cardsContainer.innerHTML = '';
@@ -912,12 +1129,31 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Group tags: health (habits) and category
                         const healthTags = (r.habits || []).map(h => `<span class="tag health-tag">${h}</span>`).join('');
                         const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
+                        
+                        // Add nutrition info if available from sorting
+                        let nutritionInfo = '';
+                        if (r.nutritionData) {
+                            const data = r.nutritionData;
+                            nutritionInfo = `<div class="recipe-nutrition-info">
+                                <span class="nutrition-item">🔥 ${data.calories.toFixed(0)} kcal</span>
+                                <span class="nutrition-item">💪 ${data.protein.toFixed(1)}g protein</span>
+                                <span class="nutrition-item">🥑 ${data.fat.toFixed(1)}g fat</span>
+                                <span class="nutrition-item">🧂 ${data.sodium.toFixed(0)}mg sodium</span>
+                            </div>`;
+                        }
+                        
                         card.innerHTML = `
                             <div class="recipe-title">${r.title || ''}</div>
                             <div class="recipe-description">${r.description || ''}</div>
+                            ${nutritionInfo}
                             <div class="recipe-tags-row">
                                 <div class="recipe-tags health-tags-group">${healthTags}</div>
                                 <div class="recipe-tags category-tags-group">${categoryTags}</div>
+                            </div>
+                            <div class="recipe-actions">
+                                <button class="dashboard-link-btn" data-recipe-id="${r.recipe_id}" title="Go to Nutrition Dashboard">
+                                    <i class="fas fa-chart-line"></i> Dashboard
+                                </button>
                             </div>
                         `;
                         cardsContainer.appendChild(card);
@@ -1008,6 +1244,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function renderMealsAddedList() {
   const ul = document.querySelector('.meals-added-list');
+  const clearAllBtn = document.getElementById('clear-all-meals');
   if (!ul) return;
 
   const day = todayKey();
@@ -1020,42 +1257,131 @@ function renderMealsAddedList() {
     ul.innerHTML = `<li class="meal-item"><div class="meal-left">
         <div class="meal-name" style="color:#888;">No meals added yet</div>
       </div></li>`;
+    
+    // Hide clear all button when no meals
+    if (clearAllBtn) clearAllBtn.style.display = 'none';
+    
+    // Auto-refresh nutrition data to show zeros
+    if (typeof renderDashboardNutrition === 'function') {
+      renderDashboardNutrition();
+    }
     return;
   }
 
+  // Show clear all button when there are meals
+  if (clearAllBtn) {
+    clearAllBtn.style.display = 'block';
+    // Bind clear all button if not already bound
+    if (!clearAllBtn._bound) {
+      clearAllBtn._bound = true;
+      clearAllBtn.onclick = function() {
+        if (confirm('Are you sure you want to clear all meals for today?')) {
+          clearAllMealsForDay(day);
+          renderMealsAddedList();
+          if (typeof renderDashboardNutrition === 'function') {
+            renderDashboardNutrition();
+          }
+        }
+      };
+    }
+  }
+
+  // Group recipes by recipe_id and title
+  const groupedRecipes = {};
   todays.forEach(item => {
+    const key = `${item.recipe_id}_${item.title}`;
+    if (!groupedRecipes[key]) {
+      groupedRecipes[key] = {
+        recipe_id: item.recipe_id,
+        title: item.title,
+        day: item.day,
+        entries: [],
+        totalCalories: 0
+      };
+    }
+    groupedRecipes[key].entries.push(item);
+    if (typeof item.calories === 'number' && !Number.isNaN(item.calories)) {
+      groupedRecipes[key].totalCalories += item.calories;
+    }
+  });
+
+  // Render grouped recipes
+  Object.values(groupedRecipes).forEach(group => {
     const li = document.createElement('li');
     li.className = 'meal-item';
-    li.dataset.id = item.recipe_id;
-    li.dataset.day = item.day;
-
-    const kcal = (typeof item.calories === 'number' && !Number.isNaN(item.calories))
-      ? `${item.calories.toFixed(0)} kcal`
-      : '-';
+    li.dataset.recipeId = group.recipe_id;
+    li.dataset.day = group.day;
+    
+    const count = group.entries.length;
+    const displayTitle = count > 1 ? `${group.title} ×${count}` : group.title;
+    const totalKcal = group.totalCalories > 0 ? `${group.totalCalories.toFixed(0)} kcal` : '-';
 
     li.innerHTML = `
       <div class="meal-left">
-        <div class="meal-name">${item.title || 'Untitled recipe'}</div>
+        <div class="meal-name">${displayTitle}</div>
         <div class="meal-meta">Added today</div>
       </div>
       <div class="meal-right">
-        <div class="meal-kcal">${kcal}</div>
-        <button class="meal-delete" title="Remove">
-          <i class="fas fa-trash-alt"></i>
-        </button>
+        <div class="meal-kcal">${totalKcal}</div>
+        <div class="meal-controls">
+          <button class="meal-add" title="Add one more serving" data-recipe-id="${group.recipe_id}" ${count >= 3 ? 'disabled' : ''}>
+            <i class="fas fa-plus"></i>
+          </button>
+          <button class="meal-delete" title="Remove one serving" data-count="${count}">
+            <i class="fas fa-minus"></i>
+          </button>
+        </div>
       </div>
     `;
+    
+    // Store entries data for deletion
+    li._entries = group.entries;
     ul.appendChild(li);
   });
 
-  // Bind delete event
+  // Bind add/remove events
+  ul.querySelectorAll('.meal-add').forEach(btn => {
+    btn.onclick = function() {
+      const li = btn.closest('.meal-item');
+      const entries = li?._entries;
+      const recipeId = btn.getAttribute('data-recipe-id');
+      
+      if (!entries || entries.length === 0 || entries.length >= 3) return;
+      
+      // Use the first entry as template to add another one
+      const template = entries[0];
+      addToDashboard({
+        recipe_id: template.recipe_id,
+        title: template.title,
+        ingredients: template.ingredients || [],
+        calories: template.calories,
+        added_at: Date.now(),
+        day: template.day
+      });
+      
+      renderMealsAddedList(); // refresh list
+      if (typeof renderDashboardNutrition === 'function') {
+        renderDashboardNutrition(); // refresh nutrition summary
+      }
+    };
+  });
+
   ul.querySelectorAll('.meal-delete').forEach(btn => {
     btn.onclick = function() {
       const li = btn.closest('.meal-item');
-      const id = li?.dataset?.id;
-      const day = li?.dataset?.day;
-      if (!id || !day) return;
-      removeFromDashboardByIdAndDay(id, day);
+      const entries = li?._entries;
+      
+      if (!entries || entries.length === 0) return;
+      
+      // Remove one entry (the most recent one)
+      const entryToRemove = entries[entries.length - 1];
+      if (entryToRemove.dashboard_entry_id) {
+        removeFromDashboardByEntryId(entryToRemove.dashboard_entry_id);
+      } else {
+        // Fallback for old entries
+        removeFromDashboardByIdAndDay(entryToRemove.recipe_id, entryToRemove.day);
+      }
+      
       renderMealsAddedList(); // refresh list
       if (typeof renderDashboardNutrition === 'function') {
         renderDashboardNutrition(); // refresh nutrition summary

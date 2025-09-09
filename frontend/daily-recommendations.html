@@ -31,23 +31,23 @@
                 </a>
                 <a href="explore-recipes.html" class="nav-link">
                     <i class="fas fa-search"></i>
-                    <span>Explore Recipes</span>
+                    <span>Recipes</span>
+                </a>
+                <a href="nutrition-dashboard.html" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
                 </a>
                 <a href="daily-recommendations.html" class="nav-link active">
                     <i class="fas fa-heart"></i>
-                    <span>Daily Recommendations</span>
+                    <span>Daily Tips</span>
                 </a>
                 <a href="meal-planning.html" class="nav-link">
-                    <i class="fas fa-calendar"></i>
-                    <span>Meal Planning</span>
-                </a>
-                <a href="nutrition-dashboard.html" class="nav-link">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Nutrition Dashboard</span>
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Planning</span>
                 </a>
                 <a href="shopping-list.html" class="nav-link">
                     <i class="fas fa-shopping-cart"></i>
-                    <span>Shopping List</span>
+                    <span>Shopping</span>
                 </a>
             </div>
             
@@ -68,9 +68,251 @@
         </div>
     </nav>
     <main class="main-content">
+        <!-- Page Header -->
         <section class="page-header">
-            <h1 class="page-title">Daily Recommendations</h1>
-            <p class="page-subtitle">There is nothing here for now.</p>
+            <div class="section-container">
+                <h1 class="page-title">Daily Health Tips</h1>
+                <p class="page-subtitle">Personalized nutrition and wellness recommendations for healthy aging</p>
+                <p class="page-description">Get expert advice on maintaining optimal health through smart food choices and lifestyle habits</p>
+            </div>
+        </section>
+
+        <!-- Today's Featured Tip -->
+        <section class="featured-tip-section">
+            <div class="section-container">
+                <div class="featured-tip-card">
+                    <div class="tip-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="tip-content">
+                        <h2>Today's Featured Tip</h2>
+                        <h3>Stay Hydrated for Better Energy</h3>
+                        <p>Drink a glass of water first thing in the morning to kickstart your metabolism. Proper hydration helps maintain energy levels, supports digestion, and keeps your skin healthy. Aim for 8-10 glasses throughout the day.</p>
+                        <div class="tip-action">
+                            <button class="btn btn-primary tip-btn">
+                                <i class="fas fa-tint"></i>
+                                Track Water Intake
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Daily Recommendations Grid -->
+        <section class="recommendations-section">
+            <div class="section-container">
+                <div class="section-title-wrapper">
+                    <h2 class="section-title">Today's Wellness Focus</h2>
+                    <p class="section-subtitle">Evidence-based tips tailored for seniors</p>
+                </div>
+                
+                <div class="recommendations-grid">
+                    <!-- Nutrition Recommendation -->
+                    <div class="recommendation-card">
+                        <div class="card-header">
+                            <div class="card-icon nutrition-icon">
+                                <i class="fas fa-apple-alt"></i>
+                            </div>
+                            <div class="card-category">Nutrition</div>
+                        </div>
+                        <h3 class="card-title">Power Up with Protein</h3>
+                        <p class="card-description">Include lean protein in every meal to maintain muscle mass and strength. Great options include fish, eggs, beans, and Greek yogurt.</p>
+                        <div class="card-stats">
+                            <div class="stat">
+                                <span class="stat-number">25-30g</span>
+                                <span class="stat-label">per meal</span>
+                            </div>
+                        </div>
+                        <div class="card-action">
+                            <a href="explore-recipes.html" class="action-link">Find Protein Recipes</a>
+                        </div>
+                    </div>
+
+                    <!-- Exercise Recommendation -->
+                    <div class="recommendation-card">
+                        <div class="card-header">
+                            <div class="card-icon exercise-icon">
+                                <i class="fas fa-walking"></i>
+                            </div>
+                            <div class="card-category">Exercise</div>
+                        </div>
+                        <h3 class="card-title">Daily Movement Goal</h3>
+                        <p class="card-description">Gentle exercise like walking improves cardiovascular health, bone density, and mental well-being. Start with what feels comfortable.</p>
+                        <div class="card-stats">
+                            <div class="stat">
+                                <span class="stat-number">30 min</span>
+                                <span class="stat-label">recommended</span>
+                            </div>
+                        </div>
+                        <div class="card-action">
+                            <a href="#" class="action-link">View Exercise Tips</a>
+                        </div>
+                    </div>
+
+                    <!-- Hydration Recommendation -->
+                    <div class="recommendation-card">
+                        <div class="card-header">
+                            <div class="card-icon hydration-icon">
+                                <i class="fas fa-tint"></i>
+                            </div>
+                            <div class="card-category">Hydration</div>
+                        </div>
+                        <h3 class="card-title">Smart Hydration</h3>
+                        <p class="card-description">Proper hydration supports kidney function, regulates body temperature, and helps prevent constipation. Add lemon for extra flavor!</p>
+                        <div class="card-stats">
+                            <div class="stat">
+                                <span class="stat-number">8-10</span>
+                                <span class="stat-label">glasses/day</span>
+                            </div>
+                        </div>
+                        <div class="card-action">
+                            <a href="#" class="action-link">Hydration Tracker</a>
+                        </div>
+                    </div>
+
+                    <!-- Sleep Recommendation -->
+                    <div class="recommendation-card">
+                        <div class="card-header">
+                            <div class="card-icon sleep-icon">
+                                <i class="fas fa-moon"></i>
+                            </div>
+                            <div class="card-category">Sleep</div>
+                        </div>
+                        <h3 class="card-title">Quality Sleep</h3>
+                        <p class="card-description">Good sleep supports immune function, memory, and emotional well-being. Maintain a consistent bedtime routine for better rest.</p>
+                        <div class="card-stats">
+                            <div class="stat">
+                                <span class="stat-number">7-9</span>
+                                <span class="stat-label">hours ideal</span>
+                            </div>
+                        </div>
+                        <div class="card-action">
+                            <a href="#" class="action-link">Sleep Better Tips</a>
+                        </div>
+                    </div>
+
+                    <!-- Mental Health Recommendation -->
+                    <div class="recommendation-card">
+                        <div class="card-header">
+                            <div class="card-icon mental-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="card-category">Mental Health</div>
+                        </div>
+                        <h3 class="card-title">Stay Social & Engaged</h3>
+                        <p class="card-description">Social connections and mental stimulation are vital for cognitive health. Try cooking with friends or learning new recipes!</p>
+                        <div class="card-stats">
+                            <div class="stat">
+                                <span class="stat-number">Daily</span>
+                                <span class="stat-label">interaction</span>
+                            </div>
+                        </div>
+                        <div class="card-action">
+                            <a href="meal-planning.html" class="action-link">Plan Social Meals</a>
+                        </div>
+                    </div>
+
+                    <!-- Preventive Care Recommendation -->
+                    <div class="recommendation-card">
+                        <div class="card-header">
+                            <div class="card-icon health-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="card-category">Preventive Care</div>
+                        </div>
+                        <h3 class="card-title">Heart-Healthy Choices</h3>
+                        <p class="card-description">Choose foods rich in omega-3 fatty acids, fiber, and antioxidants. Limit sodium and processed foods for optimal heart health.</p>
+                        <div class="card-stats">
+                            <div class="stat">
+                                <span class="stat-number">5-9</span>
+                                <span class="stat-label">fruits/veg daily</span>
+                            </div>
+                        </div>
+                        <div class="card-action">
+                            <a href="nutrition-dashboard.html" class="action-link">Track Nutrition</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Weekly Focus Section -->
+        <section class="weekly-focus-section">
+            <div class="section-container">
+                <div class="weekly-focus-card">
+                    <div class="focus-header">
+                        <h2>This Week's Focus: Bone Health</h2>
+                        <div class="focus-badge">Week 3 of 4</div>
+                    </div>
+                    <div class="focus-content">
+                        <div class="focus-description">
+                            <p>Strong bones are essential for maintaining independence and preventing fractures. This week, we're focusing on calcium-rich foods and vitamin D.</p>
+                        </div>
+                        <div class="focus-goals">
+                            <div class="goal-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Include 3 servings of dairy or fortified alternatives daily</span>
+                            </div>
+                            <div class="goal-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Spend 15 minutes in sunlight for vitamin D</span>
+                            </div>
+                            <div class="goal-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Try weight-bearing exercises like walking</span>
+                            </div>
+                        </div>
+                        <div class="focus-action">
+                            <button class="btn btn-secondary">
+                                <i class="fas fa-bone"></i>
+                                View Bone Health Recipes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Tips Section -->
+        <section class="quick-tips-section">
+            <div class="section-container">
+                <h2 class="section-title">Quick Daily Reminders</h2>
+                <div class="tips-grid">
+                    <div class="tip-item">
+                        <div class="tip-icon-small">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <div class="tip-text">
+                            <strong>Meal Timing:</strong> Eat regular meals to maintain steady energy levels
+                        </div>
+                    </div>
+                    <div class="tip-item">
+                        <div class="tip-icon-small">
+                            <i class="fas fa-pills"></i>
+                        </div>
+                        <div class="tip-text">
+                            <strong>Supplements:</strong> Take medications with food to improve absorption
+                        </div>
+                    </div>
+                    <div class="tip-item">
+                        <div class="tip-icon-small">
+                            <i class="fas fa-thermometer-half"></i>
+                        </div>
+                        <div class="tip-text">
+                            <strong>Food Safety:</strong> Check expiration dates and store perishables properly
+                        </div>
+                    </div>
+                    <div class="tip-item">
+                        <div class="tip-icon-small">
+                            <i class="fas fa-smile"></i>
+                        </div>
+                        <div class="tip-text">
+                            <strong>Enjoyment:</strong> Share meals with others when possible for social connection
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
 
