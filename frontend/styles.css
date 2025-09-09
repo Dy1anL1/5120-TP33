@@ -2205,25 +2205,3 @@ html {
     animation-delay: 0.4s;
 }
 
-/* Shine animation for CTA title */
-@keyframes shine {
-    0% { background-position: -400px 0; }
-}
-
-.shine-animate {
-    display: inline-block;
-    background: linear-gradient(
-        120deg,
-        #4caf50 0%,
-        #4caf50 47%,
-        #ace7c3 49%,
-        #ace7c3 51%,
-        #4caf50 53%,
-        #4caf50 100%
-    );
-    background-size: 800px 100%;
-    background-repeat: no-repeat;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: shine 5s linear infinite;
-}
