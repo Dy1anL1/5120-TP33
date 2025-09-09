@@ -6,17 +6,138 @@
     <title>Silver Spoon Society - Healthy Living</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="password-protection.js"></script>
+    <style>
+        /* Single page scroll styles */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Welcome page styles */
+        .welcome-section {
+            background-image: url('cta3.jpg');
+            background-size: cover;
+            background-position: center 40%;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .welcome-card {
+            background: rgba(255,255,255,0.95);
+            padding: 2rem 2.5rem;
+            border-radius: 12px;
+            max-width: 720px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            opacity: 0;
+            transform: translateY(18px);
+            transition: opacity 900ms cubic-bezier(.2,.9,.3,1), transform 1000ms cubic-bezier(.2,.9,.3,1);
+        }
+
+        .welcome-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .welcome-title {
+            font-size: 2.25rem;
+            color: #2e7d32;
+            margin-bottom: 0.5rem;
+        }
+        
+        .welcome-sub {
+            color: #444;
+            margin-bottom: 1.25rem;
+        }
+        
+        .welcome-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.9rem 1.6rem;
+            border-radius: 999px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            text-decoration: none;
+            color: #fff;
+            background: #4CAF50;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .welcome-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        /* Main page style adjustments */
+        .main-content {
+            margin-top: 0;
+        }
+        
+        /* Navbar fixed at top */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+        
+        /* Hide navbar when scrolling */
+        .navbar.hidden {
+            transform: translateY(-100%);
+        }
+        
+        /* Smooth scroll to sections */
+        .scroll-to-section {
+            scroll-margin-top: 110px;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .welcome-card { 
+                position: static; 
+                margin: 1.25rem auto; 
+                width: calc(100% - 2.5rem); 
+            }
+            
+            .welcome-title { 
+                font-size: 1.6rem; 
+            }
+            
+            .welcome-card { 
+                padding: 1.25rem; 
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- Navigation Bar Trigger -->
-    <div class="navbar-trigger"></div>
-    
+    <!-- Welcome Section -->
+    <section class="welcome-section" id="welcome">
+        <div class="welcome-card" role="region" aria-labelledby="welcome-heading">
+            <h1 class="welcome-title shine-animate">Welcome to Silver Spoon Society</h1>
+            <p class="welcome-sub">Designed for healthy eating, our recipes and nutrition tools are easy to use and suitable for long-term use.</p>
+            <a href="#home" class="welcome-btn" aria-label="Get Started">
+                <i class="fas fa-arrow-down"></i>
+                Get Started
+            </a>
+        </div>
+    </section>
+
     <!-- Navigation Bar -->
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-logo">
                 <div class="logo-icon">
-                    <!-- Logo image -->
                     <img src="logo.jpg" alt="Silver Spoon Society Logo" class="custom-logo">
                 </div>
                 <div class="logo-text">
@@ -25,7 +146,7 @@
             </div>
             
             <div class="nav-links">
-                <a href="home.html" class="nav-link active">
+                <a href="#welcome" class="nav-link">
                     <i class="fas fa-home"></i>
                     <span>Home</span>
                 </a>
@@ -51,17 +172,6 @@
                 </a>
             </div>
             
-            <!--
-            <div class="nav-right">
-                <button class="nav-icon-btn">
-                    <i class="fas fa-globe"></i>
-                </button>
-                <button class="nav-icon-btn">
-                    <i class="fas fa-ellipsis-v"></i>
-                </button>
-            </div>
-            -->
-            
             <button class="mobile-menu-btn">
                 <i class="fas fa-bars"></i>
             </button>
@@ -70,17 +180,11 @@
 
     <!-- Main Content Area -->
     <main class="main-content">
-        <!-- Hero Section -->
-        <section class="hero-section">
+        <!-- Home Section -->
+        <section class="hero-section scroll-to-section" id="home">
             <div class="hero-container">
                 <h1 class="hero-title">Silver Spoon Society</h1>
                 <p class="hero-subtitle">Nutrition made simple for healthy aging</p>
-                <!--
-                <p class="hero-description">
-                    Discover heart-healthy recipes and track your daily nutrition with tools designed for seniors.
-                    No complex apps, just simple tools to help you eat well and age gracefully.
-                </p>
-                -->
                 <div class="hero-buttons">
                     <a class="btn btn-primary" href="explore-recipes.html">
                         <i class="fas fa-heart"></i>
@@ -96,7 +200,7 @@
         </section>
 
         <!-- How It Works Section -->
-        <section class="how-it-works">
+        <section class="how-it-works scroll-to-section" id="how-it-works">
             <div class="section-container">
                 <h2 class="section-title">How It Works</h2>
                 <div class="cards-container">
@@ -126,22 +230,22 @@
         </section>
 
         <!-- Features Button Section -->
-        <section class="features-section">
+        <section class="features-section scroll-to-section" id="features">
             <div class="section-container">
                 <div class="features-container">
-                    <a class="feature-item" href="#" id="feature-meal-planning">
+                    <a class="feature-item" href="meal-planning.html">
                         <div class="feature-icon">
                             <i class="fas fa-calendar"></i>
                         </div>
                         <span class="feature-text">Meal Planning</span>
                     </a>
-                    <a class="feature-item" href="#" id="feature-shopping-list">
+                    <a class="feature-item" href="shopping-list.html">
                         <div class="feature-icon">
                             <i class="fas fa-bolt"></i>
                         </div>
                         <span class="feature-text">Shopping List</span>
                     </a>
-                    <a class="feature-item" href="#" id="feature-recommendations">
+                    <a class="feature-item" href="daily-recommendations.html">
                         <div class="feature-icon">
                             <i class="fas fa-heart"></i>
                         </div>
@@ -168,6 +272,69 @@
         </div>
     </footer>
 
+
+    <script>
+        // Preload welcome page image and show card
+        (function(){
+            const welcomeCard = document.querySelector('.welcome-card');
+            const imgUrl = 'cta3.jpg';
+
+            function reveal() {
+                requestAnimationFrame(() => setTimeout(() => welcomeCard.classList.add('visible'), 180));
+            }
+
+            // Preload image
+            const img = new Image();
+            img.src = imgUrl;
+            img.onload = () => {
+                reveal();
+            };
+            img.onerror = () => {
+                reveal();
+            };
+        })();
+
+        // Navbar hide/show on scroll
+        let lastScrollTop = 0;
+        const navbar = document.querySelector('.navbar');
+
+        window.addEventListener('scroll', function() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            if (scrollTop > lastScrollTop && scrollTop > 100) {
+                // Scrolling down, hide navbar
+                navbar.classList.add('hidden');
+            } else {
+                // Scrolling up, show navbar
+                navbar.classList.remove('hidden');
+            }
+            
+            lastScrollTop = scrollTop;
+        });
+
+        // Mobile menu toggle
+        const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+        const navLinks = document.querySelector('.nav-links');
+
+        mobileMenuBtn.addEventListener('click', function() {
+            navLinks.classList.toggle('show');
+        });
+
+        // Smooth scroll to sections
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+    </script>
     <script src="script.js"></script>
 </body>
 </html>
