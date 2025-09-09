@@ -344,7 +344,26 @@ body {
 
 /* Main content area */
 .main-content {
-    margin-top: 110px;
+    margin-top: 0;
+}
+
+/* 单页面滚动支持 */
+html {
+    scroll-behavior: smooth;
+}
+
+/* 导航栏滚动隐藏效果 */
+.navbar {
+    transition: transform 0.3s ease;
+}
+
+.navbar.hidden {
+    transform: translateY(-100%);
+}
+
+/* 滚动到各个部分的间距 */
+.scroll-to-section {
+    scroll-margin-top: 110px;
 }
 
 /* Hero Section Styles */

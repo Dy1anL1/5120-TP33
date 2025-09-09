@@ -1,3 +1,31 @@
+// ====== Compact Nutrition Goals (10 key nutrients for dashboard) ======
+const NUTRIENT_GOALS = {
+    female_51: {
+        calories_kcal: 1800,
+        protein_g: 46,
+        carbohydrate_g: 130,
+        total_fat_pct_range: '20-35',
+        fiber_g: 22.4,
+        calcium_mg: 1200,
+        potassium_mg: 4700,
+        sodium_mg: 2300,
+        vitaminD_IU: 600,
+        vitaminB12_mcg: 2.4
+    },
+    male_51: {
+        calories_kcal: 2200,
+        protein_g: 56,
+        carbohydrate_g: 130,
+        total_fat_pct_range: '20-35',
+        fiber_g: 28,
+        calcium_mg: 1200,
+        potassium_mg: 4700,
+        sodium_mg: 2300,
+        vitaminD_IU: 600,
+        vitaminB12_mcg: 2.4
+    }
+};
+
 // Modal helpers
 function ensureRecipeModal() {
     let m = document.getElementById('recipe-modal');
@@ -46,12 +74,13 @@ function closeModal() {
 }
 
 // Unified close event
-document.addEventListener('click', (e)=>{
+document.addEventListener('click', (e) => {
     if (e.target.closest('.modal-close') || e.target.classList.contains('modal-backdrop')) {
         closeModal();
     }
 });
 
+// Open recipe modal and fetch nutrition summary
 async function openRecipeModal(recipe) {
     const m = ensureRecipeModal();
     const titleEl = m.querySelector('#recipe-modal-title');
@@ -87,20 +116,30 @@ async function openRecipeModal(recipe) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ingredients })
             });
-            const { summary_100g_sum } = await res.json();
-            if (sumEl) {
-                sumEl.innerHTML = '';
-                const pairs = [
-                    ['calories','kcal'],['protein','g'],['total_fat','g'],
-                    ['carbohydrates','g'],['sodium','mg'],['total_sugars','g'],['saturated_fats','g']
-                ];
-                pairs.forEach(([k,u])=>{
-                    const v = summary_100g_sum?.[k];
-                    if (v==null) return;
-                    const card = document.createElement('div'); card.className='card';
-                    card.innerHTML = `<div class="key">${k.replace('_',' ')}</div><div class="val">${Number(v).toFixed(1)} ${u}</div>`;
-                    sumEl.appendChild(card);
-                });
+            const body = await res.json();
+            const summary = body.summary_100g_sum || {};
+            if (Object.keys(summary).length === 0) {
+                if (sumEl) sumEl.innerHTML = '<div style="color:#888;">No nutrition matches found for listed ingredients.</div>';
+            } else {
+                if (sumEl) {
+                    sumEl.innerHTML = '';
+                    const pairs = [
+                        { keys: ['calories', 'energy_kcal', 'energy'], unit: 'kcal', label: 'calories' },
+                        { keys: ['protein', 'protein_g'], unit: 'g', label: 'protein' },
+                        { keys: ['total_fat', 'fat', 'fat_g'], unit: 'g', label: 'fat' },
+                        { keys: ['carbohydrates', 'carbohydrate_g', 'carbohydrates_g'], unit: 'g', label: 'carbohydrates' },
+                        { keys: ['sodium', 'sodium_mg'], unit: 'mg', label: 'sodium' },
+                        { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], unit: 'g', label: 'sugars' },
+                        { keys: ['saturated_fats', 'saturated_fat', 'saturated_fats_g'], unit: 'g', label: 'saturated fats' }
+                    ];
+                    pairs.forEach(p => {
+                        const v = getAny(summary, p.keys);
+                        if (v == null) return;
+                        const card = document.createElement('div'); card.className = 'card';
+                        card.innerHTML = `<div class="key">${p.label}</div><div class="val">${fmt(v)} ${p.unit}</div>`;
+                        sumEl.appendChild(card);
+                    });
+                }
             }
         } else if (sumEl) {
             sumEl.innerHTML = '<div class="card"><div class="key">No ingredients</div><div class="val">-</div></div>';
@@ -112,24 +151,68 @@ async function openRecipeModal(recipe) {
     // Add to Dashboard
     const addBtn = m.querySelector('#add-to-dashboard');
     if (addBtn) {
-        addBtn.onclick = () => {
-            const key = 'nss_dashboard';
-            const list = JSON.parse(localStorage.getItem(key) || '[]');
-            list.push({
-                id: recipe.recipe_id,
-                title: recipe.title,
-                ingredients: recipe.ingredients,
-                added_at: Date.now()
-            });
-            localStorage.setItem(key, JSON.stringify(list));
-            addBtn.textContent = 'Added!';
-            setTimeout(()=> addBtn.textContent = 'Add to Nutrition Dashboard', 1200);
-        };
+      addBtn.onclick = () => {
+        const day = todayKey();
+        // Get nutrition summary, use calories if available, otherwise null
+        let calories = null;
+        const sumEl = m.querySelector('#nutrition-summary');
+        if (sumEl) {
+          const calCard = sumEl.querySelector('.card .key')?.textContent?.toLowerCase() === 'calories'
+            ? sumEl.querySelector('.card .val')?.textContent
+            : null;
+          if (calCard && !isNaN(Number(calCard))) calories = Number(calCard);
+        }
+        addToDashboard({
+          recipe_id: recipe.recipe_id,
+          title: recipe.title,
+          ingredients: recipe.ingredients || [],
+          calories,
+          added_at: Date.now(),
+          day
+        });
+        addBtn.textContent = 'Added!';
+        addBtn.disabled = true;
+        setTimeout(() => {
+          addBtn.textContent = 'Add to Nutrition Dashboard';
+          addBtn.disabled = false;
+        }, 1200);
+      };
     }
 }
+
 // ====== Nutrition Dashboard Integration ======
 // ====== Dashboard Nutrition Rendering ======
 const DASHBOARD_KEY = 'nss_dashboard';
+
+function todayKey() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function readDashboard() {
+  try { return JSON.parse(localStorage.getItem(DASHBOARD_KEY)) || []; }
+  catch { return []; }
+}
+
+function writeDashboard(list) {
+  localStorage.setItem(DASHBOARD_KEY, JSON.stringify(list || []));
+}
+
+function addToDashboard(item) {
+  const list = readDashboard();
+  list.push(item);
+  writeDashboard(list);
+}
+
+function removeFromDashboardByIdAndDay(recipe_id, day) {
+  const list = readDashboard();
+  const next = list.filter(x => !(String(x.recipe_id) === String(recipe_id) && x.day === day));
+  writeDashboard(next);
+  return
+}
 
 async function renderDashboardNutrition() {
     const dashDiv = document.getElementById('dashboard-nutrition');
@@ -140,25 +223,48 @@ async function renderDashboardNutrition() {
     const caloriesGoal = document.getElementById('calories-goal');
     const proteinCurrent = document.getElementById('protein-current');
     const proteinGoal = document.getElementById('protein-goal');
-    const fiberCurrent = document.getElementById('fiber-current');
-    const fiberGoal = document.getElementById('fiber-goal');
-    const waterCurrent = document.getElementById('water-current');
-    const waterGoal = document.getElementById('water-goal');
+    const carbohydratesCurrent = document.getElementById('carbohydrates-current');
+    const carbohydratesGoal = document.getElementById('carbohydrates-goal');
+    const sodiumCurrent = document.getElementById('sodium-current');
+    const sodiumGoal = document.getElementById('sodium-goal');
     const overallProgress = document.getElementById('overall-progress');
     const overallProgressText = document.getElementById('overall-progress-text');
     // Progress bar
     const progressFill = document.querySelector('.progress-fill');
     let allIngredients = [];
+
+    /* 思考（要不要加）
+    // ====== Auto-reference recommended values ======
+    // 默认 female_51，可根据实际需求切换
+    const userType = window.localStorage.getItem('nss_user_type') || 'female_51';
+    const goals = NUTRIENT_GOALS[userType] || NUTRIENT_GOALS['female_51'];
+    // Map compact goals to DOM elements (if present)
+    if (caloriesGoal) caloriesGoal.textContent = goals.calories_kcal;
+    if (proteinGoal) proteinGoal.textContent = goals.protein_g;
+    if (fiberGoal) fiberGoal.textContent = goals.fiber_g;
+    // Optional goal elements: create or set sodium/calcium/vitD/vitB12 if present
+    const sodiumGoalEl = document.getElementById('sodium-goal');
+    if (sodiumGoalEl) sodiumGoalEl.textContent = goals.sodium_mg;
+    const calciumGoalEl = document.getElementById('calcium-goal');
+    if (calciumGoalEl) calciumGoalEl.textContent = goals.calcium_mg;
+    const potassiumGoalEl = document.getElementById('potassium-goal');
+    if (potassiumGoalEl) potassiumGoalEl.textContent = goals.potassium_mg;
+    const vitDGoalEl = document.getElementById('vitaminD-goal');
+    if (vitDGoalEl) vitDGoalEl.textContent = goals.vitaminD_IU;
+    const vitB12GoalEl = document.getElementById('vitaminB12-goal');
+    if (vitB12GoalEl) vitB12GoalEl.textContent = goals.vitaminB12_mcg;
+    */
     try {
         // Read dashboard from localStorage
         let dashboard = [];
         try {
             dashboard = JSON.parse(localStorage.getItem(DASHBOARD_KEY)) || [];
-        } catch {}
+        } catch { }
         if (!Array.isArray(dashboard) || dashboard.length === 0) {
             dashDiv.innerHTML = '<div style="color:#888;text-align:center;">No dashboard recipes found.</div>';
             return;
         }
+
         // Merge all ingredients
         for (const item of dashboard) {
             if (Array.isArray(item.ingredients)) {
@@ -169,46 +275,103 @@ async function renderDashboardNutrition() {
             dashDiv.innerHTML = '<div style="color:#888;text-align:center;">No ingredients found in dashboard recipes.</div>';
             return;
         }
+
         // POST to MATCH_API
         const nutri = await fetchNutrition(allIngredients);
         const sum = nutri.summary_100g_sum || {};
         const details = nutri.details || [];
-        // Update main cards
-        if (caloriesCurrent) caloriesCurrent.textContent = sum.calories != null ? Number(sum.calories).toFixed(0) : '0';
-        if (proteinCurrent) proteinCurrent.textContent = sum.protein != null ? Number(sum.protein).toFixed(0) : '0';
-        if (fiberCurrent) fiberCurrent.textContent = sum.fiber != null ? Number(sum.fiber).toFixed(0) : '0';
-        if (waterCurrent) waterCurrent.textContent = sum.water != null ? Number(sum.water).toFixed(0) : '0';
+
+        // Update main cards (use aliases to tolerate backend naming differences)
+        const caloriesVal = getAny(sum, ['calories', 'energy_kcal', 'energy']);
+        const proteinVal = getAny(sum, ['protein', 'protein_g']);
+        const carbVal = getAny(sum, ['carbohydrates', 'carbohydrate_g', 'carbohydrates_g']);
+        const sodiumVal = getAny(sum, ['sodium', 'sodium_mg']);
+        if (caloriesCurrent) caloriesCurrent.textContent = caloriesVal != null ? fmt(caloriesVal) : '-';
+        if (proteinCurrent) proteinCurrent.textContent = proteinVal != null ? fmt(proteinVal) : '-';
+        if (carbohydratesCurrent) carbohydratesCurrent.textContent = carbVal != null ? fmt(carbVal) : '-';
+        if (sodiumCurrent) sodiumCurrent.textContent = sodiumVal != null ? fmt(sodiumVal) : '-';
         // Goals (can be static or configurable)
-        const calGoal = caloriesGoal ? Number(caloriesGoal.textContent) : 2000;
-        const proGoal = proteinGoal ? Number(proteinGoal.textContent) : 80;
-        const fibGoal = fiberGoal ? Number(fiberGoal.textContent) : 30;
-        const watGoal = waterGoal ? Number(waterGoal.textContent) : 8;
+        const calGoal = caloriesGoal ? Number(caloriesGoal.textContent) : 2200;
+        const proGoal = proteinGoal ? Number(proteinGoal.textContent) : 56;
+        // Carbohydrates and sodium goals
+        const carbGoal = carbohydratesGoal ? Number(carbohydratesGoal.textContent) : 130;
+        const sodiumGoalVal = sodiumGoal ? Number(sodiumGoal.textContent) : 2300;
+
         // Progress calculation (simple average)
         let percent = 0;
         let count = 0;
-        if (sum.calories != null) { percent += Math.min(sum.calories / calGoal, 1); count++; }
-        if (sum.protein != null) { percent += Math.min(sum.protein / proGoal, 1); count++; }
-        if (sum.fiber != null) { percent += Math.min(sum.fiber / fibGoal, 1); count++; }
-        if (sum.water != null) { percent += Math.min(sum.water / watGoal, 1); count++; }
+        if (caloriesVal != null) { percent += Math.min(caloriesVal / calGoal, 1); count++; }
+        if (proteinVal != null) { percent += Math.min(proteinVal / proGoal, 1); count++; }
+        if (carbVal != null) { percent += Math.min(carbVal / carbGoal, 1); count++; }
+        if (sodiumVal != null) { percent += Math.min(sodiumVal / sodiumGoalVal, 1); count++; }
         percent = count ? Math.round((percent / count) * 100) : 0;
         if (overallProgress) overallProgress.textContent = percent + '%';
         if (overallProgressText) overallProgressText.textContent = percent + '%';
-        if (progressFill) progressFill.style.width = percent + '%';
-        // Render dashboard summary below
+        if (progressFill) {
+            // set width and color when exceeding 100%
+            progressFill.style.width = Math.min(100, percent) + '%';
+            progressFill.style.background = percent > 100 ? '#e53935' : '';
+        }
+
+        // Update progress header message when goals reached
+        const progWarnSpan = document.querySelector('.progress-warning span');
+        if (progWarnSpan) {
+            if (percent >= 100) progWarnSpan.textContent = 'Great job - you\'ve reached your daily goals!';
+            else progWarnSpan.textContent = 'Keep logging meals to reach your goals';
+        }
+
+        // Per-card visual: mark numbers/progress red when current > goal
+        const cardFields = [
+            { curId: 'calories-current', goalId: 'calories-goal' },
+            { curId: 'protein-current', goalId: 'protein-goal' },
+            { curId: 'carbohydrates-current', goalId: 'carbohydrates-goal' },
+            { curId: 'sodium-current', goalId: 'sodium-goal' },
+        ];
+        cardFields.forEach(({ curId, goalId }) => {
+            const curEl = document.getElementById(curId);
+            const goalEl = document.getElementById(goalId);
+            if (!curEl || !goalEl) return;
+            const cur = Number(String(curEl.textContent).replace(/[^0-9\.\-]/g, '')) || 0;
+            const goal = Number(String(goalEl.textContent).replace(/[^0-9\.\-]/g, '')) || 0 || 1;
+            const card = curEl.closest('.nutrition-card');
+            if (card) {
+                const fill = card.querySelector('.progress-fill');
+                const pct = goal ? (cur / goal) * 100 : 0;
+                if (fill) {
+                    fill.style.width = Math.min(100, pct) + '%';
+                    fill.style.background = pct > 100 ? '#e53935' : '';
+                }
+                if (cur > goal) {
+                    // red number
+                    curEl.style.color = '#e53935';
+                    card.classList.add('over-goal');
+                } else {
+                    curEl.style.color = '';
+                    card.classList.remove('over-goal');
+                }
+            }
+        });
+        // Render dashboard summary below (extended nutrients)
         const fields = [
-            { key: 'calories', label: 'Calories', icon: 'fa-fire' },
-            { key: 'protein', label: 'Protein', icon: 'fa-drumstick-bite' },
-            { key: 'fat', label: 'Fat', icon: 'fa-bacon' },
-            { key: 'sodium', label: 'Sodium', icon: 'fa-salt-shaker' },
-            { key: 'sugar', label: 'Sugar', icon: 'fa-cube' },
+            { keys: ['calories', 'energy_kcal', 'energy'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
+            { keys: ['protein', 'protein_g'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
+            { keys: ['total_fat', 'fat', 'fat_g'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
+            { keys: ['fiber', 'fiber_g', 'dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
+            { keys: ['potassium', 'potassium_mg'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
+            { keys: ['calcium', 'calcium_mg'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+            { keys: ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
+            { keys: ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
+            { keys: ['sodium', 'sodium_mg'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
+            { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
         ];
         let html = '<div class="nutrition-cards">';
         fields.forEach(f => {
-            const val = sum[f.key] != null ? sum[f.key] : '-';
+            const raw = getAny(sum, f.keys);
+            const val = raw != null ? fmt(raw) : '-';
             html += `<div class="nutrition-card">
                 <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
                 <div class="nutrition-label">${f.label}</div>
-                <div class="nutrition-value">${val}</div>
+                <div class="nutrition-value">${val}${f.unit ? ' ' + f.unit : ''}</div>
             </div>`;
         });
         html += '</div>';
@@ -216,15 +379,30 @@ async function renderDashboardNutrition() {
         if (details.length > 0) {
             html += '<h3 style="margin-top:2rem;">Ingredient Details</h3>';
             html += '<table class="nutrition-details-table" style="width:100%;margin-top:1rem;border-collapse:collapse;">';
-            html += '<thead><tr><th>Ingredient</th><th>Calories</th><th>Protein</th><th>Fat</th><th>Sodium</th><th>Sugar</th></tr></thead><tbody>';
+            html += '<thead><tr><th>Ingredient</th><th>Calories</th><th>Protein</th><th>Fat</th><th>Fiber</th><th>Potassium</th><th>Calcium</th><th>Vit D</th><th>Vit B12</th><th>Sodium</th><th>Sugar</th></tr></thead><tbody>';
             details.forEach(d => {
+                const rowCalories = getAny(d, ['calories', 'energy_kcal', 'energy']);
+                const rowProtein = getAny(d, ['protein', 'protein_g']);
+                const rowFat = getAny(d, ['total_fat', 'fat', 'fat_g']);
+                const rowFiber = getAny(d, ['fiber', 'fiber_g', 'dietary_fiber']);
+                const rowPotassium = getAny(d, ['potassium', 'potassium_mg']);
+                const rowCalcium = getAny(d, ['calcium', 'calcium_mg']);
+                const rowVitD = getAny(d, ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu']);
+                const rowVitB12 = getAny(d, ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg']);
+                const rowSodium = getAny(d, ['sodium', 'sodium_mg']);
+                const rowSugar = getAny(d, ['total_sugars', 'sugar', 'sugars', 'sugar_g']);
                 html += `<tr>
                     <td>${d.ingredient || '-'}</td>
-                    <td>${d.calories != null ? d.calories : '-'}</td>
-                    <td>${d.protein != null ? d.protein : '-'}</td>
-                    <td>${d.fat != null ? d.fat : '-'}</td>
-                    <td>${d.sodium != null ? d.sodium : '-'}</td>
-                    <td>${d.sugar != null ? d.sugar : '-'}</td>
+                    <td>${rowCalories != null ? fmt(rowCalories) : '-'}</td>
+                    <td>${rowProtein != null ? fmt(rowProtein) : '-'}</td>
+                    <td>${rowFat != null ? fmt(rowFat) : '-'}</td>
+                    <td>${rowFiber != null ? fmt(rowFiber) : '-'}</td>
+                    <td>${rowPotassium != null ? fmt(rowPotassium) + ' mg' : '-'}</td>
+                    <td>${rowCalcium != null ? fmt(rowCalcium) + ' mg' : '-'}</td>
+                    <td>${rowVitD != null ? fmt(rowVitD) + ' IU' : '-'}</td>
+                    <td>${rowVitB12 != null ? fmt(rowVitB12) + ' mcg' : '-'}</td>
+                    <td>${rowSodium != null ? fmt(rowSodium) : '-'}</td>
+                    <td>${rowSugar != null ? fmt(rowSugar) : '-'}</td>
                 </tr>`;
             });
             html += '</tbody></table>';
@@ -234,17 +412,55 @@ async function renderDashboardNutrition() {
         dashDiv.innerHTML = `<div style="color:#c00;text-align:center;">${e.message}</div>`;
     }
 }
+
 const NUTRITION_API = "https://0brixnxwq3.execute-api.ap-southeast-2.amazonaws.com/prod/match";
 const RECIPES_API = "https://97xkjqjeuc.execute-api.ap-southeast-2.amazonaws.com/prod/recipes";
 
 async function fetchNutrition(ingredients) {
+    // Accept either array of strings or array of objects { text }
+    const normalized = (ingredients || []).map(s => typeof s === 'string' ? { text: s } : s || { text: '' });
+    // Infer labels for each ingredient (if not provided)
+    normalized.forEach(it => { if (!it.label) it.label = inferLabelFromText(it.text || it.name || ''); });
     const res = await fetch(NUTRITION_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ingredients })
+        body: JSON.stringify({ ingredients: normalized })
     });
     if (!res.ok) throw new Error('Failed to fetch nutrition');
     return await res.json();
+}
+
+// Infer simple label from ingredient text
+function inferLabelFromText(text) {
+    if (!text) return null;
+    const s = String(text).toLowerCase();
+    if (/\b(canned|tin|in brine|in oil|drained)\b/.test(s)) return 'canned';
+    if (/\b(frozen|flash frozen)\b/.test(s)) return 'frozen';
+    if (/\b(dried|dehydrated|dry|raisins|dried apricot|sun-dried)\b/.test(s)) return 'dry';
+    if (/\b(cooked|boiled|steamed|roasted|grilled|baked|stir[- ]fry|saute|pan fried)\b/.test(s)) return 'cooked';
+    if (/\b(raw|fresh)\b/.test(s)) return 'raw';
+    if (/\b(unsweetened|no sugar|no added sugar)\b/.test(s)) return 'unsweetened';
+    if (/\b(sweetened|sugared|with sugar|honey|syrup|sweet)\b/.test(s)) return 'sweetened';
+    if (/\b(enriched|fortified)\b/.test(s)) return 'enriched';
+    if (/\b(caffeine|coffee|caffeinated)\b/.test(s)) return 'caffeine';
+    return null;
+}
+
+// Helper: return first non-null value for a list of possible keys
+function getAny(obj, keys) {
+    if (!obj || !Array.isArray(keys)) return null;
+    for (const k of keys) {
+        if (obj[k] != null) return obj[k];
+    }
+    return null;
+}
+
+// Formatter: show numeric value with two decimals, or '-' when missing
+function fmt(v, digits = 2) {
+    if (v == null || v === '') return '-';
+    const n = Number(v);
+    if (Number.isNaN(n)) return '-';
+    return n.toFixed(digits);
 }
 
 function getQueryParam(name) {
@@ -272,22 +488,28 @@ async function renderNutritionDashboard() {
             const nutri = await fetchNutrition(ingredients);
             const sum = nutri.summary_100g_sum || {};
             const fields = [
-                { key: 'calories', label: 'Calories', icon: 'fa-fire' },
-                { key: 'protein', label: 'Protein', icon: 'fa-drumstick-bite' },
-                { key: 'fat', label: 'Fat', icon: 'fa-bacon' },
-                { key: 'sodium', label: 'Sodium', icon: 'fa-salt-shaker' },
-                { key: 'sugar', label: 'Sugar', icon: 'fa-cube' },
+                { keys: ['calories', 'energy_kcal', 'energy'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
+                { keys: ['protein', 'protein_g'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
+                { keys: ['total_fat', 'fat', 'fat_g'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
+                { keys: ['fiber', 'fiber_g', 'dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
+                { keys: ['potassium', 'potassium_mg'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
+                { keys: ['calcium', 'calcium_mg'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+                { keys: ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
+                { keys: ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
+                { keys: ['sodium', 'sodium_mg'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
+                { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
             ];
             resultsDiv.innerHTML = '<div class="nutrition-cards"></div>';
             const cards = resultsDiv.querySelector('.nutrition-cards');
             fields.forEach(f => {
-                const val = sum[f.key] != null ? sum[f.key] : '-';
+                const raw = getAny(sum, f.keys);
+                const val = raw != null ? fmt(raw) : '-';
                 const card = document.createElement('div');
                 card.className = 'nutrition-card';
                 card.innerHTML = `
                     <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
                     <div class="nutrition-label">${f.label}</div>
-                    <div class="nutrition-value">${val}</div>
+                    <div class="nutrition-value">${val}${f.unit ? ' ' + f.unit : ''}</div>
                 `;
                 cards.appendChild(card);
             });
@@ -304,7 +526,12 @@ async function renderNutritionDashboard() {
 
 // Auto-execute on page load
 if (window.location.pathname.includes('nutrition-dashboard')) {
-    document.addEventListener('DOMContentLoaded', renderNutritionDashboard);
+  document.addEventListener('DOMContentLoaded', () => {
+    renderMealsAddedList();
+    if (typeof renderDashboardNutrition === 'function') {
+      renderDashboardNutrition();
+    }
+  });
 }
 
 async function fetchRecipes({ keyword, category, habit, limit = 10, nextToken = null }) {
@@ -328,8 +555,8 @@ async function fetchRecipes({ keyword, category, habit, limit = 10, nextToken = 
         clearTimeout(timeout);
     }
     if (!res.ok) {
-        const txt = await res.text().catch(()=>res.statusText || '');
-        const message = `Recipes API ${res.status} ${res.statusText} ${txt ? '- '+txt.slice(0,120) : ''}`;
+        const txt = await res.text().catch(() => res.statusText || '');
+        const message = `Recipes API ${res.status} ${res.statusText} ${txt ? '- ' + txt.slice(0, 120) : ''}`;
         const err = new Error(message);
         err.status = res.status;
         throw err;
@@ -355,45 +582,45 @@ async function fetchRecipes({ keyword, category, habit, limit = 10, nextToken = 
         data.items = fuzzyResults.map(r => r.item);
     }
     return data;
-// Simple fuzzy matching tool (Levenshtein distance)
-function getFuseInstance(items) {
-    // Only load Fuse.js implementation on first call
-    if (!window.Fuse) {
-        class Fuse {
-            constructor(list) { this.list = list; }
-            search(pattern, maxTypos = 3) {
-                pattern = pattern.toLowerCase();
-                return this.list.map(item => {
-                    let minDist = 99;
-                    let fields = [];
-                    if (item.title) fields.push(item.title);
-                    if (Array.isArray(item.ingredients)) fields = fields.concat(item.ingredients);
-                    for (const field of fields) {
-                        const dist = levenshtein(pattern, String(field).toLowerCase());
-                        if (dist < minDist) minDist = dist;
-                        if (String(field).toLowerCase().includes(pattern)) minDist = 0;
-                    }
-                    return { item, score: minDist };
-                }).filter(r => r.score <= maxTypos)
-                  .sort((a,b)=>a.score-b.score);
-            }
-        }
-        function levenshtein(a, b) {
-            const matrix = [];
-            for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-            for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-            for (let i = 1; i <= b.length; i++) {
-                for (let j = 1; j <= a.length; j++) {
-                    if (b.charAt(i-1) === a.charAt(j-1)) matrix[i][j] = matrix[i-1][j-1];
-                    else matrix[i][j] = Math.min(matrix[i-1][j-1]+1, matrix[i][j]+1, matrix[i-1][j]+1);
+    // Simple fuzzy matching tool (Levenshtein distance)
+    function getFuseInstance(items) {
+        // Only load Fuse.js implementation on first call
+        if (!window.Fuse) {
+            class Fuse {
+                constructor(list) { this.list = list; }
+                search(pattern, maxTypos = 3) {
+                    pattern = pattern.toLowerCase();
+                    return this.list.map(item => {
+                        let minDist = 99;
+                        let fields = [];
+                        if (item.title) fields.push(item.title);
+                        if (Array.isArray(item.ingredients)) fields = fields.concat(item.ingredients);
+                        for (const field of fields) {
+                            const dist = levenshtein(pattern, String(field).toLowerCase());
+                            if (dist < minDist) minDist = dist;
+                            if (String(field).toLowerCase().includes(pattern)) minDist = 0;
+                        }
+                        return { item, score: minDist };
+                    }).filter(r => r.score <= maxTypos)
+                        .sort((a, b) => a.score - b.score);
                 }
             }
-            return matrix[b.length][a.length];
+            function levenshtein(a, b) {
+                const matrix = [];
+                for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+                for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+                for (let i = 1; i <= b.length; i++) {
+                    for (let j = 1; j <= a.length; j++) {
+                        if (b.charAt(i - 1) === a.charAt(j - 1)) matrix[i][j] = matrix[i - 1][j - 1];
+                        else matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j] + 1, matrix[i - 1][j] + 1);
+                    }
+                }
+                return matrix[b.length][a.length];
+            }
+            window.Fuse = Fuse;
         }
-        window.Fuse = Fuse;
+        return new window.Fuse(items);
     }
-    return new window.Fuse(items);
-}
 }
 
 
@@ -402,9 +629,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const mealPlanning = document.getElementById('feature-meal-planning');
     const shoppingList = document.getElementById('feature-shopping-list');
     const recommendations = document.getElementById('feature-recommendations');
-    if (mealPlanning) mealPlanning.addEventListener('click', function(e) { e.preventDefault(); window.location.href = 'meal-planning.html'; });
-    if (shoppingList) shoppingList.addEventListener('click', function(e) { e.preventDefault(); window.location.href = 'shopping-list.html'; });
-    if (recommendations) recommendations.addEventListener('click', function(e) { e.preventDefault(); window.location.href = 'daily-recommendations.html'; });
+    if (mealPlanning) mealPlanning.addEventListener('click', function (e) { e.preventDefault(); window.location.href = 'meal-planning.html'; });
+    if (shoppingList) shoppingList.addEventListener('click', function (e) { e.preventDefault(); window.location.href = 'shopping-list.html'; });
+    if (recommendations) recommendations.addEventListener('click', function (e) { e.preventDefault(); window.location.href = 'daily-recommendations.html'; });
     // Modal logic
     const modal = document.getElementById('recipe-modal');
     const modalBackdrop = modal ? modal.querySelector('.modal-backdrop') : null;
@@ -441,24 +668,33 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         // Nutrition
         if (modalNutrition) {
-            // modalNutrition.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition...</div>';
             fetchNutrition(recipe.ingredients).then(nutri => {
                 const sum = nutri.summary_100g_sum || {};
+                if (Object.keys(sum).length === 0) {
+                    modalNutrition.innerHTML = '<div style="color:#888;text-align:center;">No nutrition matches found for listed ingredients.</div>';
+                    return;
+                }
                 const fields = [
-                    { key: 'calories', label: 'Calories', icon: 'fa-fire' },
-                    { key: 'protein', label: 'Protein', icon: 'fa-drumstick-bite' },
-                    { key: 'fat', label: 'Fat', icon: 'fa-bacon' },
-                    { key: 'sodium', label: 'Sodium', icon: 'fa-salt-shaker' },
-                    { key: 'sugar', label: 'Sugar', icon: 'fa-cube' },
+                    { keys: ['calories', 'energy_kcal', 'energy'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
+                    { keys: ['protein', 'protein_g'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
+                    { keys: ['total_fat', 'fat', 'fat_g'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
+                    { keys: ['fiber', 'fiber_g', 'dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
+                    { keys: ['potassium', 'potassium_mg'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
+                    { keys: ['calcium', 'calcium_mg'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+                    { keys: ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
+                    { keys: ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
+                    { keys: ['sodium', 'sodium_mg'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
+                    { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
                 ];
                 let html = '<div class="nutrition-cards">';
                 fields.forEach(f => {
-                    const val = sum[f.key] != null ? sum[f.key] : '-';
+                    const raw = getAny(sum, f.keys);
+                    const val = raw != null ? fmt(raw) : '-';
                     html += `<div class="nutrition-card">
-                        <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
-                        <div class="nutrition-label">${f.label}</div>
-                        <div class="nutrition-value">${val}</div>
-                    </div>`;
+                            <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
+                            <div class="nutrition-label">${f.label}</div>
+                            <div class="nutrition-value">${val}${f.unit ? ' ' + f.unit : ''}</div>
+                        </div>`;
                 });
                 html += '</div>';
                 modalNutrition.innerHTML = html;
@@ -468,9 +704,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         // Dashboard button
         if (modalDashboardBtn) {
-            modalDashboardBtn.onclick = function() {
+            modalDashboardBtn.onclick = function () {
                 let dashboard = [];
-                try { dashboard = JSON.parse(localStorage.getItem('nss_dashboard')) || []; } catch {}
+                try { dashboard = JSON.parse(localStorage.getItem('nss_dashboard')) || []; } catch { }
                 if (!dashboard.some(r => r.recipe_id === recipe.recipe_id)) {
                     dashboard.push(recipe);
                     localStorage.setItem('nss_dashboard', JSON.stringify(dashboard));
@@ -502,26 +738,26 @@ document.addEventListener('DOMContentLoaded', function () {
     const dietTypeSelect = document.getElementById('diet-type');
     const applyFiltersBtn = document.querySelector('.apply-filters-btn');
     const resultsHeader = document.querySelector('.results-header h2');
-        const cardsContainer = document.querySelector('.recipe-cards-container');
+    const cardsContainer = document.querySelector('.recipe-cards-container');
 
-        // Delegate click to recipe cards
-        if (cardsContainer) {
-            cardsContainer.addEventListener('click', async (e) => {
-                const card = e.target.closest('.recipe-card');
-                if (!card) return;
-                const id = card.dataset.id;
-                let recipe = card._recipe;
+    // Delegate click to recipe cards
+    if (cardsContainer) {
+        cardsContainer.addEventListener('click', async (e) => {
+            const card = e.target.closest('.recipe-card');
+            if (!card) return;
+            const id = card.dataset.id;
+            let recipe = card._recipe;
 
-                if (!recipe || !Array.isArray(recipe.ingredients) || !Array.isArray(recipe.directions)) {
-                    // Fetch details if missing
-                    const res = await fetch(`${RECIPES_API}?recipe_id=${encodeURIComponent(id)}`);
-                    if (!res.ok) return alert('Failed to load recipe details');
-                    const data = await res.json();
-                    recipe = (data.items && data.items[0]) || {};
-                }
-                openRecipeModal(recipe);
-            });
-        }
+            if (!recipe || !Array.isArray(recipe.ingredients) || !Array.isArray(recipe.directions)) {
+                // Fetch details if missing
+                const res = await fetch(`${RECIPES_API}?recipe_id=${encodeURIComponent(id)}`);
+                if (!res.ok) return alert('Failed to load recipe details');
+                const data = await res.json();
+                recipe = (data.items && data.items[0]) || {};
+            }
+            openRecipeModal(recipe);
+        });
+    }
     const modalContainer = document.getElementById('recipe-modal-container');
     const dashboardKey = 'nutrition_dashboard_recipes';
 
@@ -539,7 +775,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const categories = (recipe.categories || []).map(c => `<span class="tag category">${c}</span>`).join(' ');
         // Favorite button state
         let dashboard = [];
-        try { dashboard = JSON.parse(localStorage.getItem(dashboardKey)) || []; } catch {}
+        try { dashboard = JSON.parse(localStorage.getItem(dashboardKey)) || []; } catch { }
         const isFav = dashboard.some(r => r.recipe_id === recipe.recipe_id);
         modal.innerHTML = `
             <div class="modal-content upgraded-modal-content">
@@ -571,7 +807,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Close modal logic
         const closeBtn = modal.querySelector('.close');
         closeBtn.onclick = closeModal;
-        closeBtn.onkeydown = function(e) { if (e.key === 'Enter' || e.key === ' ') closeModal(); };
+        closeBtn.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') closeModal(); };
         function closeModal() {
             modalContainer.style.display = 'none';
             modalContainer.innerHTML = '';
@@ -580,30 +816,40 @@ document.addEventListener('DOMContentLoaded', function () {
         // Nutrition match button
         const nutritionBtn = modal.querySelector('.nutrition-match-btn');
         const nutritionResults = modal.querySelector('.nutrition-modal-results');
-        nutritionBtn.onclick = async function() {
+        nutritionBtn.onclick = async function () {
             nutritionBtn.disabled = true;
             // nutritionResults.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition...</div>';
             try {
                 const nutri = await fetchNutrition(recipe.ingredients);
                 const sum = nutri.summary_100g_sum || {};
+                if (Object.keys(sum).length === 0) {
+                    nutritionResults.innerHTML = '<div style="color:#888;text-align:center;">No nutrition matches found for listed ingredients.</div>';
+                    return;
+                }
                 const fields = [
-                    { key: 'calories', label: 'Calories', icon: 'fa-fire' },
-                    { key: 'protein', label: 'Protein', icon: 'fa-drumstick-bite' },
-                    { key: 'fat', label: 'Fat', icon: 'fa-bacon' },
-                    { key: 'sodium', label: 'Sodium', icon: 'fa-salt-shaker' },
-                    { key: 'sugar', label: 'Sugar', icon: 'fa-cube' },
+                    { keys: ['calories', 'energy_kcal', 'energy'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
+                    { keys: ['protein', 'protein_g'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
+                    { keys: ['total_fat', 'fat', 'fat_g'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
+                    { keys: ['fiber', 'fiber_g', 'dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
+                    { keys: ['potassium', 'potassium_mg'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
+                    { keys: ['calcium', 'calcium_mg'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+                    { keys: ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
+                    { keys: ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
+                    { keys: ['sodium', 'sodium_mg'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
+                    { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
                 ];
                 nutritionResults.innerHTML = '<div class="nutrition-cards"></div>';
                 const cards = nutritionResults.querySelector('.nutrition-cards');
                 fields.forEach(f => {
-                    const val = sum[f.key] != null ? sum[f.key] : '-';
+                    const raw = getAny(sum, f.keys);
+                    const val = raw != null ? fmt(raw) : '-';
                     const card = document.createElement('div');
                     card.className = 'nutrition-card';
                     card.innerHTML = `
-                        <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
-                        <div class="nutrition-label">${f.label}</div>
-                        <div class="nutrition-value">${val}</div>
-                    `;
+                            <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
+                            <div class="nutrition-label">${f.label}</div>
+                            <div class="nutrition-value">${val}${f.unit ? ' ' + f.unit : ''}</div>
+                        `;
                     cards.appendChild(card);
                 });
             } catch (e) {
@@ -615,9 +861,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Favorite (dashboard) button logic
         const favBtn = modal.querySelector('.favorite-btn');
-        favBtn.onclick = function() {
+        favBtn.onclick = function () {
             let dashboard = [];
-            try { dashboard = JSON.parse(localStorage.getItem(dashboardKey)) || []; } catch {}
+            try { dashboard = JSON.parse(localStorage.getItem(dashboardKey)) || []; } catch { }
             const idx = dashboard.findIndex(r => r.recipe_id === recipe.recipe_id);
             if (idx === -1) {
                 dashboard.push({ recipe_id: recipe.recipe_id, title: recipe.title, ingredients: recipe.ingredients });
@@ -689,7 +935,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 loadMoreBtn.textContent = 'Load more';
                 loadMoreBtn.style.display = 'block';
                 loadMoreBtn.style.margin = '1.5rem auto';
-                loadMoreBtn.onclick = function() { updateRecipes(false); };
+                loadMoreBtn.onclick = function () { updateRecipes(false); };
                 cardsContainer.appendChild(loadMoreBtn);
             } else if (!nextToken && filteredItems.length > 0 && cardsContainer) {
                 // Show "No more recipe available" when there is no more data
@@ -705,25 +951,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 resultsHeader.textContent = `${total} Recipe${total !== 1 ? 's' : ''} Found`;
             }
         } catch (e) {
-                // If server error 5xx try a graceful fallback (no title_prefix) once
-                if (e && e.status && String(e.status).startsWith('5')) {
-                    try {
-                        const fallback = await fetchRecipes({ keyword: '', category, habit, limit });
-                        if (fallback && fallback.items && fallback.items.length) {
-                            // render fallback results by reusing logic
-                            const tempItems = fallback.items;
-                            if (cardsContainer) {
-                                cardsContainer.innerHTML = '';
-                                tempItems.forEach(r => {
-                                    const card = document.createElement('div');
-                                    card.className = 'recipe-card';
-                                    card.tabIndex = 0;
-                                    card.style.cursor = 'pointer';
-                                    card.setAttribute('data-id', r.recipe_id || r.id || '');
-                                    card._recipe = r;
-                                    const healthTags = (r.habits || []).map(h => `<span class="tag health-tag">${h}</span>`).join('');
-                                    const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
-                                    card.innerHTML = `
+            // If server error 5xx try a graceful fallback (no title_prefix) once
+            if (e && e.status && String(e.status).startsWith('5')) {
+                try {
+                    const fallback = await fetchRecipes({ keyword: '', category, habit, limit });
+                    if (fallback && fallback.items && fallback.items.length) {
+                        // render fallback results by reusing logic
+                        const tempItems = fallback.items;
+                        if (cardsContainer) {
+                            cardsContainer.innerHTML = '';
+                            tempItems.forEach(r => {
+                                const card = document.createElement('div');
+                                card.className = 'recipe-card';
+                                card.tabIndex = 0;
+                                card.style.cursor = 'pointer';
+                                card.setAttribute('data-id', r.recipe_id || r.id || '');
+                                card._recipe = r;
+                                const healthTags = (r.habits || []).map(h => `<span class="tag health-tag">${h}</span>`).join('');
+                                const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
+                                card.innerHTML = `
                                         <div class="recipe-title">${r.title || ''}</div>
                                         <div class="recipe-description">${r.description || ''}</div>
                                         <div class="recipe-tags-row">
@@ -731,19 +977,19 @@ document.addEventListener('DOMContentLoaded', function () {
                                             <div class="recipe-tags category-tags-group">${categoryTags}</div>
                                         </div>
                                     `;
-                                    cardsContainer.appendChild(card);
-                                });
-                            }
-                            if (resultsHeader) resultsHeader.textContent = `${cardsContainer.querySelectorAll('.recipe-card').length} Recipes Found`;
-                            return; // done
+                                cardsContainer.appendChild(card);
+                            });
                         }
-                    } catch (inner) {
-                        // ignore fallback failure, fall through to show original error
+                        if (resultsHeader) resultsHeader.textContent = `${cardsContainer.querySelectorAll('.recipe-card').length} Recipes Found`;
+                        return; // done
                     }
+                } catch (inner) {
+                    // ignore fallback failure, fall through to show original error
                 }
-                if (cardsContainer) cardsContainer.innerHTML = `<div style="color:#c00;text-align:center;">Please enter a keyword or select a filter before searching.</div>`;
-                if (resultsHeader) resultsHeader.textContent = '0 Recipes Found';
             }
+            if (cardsContainer) cardsContainer.innerHTML = `<div style="color:#c00;text-align:center;">Please enter a keyword or select a filter before searching.</div>`;
+            if (resultsHeader) resultsHeader.textContent = '0 Recipes Found';
+        }
     }
 
     if (applyFiltersBtn) {
@@ -759,3 +1005,61 @@ document.addEventListener('DOMContentLoaded', function () {
     // Optionally: fetch once on page load
     updateRecipes(true);
 });
+
+function renderMealsAddedList() {
+  const ul = document.querySelector('.meals-added-list');
+  if (!ul) return;
+
+  const day = todayKey();
+  const all = readDashboard();
+  const todays = all.filter(x => x.day === day);
+
+  ul.innerHTML = '';
+
+  if (todays.length === 0) {
+    ul.innerHTML = `<li class="meal-item"><div class="meal-left">
+        <div class="meal-name" style="color:#888;">No meals added yet</div>
+      </div></li>`;
+    return;
+  }
+
+  todays.forEach(item => {
+    const li = document.createElement('li');
+    li.className = 'meal-item';
+    li.dataset.id = item.recipe_id;
+    li.dataset.day = item.day;
+
+    const kcal = (typeof item.calories === 'number' && !Number.isNaN(item.calories))
+      ? `${item.calories.toFixed(0)} kcal`
+      : '-';
+
+    li.innerHTML = `
+      <div class="meal-left">
+        <div class="meal-name">${item.title || 'Untitled recipe'}</div>
+        <div class="meal-meta">Added today</div>
+      </div>
+      <div class="meal-right">
+        <div class="meal-kcal">${kcal}</div>
+        <button class="meal-delete" title="Remove">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+    `;
+    ul.appendChild(li);
+  });
+
+  // Bind delete event
+  ul.querySelectorAll('.meal-delete').forEach(btn => {
+    btn.onclick = function() {
+      const li = btn.closest('.meal-item');
+      const id = li?.dataset?.id;
+      const day = li?.dataset?.day;
+      if (!id || !day) return;
+      removeFromDashboardByIdAndDay(id, day);
+      renderMealsAddedList(); // refresh list
+      if (typeof renderDashboardNutrition === 'function') {
+        renderDashboardNutrition(); // refresh nutrition summary
+      }
+    };
+  });
+}

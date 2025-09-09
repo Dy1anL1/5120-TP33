@@ -1,100 +1,58 @@
-# Silver Spoon Society - Netlify Deployment
+# Silver Spoon Society 前端
 
-This folder contains all the files needed to deploy the Silver Spoon Society website to Netlify.
+这是 Silver Spoon Society 网站的前端部分，专为健康衰老和营养管理设计，采用现代响应式布局和交互。
 
-## 🚀 How to Deploy to Netlify
+## 主要功能
 
-### Method 1: Drag and Drop (Easiest)
-1. Go to [netlify.com](https://netlify.com)
-2. Sign up or log in to your account
-3. Drag and drop this entire `netlify-deploy` folder onto the Netlify dashboard
-4. Your site will be automatically deployed!
+- 首页、菜谱搜索、每日推荐、营养仪表盘、购物清单等页面
+- 响应式设计，支持桌面、平板、移动端
+- 动态渲染菜谱卡片，支持弹窗查看详情和营养信息
+- 营养仪表盘可自动统计每日营养摄入
+- 支持本地存储（localStorage）记录用户菜单
 
-### Method 2: Git Integration
-1. Push this folder to a GitHub repository
-2. Connect your GitHub account to Netlify
-3. Select the repository and deploy
+## 文件结构
 
-### Method 3: Netlify CLI
-```bash
-# Install Netlify CLI
-npm install -g netlify-cli
-
-# Deploy from this folder
-netlify deploy --prod --dir=.
+```
+frontend/
+├── index.html                  # CTA页
+├── home.html                   # 首页
+├── explore-recipes.html        # 菜谱搜索页
+├── daily-recommendations.html  # 每日推荐
+├── nutrition-dashboard.html    # 营养数据表
+├── shopping-list.html          # 购物清单
+├── styles.css                  # 全站样式
+├── script.js                   # 主 JS 逻辑（动态渲染、API 调用、仪表盘等）
+├── assets/                     # 图片和静态资源
+└── README.md                   # 前端说明文档
 ```
 
-## 📁 What's Included
+## 使用方法
 
-- **HTML Files**: All page templates (cta.html as landing page, index.html, explore-recipes.html, etc.)
-- **CSS**: Complete styling with responsive design
-- **JavaScript**: Interactive functionality
-- **Images**: All assets including logos and background images
-- **Configuration**: 
-  - `netlify.toml`: Deployment configuration
-  - `_redirects`: URL routing rules (root path serves cta.html, others serve index.html)
+1. 直接打开 `index.html` 或其他页面即可浏览（推荐本地服务器）
+2. 推荐用 Python/Node.js 本地服务器：
+    ```bash
+    python3 -m http.server 8000
+    # 或
+    npx serve .
+    ```
+3. 在线部署：支持 GitHub Pages、Netlify、Vercel 等静态托管
 
-## ✨ Features
+## 技术栈
 
-- ✅ Responsive design for all devices
-- ✅ Single-page application routing
-- ✅ CTA landing page as default entry point
-- ✅ Optimized caching for static assets
-- ✅ Security headers configured
-- ✅ SEO-friendly structure
-- ✅ Interactive navigation with hover effects
-- ✅ Custom background images
-- ✅ Mobile-friendly design
+- HTML5 / CSS3 / JavaScript (ES6+)
+- Font Awesome 图标库
+- 响应式设计（Flexbox、Grid、媒体查询）
+- 动态 API 调用（与后端 Serverless API 对接）
 
-## 🎯 User Experience Flow
+## 自定义与扩展
 
-1. **First Visit**: Users see the beautiful CTA landing page
-2. **Get Started**: Clicking "Get Started" takes them to the main application
-3. **Navigation**: All other pages work normally with the hidden navbar
+- 可在 `styles.css` 修改主题色和样式
+- 可在 `script.js` 增加新功能或对接更多 API
+- 页面内容和结构可自由调整
 
-## 🌐 Custom Domain
+## 许可证
 
-After deployment, you can:
-1. Go to your site settings in Netlify
-2. Add a custom domain
-3. Configure DNS settings
+MIT License，欢迎自由使用和修改。
 
-## 🛠️ Technical Details
-
-- **Entry Point**: CTA page (cta.html) serves as the landing page
-- **Main App**: Index page (index.html) contains the main application
-- **Routing**: All routes are properly handled for single-page app behavior
-- **Performance**: Optimized caching and compression
-- **Security**: Security headers configured for production
-
-## 📱 Pages Included
-
-- **CTA Landing Page**: Welcome page with call-to-action
-- **Home Page**: Main dashboard with navigation
-- **Explore Recipes**: Recipe search and browsing
-- **Daily Recommendations**: Personalized recommendations
-- **Meal Planning**: Meal planning tools
-- **Nutrition Dashboard**: Nutrition tracking
-- **Shopping List**: Shopping list functionality
-
-## 🎨 Design Features
-
-- Modern, clean interface
-- Green color scheme (#4CAF50)
-- Smooth animations and transitions
-- Hidden navigation bar with hover effects
-- Responsive design for all screen sizes
-- Custom background images
-- Professional typography
-
-## 📞 Support
-
-The website includes all functionality for a complete nutrition and recipe management platform. All features are fully functional in the deployed version.
-
-## 🔄 Deployment Status
-
-✅ All files ready for deployment
-✅ Configuration files updated
-✅ Routing rules configured
-✅ Performance optimizations applied
-✅ Security headers configured
+---
+如有问题请联系项目维护者。

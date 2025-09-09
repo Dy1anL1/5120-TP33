@@ -1,5 +1,3 @@
-
-
 .logo-text p {
     font-size: 1.1rem;
     margin-top: 0.2em;
@@ -238,8 +236,11 @@ body {
     left: 0;
     right: 0;
     z-index: 1000;
-    transform: translateY(-100%);
-    transition: transform 0.3s ease 1s;
+    /* Always show navbar, no hover effect */
+    transform: translateY(0);
+    transition: none;
+    /* Move navbar down to avoid covering page title */
+    margin-top: 0;
 }
 
 .navbar:hover {
@@ -249,13 +250,7 @@ body {
 
 /* Hover trigger area for navbar */
 .navbar-trigger {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 20px;
-    z-index: 1001;
-    background: transparent;
+    display: none;
 }
 
 .navbar-trigger:hover + .navbar {
@@ -337,7 +332,7 @@ body {
     align-items: center;
     text-decoration: none;
     color: #666;
-    font-size: 16px;
+    font-size: 20px;
     transition: color 0.3s ease;
     gap: 5px;
 }
@@ -416,15 +411,35 @@ body {
     margin-top: 0;
 }
 
+/* 单页面滚动支持 */
+html {
+    scroll-behavior: smooth;
+}
+
+/* 导航栏滚动隐藏效果 */
+.navbar {
+    transition: transform 0.3s ease;
+}
+
+.navbar.hidden {
+    transform: translateY(-100%);
+}
+
+/* 滚动到各个部分的间距 */
+.scroll-to-section {
+    scroll-margin-top: 110px;
+}
+
 /* Hero Section Styles */
 .hero-section {
-    background: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)), url('WechatIMG1763.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    /* background: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)), url('WechatIMG1763.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat; */
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     padding: 120px 20px;
     text-align: center;
-    min-height: 80vh;
+    min-height: 60vh;
 }
 
 .hero-container {
@@ -692,6 +707,7 @@ body {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     padding: 60px 20px;
     text-align: center;
+    margin-top: 110px;
 }
 
 .page-title {
@@ -1003,7 +1019,7 @@ body {
     gap: 10px;
     color: #ff9800;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 16px;
 }
 
 .progress-warning i {
@@ -1057,6 +1073,19 @@ body {
     gap: 25px;
 }
 
+/* Container used by JS-rendered summary cards (adds spacing between cards) */
+.nutrition-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px; /* spacing between cards */
+    align-items: start;
+    margin-top: 12px;
+}
+
+.nutrition-cards .nutrition-card {
+    margin: 0; /* remove any inline margins from JS templates */
+}
+
 .nutrition-card {
     background: white;
     border-radius: 15px;
@@ -1087,7 +1116,8 @@ body {
     align-items: center;
     justify-content: center;
     color: #4CAF50;
-    font-size: 20px;
+    font-size: 30px;
+    margin: 0;
 }
 
 .card-title h3 {
@@ -1178,6 +1208,7 @@ body {
     border-radius: 15px;
     padding: 30px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    max-width: 100%;
 }
 
 .goals-header h2 {
@@ -1191,7 +1222,7 @@ body {
 
 .goals-header i {
     color: #4CAF50;
-    font-size: 1.3rem;
+    font-size: 1.6rem;
 }
 
 .goals-list {
@@ -1267,7 +1298,7 @@ body {
 
 .progress-text {
     color: #666;
-    font-size: 11px;
+    font-size: 15px;
     font-weight: 500;
     text-transform: uppercase;
 }
@@ -1311,6 +1342,47 @@ body {
     color: #333;
     font-weight: 600;
 }
+
+/* Goals row: left side Today's Goals list, right side Today's Meals Added panel */
+.goals-row {
+    display: grid;
+    grid-template-columns: 1fr 340px; /* left side flexible, right side fixed width */
+    gap: 20px;
+    align-items: start;
+    margin-top: 12px;
+}
+
+/* On narrow screens, collapse to single column: Meals panel moves below */
+@media (max-width: 900px) {
+    .goals-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Ensure goals-list fills the left side */
+.goals-list { width: 100%; }
+
+/* Right panel styles */
+.meals-added-section {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    padding: 14px;
+    min-width: 260px;
+}
+
+/* meals list item styles */
+.meals-added-header { display:flex; align-items:center; gap:10px; font-weight:600; color:#222; margin-bottom:10px; }
+.meals-added-list { list-style:none; margin:0; padding:0; }
+.meal-item { display:flex; align-items:center; justify-content:space-between; padding:10px 6px; border-bottom:1px solid #f3f3f3; }
+.meal-item:last-child { border-bottom:none; }
+.meal-left { display:flex; flex-direction:column; gap:4px; }
+.meal-name { font-weight:600; color:#222; }
+.meal-meta { font-size:0.92rem; color:#666; }
+.meal-right { display:flex; align-items:center; gap:10px; }
+.meal-kcal { color:#4caf50; font-weight:600; font-size:0.95rem; }
+.meal-delete { background:none; border:0; color:#999; cursor:pointer; font-size:1rem; padding:6px; border-radius:6px; }
+.meal-delete:hover { color:#e53935; }
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -1687,4 +1759,27 @@ body {
 
 .feature-item:nth-child(4) {
     animation-delay: 0.4s;
+}
+
+/* Shine animation for CTA title */
+@keyframes shine {
+    0% { background-position: -400px 0; }
+}
+
+.shine-animate {
+    display: inline-block;
+    background: linear-gradient(
+        120deg,
+        #4caf50 0%,
+        #4caf50 47%,
+        #ace7c3 49%,
+        #ace7c3 51%,
+        #64c267 53%,
+        #64c267 100%
+    );
+    background-size: 800px 100%;
+    background-repeat: no-repeat;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shine 5s linear infinite;
 }
