@@ -347,12 +347,12 @@ body {
     margin-top: 0;
 }
 
-/* 单页面滚动支持 */
+/* Single page scroll support */
 html {
     scroll-behavior: smooth;
 }
 
-/* 导航栏滚动隐藏效果 */
+/* Navbar scroll hide effect */
 .navbar {
     transition: transform 0.3s ease;
 }
@@ -361,7 +361,7 @@ html {
     transform: translateY(-100%);
 }
 
-/* 滚动到各个部分的间距 */
+/* Scroll margin for sections */
 .scroll-to-section {
     scroll-margin-top: 110px;
 }
@@ -2218,8 +2218,8 @@ html {
         #4caf50 47%,
         #ace7c3 49%,
         #ace7c3 51%,
-        #64c267 53%,
-        #64c267 100%
+        #4caf50 53%,
+        #4caf50 100%
     );
     background-size: 800px 100%;
     background-repeat: no-repeat;
