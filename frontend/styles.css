@@ -908,21 +908,17 @@ html {
 
     .recipe-tags-row {
         display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.3rem;
         margin-top: 0.7rem;
         align-items: flex-start;
     }
 
+    .diet-tags-group,
+    .allergy-tags-group,
+    .category-tags-group,
     .health-tags-group {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.3rem;
-        flex-direction: row;
-        align-items: center;
-    }
-
-    .category-tags-group {
         display: flex;
         flex-wrap: wrap;
         gap: 0.3rem;
@@ -931,8 +927,10 @@ html {
     }
 }
 
-.health-tags-group,
-.category-tags-group {
+.diet-tags-group,
+.allergy-tags-group,
+.category-tags-group,
+.health-tags-group {
     display: flex;
     flex-wrap: wrap;
     gap: 0.3rem;
@@ -974,15 +972,31 @@ html {
     border: 1px solid #e0e0e0;
 }
 
-.health-tag {
+.diet-tag {
     background: #e8f5e9;
     color: #43a047;
     font-weight: 400;
+    border-color: #c8e6c9;
+}
+
+.allergy-tag {
+    background: #fff3e0;
+    color: #ef6c00;
+    font-weight: 400;
+    border-color: #ffcc02;
 }
 
 .category-tag {
-    background: #f5f8f5;
-    color: #222;
+    background: #e3f2fd;
+    color: #1976d2;
+    font-weight: 400;
+    border-color: #bbdefb;
+}
+
+/* Legacy support */
+.health-tag {
+    background: #e8f5e9;
+    color: #43a047;
     font-weight: 400;
 }
 

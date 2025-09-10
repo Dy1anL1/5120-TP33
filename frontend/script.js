@@ -85,24 +85,49 @@ document.addEventListener('click', (e) => {
 async function openRecipeModal(recipe) {
     const m = ensureRecipeModal();
     const titleEl = m.querySelector('#recipe-modal-title');
-    const briefEl = m.querySelector('#recipe-brief');
     const ingEl = m.querySelector('#recipe-ingredients');
     const dirEl = m.querySelector('#recipe-directions');
     const sumEl = m.querySelector('#nutrition-summary');
 
     if (titleEl) titleEl.textContent = recipe.title || '';
-    if (briefEl) briefEl.textContent = Array.isArray(recipe.directions) && recipe.directions.length ? recipe.directions[0] : (recipe.link || '');
+    
     if (ingEl) {
         ingEl.innerHTML = '';
         (recipe.ingredients || []).forEach(s => {
             const li = document.createElement('li'); li.textContent = s; ingEl.appendChild(li);
         });
     }
+    
     if (dirEl) {
         dirEl.innerHTML = '';
-        (recipe.directions || []).forEach(s => {
-            const li = document.createElement('li'); li.textContent = s; dirEl.appendChild(li);
-        });
+        // Handle both directions (old format) and instructions (new format)
+        let instructionsText = '';
+        if (recipe.instructions && typeof recipe.instructions === 'string') {
+            instructionsText = recipe.instructions;
+        } else if (Array.isArray(recipe.directions) && recipe.directions.length > 0) {
+            instructionsText = recipe.directions.join(' ');
+        } else if (Array.isArray(recipe.instructions) && recipe.instructions.length > 0) {
+            instructionsText = recipe.instructions.join(' ');
+        }
+        
+        if (instructionsText) {
+            // Split by periods and filter out empty steps
+            const steps = instructionsText
+                .split(/\.\s+/)
+                .map(step => step.trim())
+                .filter(step => step.length > 0)
+                .map(step => step.endsWith('.') ? step : step + '.');
+            
+            steps.forEach(step => {
+                const li = document.createElement('li');
+                li.textContent = step;
+                dirEl.appendChild(li);
+            });
+        } else {
+            const li = document.createElement('li');
+            li.textContent = 'No instructions available';
+            dirEl.appendChild(li);
+        }
     }
     if (sumEl) sumEl.innerHTML = '<div class="card"><div class="key">Loading...</div><div class="val">...</div></div>';
 
@@ -862,6 +887,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             };
         }
+        
+        // View Dashboard button
+        const viewDashboardBtn = modal ? modal.querySelector('#view-dashboard') : null;
+        if (viewDashboardBtn) {
+            viewDashboardBtn.onclick = function () {
+                window.location.href = 'nutrition-dashboard.html';
+            };
+        }
         // Show modal
         modal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
@@ -885,16 +918,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const resultsHeader = document.querySelector('.results-header h2');
     const cardsContainer = document.querySelector('.recipe-cards-container');
 
-    // Delegate click to recipe cards and dashboard buttons
+    // Delegate click to recipe cards
     if (cardsContainer) {
         cardsContainer.addEventListener('click', async (e) => {
-            // Handle dashboard link button click
-            if (e.target.closest('.dashboard-link-btn')) {
-                e.stopPropagation(); // Prevent card click
-                window.location.href = 'nutrition-dashboard.html';
-                return;
-            }
-            
             const card = e.target.closest('.recipe-card');
             if (!card) return;
             const id = card.dataset.id;
@@ -1126,8 +1152,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         card.style.cursor = 'pointer';
                         card.setAttribute('data-id', r.recipe_id || r.id || '');
                         card._recipe = r;
-                        // Group tags: health (habits) and category
-                        const healthTags = (r.habits || []).map(h => `<span class="tag health-tag">${h}</span>`).join('');
+                        // Group tags into 3 types
+                        const habits = r.habits || [];
+                        const dietTags = habits.filter(h => ['vegetarian', 'vegan', 'low_sugar', 'low_sodium', 'heart_healthy', 'diabetic_friendly', 'soft_food'].includes(h))
+                            .map(h => `<span class="tag diet-tag">${h}</span>`).join('');
+                        const allergyTags = habits.filter(h => ['dairy_free', 'gluten_free', 'nut_free', 'shellfish_free', 'egg_free', 'soy_free', 'fish_free'].includes(h))
+                            .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');
                         const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
                         
                         // Add nutrition info if available from sorting
@@ -1147,13 +1177,9 @@ document.addEventListener('DOMContentLoaded', function () {
                             <div class="recipe-description">${r.description || ''}</div>
                             ${nutritionInfo}
                             <div class="recipe-tags-row">
-                                <div class="recipe-tags health-tags-group">${healthTags}</div>
+                                <div class="recipe-tags diet-tags-group">${dietTags}</div>
+                                <div class="recipe-tags allergy-tags-group">${allergyTags}</div>
                                 <div class="recipe-tags category-tags-group">${categoryTags}</div>
-                            </div>
-                            <div class="recipe-actions">
-                                <button class="dashboard-link-btn" data-recipe-id="${r.recipe_id}" title="Go to Nutrition Dashboard">
-                                    <i class="fas fa-chart-line"></i> Dashboard
-                                </button>
                             </div>
                         `;
                         cardsContainer.appendChild(card);
@@ -1203,13 +1229,18 @@ document.addEventListener('DOMContentLoaded', function () {
                                 card.style.cursor = 'pointer';
                                 card.setAttribute('data-id', r.recipe_id || r.id || '');
                                 card._recipe = r;
-                                const healthTags = (r.habits || []).map(h => `<span class="tag health-tag">${h}</span>`).join('');
+                                const habits = r.habits || [];
+                                const dietTags = habits.filter(h => ['vegetarian', 'vegan', 'low_sugar', 'low_sodium', 'heart_healthy', 'diabetic_friendly', 'soft_food'].includes(h))
+                                    .map(h => `<span class="tag diet-tag">${h}</span>`).join('');
+                                const allergyTags = habits.filter(h => ['dairy_free', 'gluten_free', 'nut_free', 'shellfish_free', 'egg_free', 'soy_free', 'fish_free'].includes(h))
+                                    .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');
                                 const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
                                 card.innerHTML = `
                                         <div class="recipe-title">${r.title || ''}</div>
                                         <div class="recipe-description">${r.description || ''}</div>
                                         <div class="recipe-tags-row">
-                                            <div class="recipe-tags health-tags-group">${healthTags}</div>
+                                            <div class="recipe-tags diet-tags-group">${dietTags}</div>
+                                            <div class="recipe-tags allergy-tags-group">${allergyTags}</div>
                                             <div class="recipe-tags category-tags-group">${categoryTags}</div>
                                         </div>
                                     `;

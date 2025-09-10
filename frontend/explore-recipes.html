@@ -264,7 +264,6 @@
             <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
                 <button class="modal-close" aria-label="Close">&times;</button>
                 <h2 id="recipe-modal-title" class="recipe-title"></h2>
-                <p class="recipe-brief" id="recipe-brief"></p>
 
                 <div class="modal-cols">
                     <div class="modal-col">
@@ -283,9 +282,10 @@
                         <button id="add-to-dashboard" class="btn btn-primary" style="margin-top:1rem;">
                             Add to Nutrition Dashboard
                         </button>
-                        <p class="fine-print" style="color:#777;margin-top:.5rem;">
-                            Iteration 1 demo: nutrition is approximated per 100g per matched ingredient.
-                        </p>
+                        <button id="view-dashboard" class="btn btn-secondary" style="margin-top:0.5rem;">
+                            <i class="fas fa-chart-line"></i>
+                            View Dashboard
+                        </button>
                     </div>
                 </div>
             </div>
@@ -325,9 +325,6 @@
                                                 Add to Nutrition Dashboard
                                             </button>
 
-                                            <p class="fine-print" style="color:#777;margin-top:.5rem;">
-                                                Iteration 1 demo: nutrition is approximated per 100g per matched ingredient.
-                                            </p>
                                         </div>
                                     </div>
                                 </div>
