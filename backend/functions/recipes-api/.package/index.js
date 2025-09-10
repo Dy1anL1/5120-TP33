@@ -40,13 +40,15 @@ function normalizeRecipe(item) {
     }
   }
   
-  // Add image-related fields
-  if (item.image_name || item.image_url) {
-    item.has_image = true;
-    item.image_display = item.image_url || `/images/${item.image_name}` || null;
-  } else {
-    item.has_image = false;
-    item.image_display = null;
+  // Add image-related fields - only if not already set
+  if (!item.has_image && !item.image_display) {
+    if (item.image_name || item.image_url) {
+      item.has_image = true;
+      item.image_display = item.image_url || `https://tp33-data-recipe.s3.ap-southeast-2.amazonaws.com/raw/foodspics/${item.image_name}.jpg` || null;
+    } else {
+      item.has_image = false;
+      item.image_display = null;
+    }
   }
   
   return item;
@@ -111,7 +113,12 @@ function getCategories(recipe) {
 }
 
 exports.handler = async (event) => {
-  const headers = { 'access-control-allow-origin': '*' };
+  const headers = { 
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token',
+    'Content-Type': 'application/json'
+  };
   try {
     const params = event.queryStringParameters || {};
     const { recipe_id, title_prefix, limit, next_token, habit, category, diet_type, allergy_filter } = params;

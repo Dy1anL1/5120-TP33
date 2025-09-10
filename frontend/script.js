@@ -88,8 +88,19 @@ async function openRecipeModal(recipe) {
     const ingEl = m.querySelector('#recipe-ingredients');
     const dirEl = m.querySelector('#recipe-directions');
     const sumEl = m.querySelector('#nutrition-summary');
+    const imgContainerEl = m.querySelector('#recipe-modal-image');
+    const imgEl = m.querySelector('#recipe-modal-img');
 
     if (titleEl) titleEl.textContent = recipe.title || '';
+    
+    // Handle recipe image in modal
+    if (recipe.has_image && recipe.image_display && imgContainerEl && imgEl) {
+        imgEl.src = recipe.image_display;
+        imgEl.alt = recipe.title || 'Recipe Image';
+        imgContainerEl.style.display = 'block';
+    } else if (imgContainerEl) {
+        imgContainerEl.style.display = 'none';
+    }
     
     if (ingEl) {
         ingEl.innerHTML = '';
@@ -654,11 +665,13 @@ if (window.location.pathname.includes('nutrition-dashboard')) {
   });
 }
 
-async function fetchRecipes({ keyword, category, habit, limit = 10, nextToken = null }) {
+async function fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit = 10, nextToken = null }) {
     const params = new URLSearchParams();
     if (keyword) params.append('title_prefix', keyword);
     if (category && category !== 'all') params.append('category', category);
     if (habit && habit !== 'all') params.append('habit', habit);
+    if (diet_type && diet_type !== 'all') params.append('diet_type', diet_type);
+    if (allergy_filter && allergy_filter !== 'all') params.append('allergy_filter', allergy_filter);
     if (limit) params.append('limit', limit);
     if (nextToken) params.append('next_token', nextToken);
     const url = `${RECIPES_API}?${params.toString()}`;
@@ -913,6 +926,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.querySelector('.search-input');
     const recipeCategorySelect = document.getElementById('recipe-category');
     const dietTypeSelect = document.getElementById('diet-type');
+    const allergyFilterSelect = document.getElementById('allergy-filter');
     const sortBySelect = document.getElementById('sort-by');
     const applyFiltersBtn = document.querySelector('.apply-filters-btn');
     const resultsHeader = document.querySelector('.results-header h2');
@@ -1120,15 +1134,16 @@ document.addEventListener('DOMContentLoaded', function () {
     async function updateRecipes(reset = true) {
         const keyword = searchInput ? searchInput.value.trim() : '';
         const category = recipeCategorySelect ? recipeCategorySelect.value : '';
-        const habit = dietTypeSelect ? dietTypeSelect.value : '';
+        const diet_type = dietTypeSelect ? dietTypeSelect.value : '';
+        const allergy_filter = allergyFilterSelect ? allergyFilterSelect.value : '';
         const sortBy = sortBySelect ? sortBySelect.value : 'default';
         if (reset) {
             nextToken = null;
-            lastQuery = { keyword, category, habit, sortBy };
+            lastQuery = { keyword, category, diet_type, allergy_filter, sortBy };
         }
         if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading...</div>';
         try {
-            const { items = [], next_token } = await fetchRecipes({ keyword, category, habit, nextToken: reset ? null : nextToken });
+            const { items = [], next_token } = await fetchRecipes({ keyword, category, diet_type, allergy_filter, nextToken: reset ? null : nextToken });
             let filteredItems = items;
             // Strict category match: only show recipes whose categories exactly match the selected category
             if (category && category !== 'all') {
@@ -1172,14 +1187,22 @@ document.addEventListener('DOMContentLoaded', function () {
                             </div>`;
                         }
                         
+                        // Add image if available
+                        const imageHtml = r.has_image && r.image_display ? 
+                            `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.style.display='none'"></div>` : 
+                            `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
+                        
                         card.innerHTML = `
-                            <div class="recipe-title">${r.title || ''}</div>
-                            <div class="recipe-description">${r.description || ''}</div>
-                            ${nutritionInfo}
-                            <div class="recipe-tags-row">
-                                <div class="recipe-tags diet-tags-group">${dietTags}</div>
-                                <div class="recipe-tags allergy-tags-group">${allergyTags}</div>
-                                <div class="recipe-tags category-tags-group">${categoryTags}</div>
+                            ${imageHtml}
+                            <div class="recipe-content">
+                                <div class="recipe-title">${r.title || ''}</div>
+                                <div class="recipe-description">${r.description || ''}</div>
+                                ${nutritionInfo}
+                                <div class="recipe-tags-row">
+                                    <div class="recipe-tags diet-tags-group">${dietTags}</div>
+                                    <div class="recipe-tags allergy-tags-group">${allergyTags}</div>
+                                    <div class="recipe-tags category-tags-group">${categoryTags}</div>
+                                </div>
                             </div>
                         `;
                         cardsContainer.appendChild(card);
@@ -1216,7 +1239,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // If server error 5xx try a graceful fallback (no title_prefix) once
             if (e && e.status && String(e.status).startsWith('5')) {
                 try {
-                    const fallback = await fetchRecipes({ keyword: '', category, habit, limit });
+                    const fallback = await fetchRecipes({ keyword: '', category, diet_type, allergy_filter, limit: 10 });
                     if (fallback && fallback.items && fallback.items.length) {
                         // render fallback results by reusing logic
                         const tempItems = fallback.items;
@@ -1235,13 +1258,21 @@ document.addEventListener('DOMContentLoaded', function () {
                                 const allergyTags = habits.filter(h => ['dairy_free', 'gluten_free', 'nut_free', 'shellfish_free', 'egg_free', 'soy_free', 'fish_free'].includes(h))
                                     .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');
                                 const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
+                                // Add image if available  
+                                const imageHtml = r.has_image && r.image_display ? 
+                                    `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.style.display='none'"></div>` : 
+                                    `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
+                                
                                 card.innerHTML = `
-                                        <div class="recipe-title">${r.title || ''}</div>
-                                        <div class="recipe-description">${r.description || ''}</div>
-                                        <div class="recipe-tags-row">
-                                            <div class="recipe-tags diet-tags-group">${dietTags}</div>
-                                            <div class="recipe-tags allergy-tags-group">${allergyTags}</div>
-                                            <div class="recipe-tags category-tags-group">${categoryTags}</div>
+                                        ${imageHtml}
+                                        <div class="recipe-content">
+                                            <div class="recipe-title">${r.title || ''}</div>
+                                            <div class="recipe-description">${r.description || ''}</div>
+                                            <div class="recipe-tags-row">
+                                                <div class="recipe-tags diet-tags-group">${dietTags}</div>
+                                                <div class="recipe-tags allergy-tags-group">${allergyTags}</div>
+                                                <div class="recipe-tags category-tags-group">${categoryTags}</div>
+                                            </div>
                                         </div>
                                     `;
                                 cardsContainer.appendChild(card);
