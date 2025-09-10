@@ -3,7 +3,7 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, GetCommand, QueryCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 
 const REGION = process.env.AWS_REGION || 'ap-southeast-2';
-const TABLE = process.env.RECIPES_TABLE || 'Recipes_i1';
+const TABLE = process.env.RECIPES_TABLE || 'Recipes_i2';
 const GSI_TITLE_PREFIX = 'gsi_title_prefix';
 
 const client = new DynamoDBClient({ region: REGION });
@@ -11,13 +11,44 @@ const ddb = DynamoDBDocumentClient.from(client);
 
 function normalizeRecipe(item) {
   if (!item) return item;
-  for (const key of ['ingredients', 'directions', 'NER']) {
+  
+  // Handle both old format (directions, NER) and new format (instructions)
+  for (const key of ['ingredients', 'directions', 'instructions', 'NER']) {
     if (typeof item[key] === 'string') {
       try { item[key] = JSON.parse(item[key]); } catch {}
     }
   }
-  item.habits = getHabits(item);
-  item.categories = getCategories(item);
+  
+  // For backward compatibility, map instructions to directions if directions doesn't exist
+  if (!item.directions && item.instructions) {
+    item.directions = Array.isArray(item.instructions) ? item.instructions : [item.instructions];
+  }
+  
+  // Use stored tags if available, otherwise generate them
+  if (!item.habits || !item.categories) {
+    // Parse stored tags from CSV strings if they exist
+    if (item.habits_csv) {
+      item.habits = item.habits_csv.split(',').map(s => s.trim()).filter(Boolean);
+    } else {
+      item.habits = getHabits(item);
+    }
+    
+    if (item.categories_csv) {
+      item.categories = item.categories_csv.split(',').map(s => s.trim()).filter(Boolean);
+    } else {
+      item.categories = getCategories(item);
+    }
+  }
+  
+  // Add image-related fields
+  if (item.image_name || item.image_url) {
+    item.has_image = true;
+    item.image_display = item.image_url || `/images/${item.image_name}` || null;
+  } else {
+    item.has_image = false;
+    item.image_display = null;
+  }
+  
   return item;
 }
 
@@ -83,7 +114,7 @@ exports.handler = async (event) => {
   const headers = { 'access-control-allow-origin': '*' };
   try {
     const params = event.queryStringParameters || {};
-    const { recipe_id, title_prefix, limit, next_token, habit, category } = params;
+    const { recipe_id, title_prefix, limit, next_token, habit, category, diet_type, allergy_filter } = params;
     if (recipe_id) {
       const cmd = new GetCommand({ TableName: TABLE, Key: { recipe_id } });
       const { Item } = await ddb.send(cmd);
@@ -114,6 +145,8 @@ exports.handler = async (event) => {
       let filtered = items;
       if (habit)    filtered = filtered.filter(r => Array.isArray(r.habits) && r.habits.includes(habit));
       if (category) filtered = filtered.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
+      if (diet_type && diet_type !== 'all') filtered = filtered.filter(r => Array.isArray(r.habits) && r.habits.includes(diet_type));
+      if (allergy_filter && allergy_filter !== 'all') filtered = filtered.filter(r => Array.isArray(r.habits) && r.habits.includes(allergy_filter));
       const nextToken = data.LastEvaluatedKey ? Buffer.from(JSON.stringify(data.LastEvaluatedKey)).toString('base64') : undefined;
       return {
         statusCode: 200,
@@ -122,7 +155,7 @@ exports.handler = async (event) => {
       };
     }
     // Only category/habit filtering, scan table if no title_prefix
-    if (category || habit) {
+    if (category || habit || diet_type || allergy_filter) {
       // Scan multiple pages until enough results collected
       let items = [];
       let scanned = 0;
@@ -140,6 +173,8 @@ exports.handler = async (event) => {
         let pageItems = (data.Items || []).map(normalizeRecipe);
         if (habit)    pageItems = pageItems.filter(r => Array.isArray(r.habits) && r.habits.includes(habit));
         if (category) pageItems = pageItems.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
+        if (diet_type && diet_type !== 'all') pageItems = pageItems.filter(r => Array.isArray(r.habits) && r.habits.includes(diet_type));
+        if (allergy_filter && allergy_filter !== 'all') pageItems = pageItems.filter(r => Array.isArray(r.habits) && r.habits.includes(allergy_filter));
         items = items.concat(pageItems);
         scanned += (data.Items || []).length;
         if (!data.LastEvaluatedKey) break;
