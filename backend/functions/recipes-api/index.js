@@ -42,13 +42,18 @@ function normalizeRecipe(item) {
   
   // Add image-related fields - only if not already set
   if (!item.has_image && !item.image_display) {
-    if (item.image_name || item.image_url) {
+    if (item.image_name || item.image_url || item.image_filename) {
       item.has_image = true;
-      item.image_display = item.image_url || `https://tp33-data-recipe.s3.ap-southeast-2.amazonaws.com/raw/foodspics/${item.image_name}.jpg` || null;
+      // Handle both old format (image_name) and new format (image_filename)
+      const imageName = item.image_filename || item.image_name;
+      item.image_display = item.image_url || (imageName ? `https://tp33-data-recipe.s3.ap-southeast-2.amazonaws.com/raw/foodspics/${imageName}.jpg` : null);
     } else {
       item.has_image = false;
       item.image_display = null;
     }
+  } else if (item.image_display && !item.image_display.includes('.jpg') && !item.image_display.includes('.jpeg')) {
+    // Fix missing .jpg extension in existing URLs
+    item.image_display = item.image_display + '.jpg';
   }
   
   return item;
@@ -119,6 +124,16 @@ exports.handler = async (event) => {
     'Access-Control-Allow-Headers': 'Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token',
     'Content-Type': 'application/json'
   };
+  
+  // Handle OPTIONS preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers,
+      body: ''
+    };
+  }
+  
   try {
     const params = event.queryStringParameters || {};
     const { recipe_id, title_prefix, limit, next_token, habit, category, diet_type, allergy_filter } = params;
@@ -203,7 +218,62 @@ exports.handler = async (event) => {
         };
       }
     }
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing query' }) };
+    
+    // Handle filter-only requests (no recipe_id or title_prefix)
+    if (category || habit || diet_type || allergy_filter || (!recipe_id && !title_prefix)) {
+      // General scan with filters
+      let items = [];
+      let scanned = 0;
+      let lastKey = null;
+      if (next_token) {
+        try {
+          lastKey = JSON.parse(Buffer.from(next_token, 'base64').toString());
+        } catch (e) {
+          return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid next_token' }) };
+        }
+      }
+      const pageLimit = 100;
+      const resultLimit = limit ? Number(limit) : 10;
+      let nextTokenResult = undefined;
+      
+      while (items.length < resultLimit && scanned < 10000) {
+        const scanParams = {
+          TableName: TABLE,
+          Limit: pageLimit,
+          ExclusiveStartKey: lastKey,
+        };
+        const data = await ddb.send(new ScanCommand(scanParams));
+        let pageItems = (data.Items || []).map(normalizeRecipe);
+        
+        // Apply filters
+        if (habit) pageItems = pageItems.filter(r => Array.isArray(r.habits) && r.habits.includes(habit));
+        if (category) pageItems = pageItems.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
+        if (diet_type && diet_type !== 'all') pageItems = pageItems.filter(r => Array.isArray(r.habits) && r.habits.includes(diet_type));
+        if (allergy_filter && allergy_filter !== 'all') pageItems = pageItems.filter(r => Array.isArray(r.habits) && r.habits.includes(allergy_filter));
+        
+        items = items.concat(pageItems);
+        scanned += (data.Items || []).length;
+        if (!data.LastEvaluatedKey) break;
+        lastKey = data.LastEvaluatedKey;
+        nextTokenResult = Buffer.from(JSON.stringify(lastKey)).toString('base64');
+      }
+      
+      if (items.length >= resultLimit && nextTokenResult) {
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ items: items.slice(0, resultLimit), count: resultLimit, next_token: nextTokenResult })
+        };
+      } else {
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ items, count: items.length, next_token: null })
+        };
+      }
+    }
+    
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing required parameters' }) };
   } catch (e) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
   }

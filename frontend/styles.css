@@ -26,15 +26,94 @@
     position: relative;
     z-index: 1001;
     background: #fff;
-    margin: 4rem auto;
+    margin: 2rem auto;
     max-width: 95%;
     width: 100%;
-    max-width: 900px;
-    padding: 1.5rem;
+    max-width: 1200px;
+    padding: 2rem;
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
     max-height: 90vh;
     overflow-y: auto;
+}
+
+.modal-two-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 1.5rem;
+}
+
+.modal-column {
+    padding: 0;
+}
+
+.modal-column h4 {
+    color: #4CAF50;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e8f5e8;
+}
+
+.modal-ingredients-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.modal-ingredients-list li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+    color: #555;
+}
+
+.modal-ingredients-list li:last-child {
+    border-bottom: none;
+}
+
+.modal-instructions-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: step-counter;
+}
+
+.modal-instructions-list li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f0f0f0;
+    color: #555;
+    counter-increment: step-counter;
+    position: relative;
+    padding-left: 2.5rem;
+}
+
+.modal-instructions-list li:before {
+    content: counter(step-counter);
+    position: absolute;
+    left: 0;
+    top: 0.75rem;
+    background: #4CAF50;
+    color: white;
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.modal-instructions-list li:last-child {
+    border-bottom: none;
+}
+
+@media (max-width: 768px) {
+    .modal-two-columns {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
 }
 
 .modal-close {
@@ -819,7 +898,7 @@ html {
 
 .recipe-image {
     width: 100%;
-    height: 200px;
+    height: 250px;
     overflow: hidden;
     border-radius: 12px 12px 0 0;
     margin: -2rem -1.5rem 1rem -1.5rem;
@@ -838,7 +917,7 @@ html {
 
 .recipe-image-placeholder {
     width: 100%;
-    height: 200px;
+    height: 250px;
     background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
     display: flex;
     align-items: center;
@@ -908,15 +987,6 @@ html {
     font-size: 0.75rem;
 }
 
-.recipe-image {
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-    height: 120px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 3rem;
-}
 
 .recipe-content {
     padding: 25px;
