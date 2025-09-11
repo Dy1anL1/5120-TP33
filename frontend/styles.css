@@ -26,15 +26,94 @@
     position: relative;
     z-index: 1001;
     background: #fff;
-    margin: 4rem auto;
+    margin: 2rem auto;
     max-width: 95%;
     width: 100%;
-    max-width: 900px;
-    padding: 1.5rem;
+    max-width: 1200px;
+    padding: 2rem;
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
     max-height: 90vh;
     overflow-y: auto;
+}
+
+.modal-two-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 1.5rem;
+}
+
+.modal-column {
+    padding: 0;
+}
+
+.modal-column h4 {
+    color: #4CAF50;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e8f5e8;
+}
+
+.modal-ingredients-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.modal-ingredients-list li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+    color: #555;
+}
+
+.modal-ingredients-list li:last-child {
+    border-bottom: none;
+}
+
+.modal-instructions-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: step-counter;
+}
+
+.modal-instructions-list li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f0f0f0;
+    color: #555;
+    counter-increment: step-counter;
+    position: relative;
+    padding-left: 2.5rem;
+}
+
+.modal-instructions-list li:before {
+    content: counter(step-counter);
+    position: absolute;
+    left: 0;
+    top: 0.75rem;
+    background: #4CAF50;
+    color: white;
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.modal-instructions-list li:last-child {
+    border-bottom: none;
+}
+
+@media (max-width: 768px) {
+    .modal-two-columns {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
 }
 
 .modal-close {
@@ -817,6 +896,46 @@ html {
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
 }
 
+.recipe-image {
+    width: 100%;
+    height: 250px;
+    overflow: hidden;
+    border-radius: 12px 12px 0 0;
+    margin: -2rem -1.5rem 1rem -1.5rem;
+}
+
+.recipe-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.recipe-image img:hover {
+    transform: scale(1.05);
+}
+
+.recipe-image-placeholder {
+    width: 100%;
+    height: 250px;
+    background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px 12px 0 0;
+    margin: -2rem -1.5rem 1rem -1.5rem;
+    color: #999;
+    font-size: 2rem;
+}
+
+.recipe-content {
+    padding: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
 .recipe-nutrition-info {
     margin: 0.75rem 0;
     padding: 0.5rem;
@@ -868,15 +987,6 @@ html {
     font-size: 0.75rem;
 }
 
-.recipe-image {
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-    height: 120px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 3rem;
-}
 
 .recipe-content {
     padding: 25px;
@@ -908,21 +1018,17 @@ html {
 
     .recipe-tags-row {
         display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.3rem;
         margin-top: 0.7rem;
         align-items: flex-start;
     }
 
+    .diet-tags-group,
+    .allergy-tags-group,
+    .category-tags-group,
     .health-tags-group {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.3rem;
-        flex-direction: row;
-        align-items: center;
-    }
-
-    .category-tags-group {
         display: flex;
         flex-wrap: wrap;
         gap: 0.3rem;
@@ -931,8 +1037,10 @@ html {
     }
 }
 
-.health-tags-group,
-.category-tags-group {
+.diet-tags-group,
+.allergy-tags-group,
+.category-tags-group,
+.health-tags-group {
     display: flex;
     flex-wrap: wrap;
     gap: 0.3rem;
@@ -974,15 +1082,31 @@ html {
     border: 1px solid #e0e0e0;
 }
 
-.health-tag {
+.diet-tag {
     background: #e8f5e9;
     color: #43a047;
     font-weight: 400;
+    border-color: #c8e6c9;
+}
+
+.allergy-tag {
+    background: #fff3e0;
+    color: #ef6c00;
+    font-weight: 400;
+    border-color: #ffcc02;
 }
 
 .category-tag {
-    background: #f5f8f5;
-    color: #222;
+    background: #e3f2fd;
+    color: #1976d2;
+    font-weight: 400;
+    border-color: #bbdefb;
+}
+
+/* Legacy support */
+.health-tag {
+    background: #e8f5e9;
+    color: #43a047;
     font-weight: 400;
 }
 
@@ -2205,25 +2329,3 @@ html {
     animation-delay: 0.4s;
 }
 
-/* Shine animation for CTA title */
-@keyframes shine {
-    0% { background-position: -400px 0; }
-}
-
-.shine-animate {
-    display: inline-block;
-    background: linear-gradient(
-        120deg,
-        #4caf50 0%,
-        #4caf50 47%,
-        #ace7c3 49%,
-        #ace7c3 51%,
-        #4caf50 53%,
-        #4caf50 100%
-    );
-    background-size: 800px 100%;
-    background-repeat: no-repeat;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: shine 5s linear infinite;
-}

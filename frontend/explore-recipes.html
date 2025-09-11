@@ -113,10 +113,25 @@
                                 <option value="all">All</option>
                                 <option value="vegetarian">Vegetarian</option>
                                 <option value="vegan">Vegan</option>
+                                <option value="low_sugar">Low-Sugar</option>
+                                <option value="low_sodium">Low-Sodium</option>
+                                <option value="heart_healthy">Heart-Healthy</option>
+                                <option value="diabetic_friendly">Diabetic-Friendly</option>
+                                <option value="soft_food">Soft Food</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="allergy-filter">Allergy-Free</label>
+                            <select id="allergy-filter" class="filter-select">
+                                <option value="all">All</option>
                                 <option value="dairy_free">Dairy-Free</option>
                                 <option value="gluten_free">Gluten-Free</option>
                                 <option value="nut_free">Nut-Free</option>
-                                <option value="low_sugar">Low-Sugar</option>
+                                <option value="shellfish_free">Shellfish-Free</option>
+                                <option value="egg_free">Egg-Free</option>
+                                <option value="soy_free">Soy-Free</option>
+                                <option value="fish_free">Fish-Free</option>
                             </select>
                         </div>
                     </div>
@@ -147,99 +162,12 @@
         <!-- Recipe Results Section -->
         <section class="recipe-results">
             <div class="section-container">
-                <div class="results-header">
-                    <h2>6 Recipes Found</h2>
+                <div class="results-header" id="results-header">
+                    <h2>Loading recipes...</h2>
                 </div>
                 
-                <div class="recipe-cards-container">
-                    <div class="recipe-card">
-                        <div class="recipe-image">
-                            <i class="fas fa-fish"></i>
-                        </div>
-                        <div class="recipe-content">
-                            <h3 class="recipe-title">Heart-Healthy Salmon with Vegetables</h3>
-                            <p class="recipe-description">Rich in omega-3 fatty acids, perfect for cardiovascular health</p>
-                            <div class="recipe-tags">
-                                <span class="tag">Heart Health</span>
-                                <span class="tag">Brain Function</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="recipe-card">
-                        <div class="recipe-image">
-                            <i class="fas fa-egg"></i>
-                        </div>
-                        <div class="recipe-content">
-                            <h3 class="recipe-title">Calcium-Rich Spinach and Cheese Omelet</h3>
-                            <p class="recipe-description">High in calcium and protein for strong bones</p>
-                            <div class="recipe-tags">
-                                <span class="tag">Bone Health</span>
-                                <span class="tag">Protein</span>
-                                <span class="tag">Iron</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="recipe-card">
-                        <div class="recipe-image">
-                            <i class="fas fa-soup"></i>
-                        </div>
-                        <div class="recipe-content">
-                            <h3 class="recipe-title">Fiber-Rich Vegetable Soup</h3>
-                            <p class="recipe-description">Gentle on digestion, packed with nutrients</p>
-                            <div class="recipe-tags">
-                                <span class="tag">Digestive Health</span>
-                                <span class="tag">Immunity</span>
-                                <span class="tag">Low Sodium</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="recipe-card">
-                        <div class="recipe-image">
-                            <i class="fas fa-apple-alt"></i>
-                        </div>
-                        <div class="recipe-content">
-                            <h3 class="recipe-title">Antioxidant Berry Smoothie Bowl</h3>
-                            <p class="recipe-description">Packed with vitamins and antioxidants for immune support</p>
-                            <div class="recipe-tags">
-                                <span class="tag">Immunity</span>
-                                <span class="tag">Antioxidants</span>
-                                <span class="tag">Vitamin C</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="recipe-card">
-                        <div class="recipe-image">
-                            <i class="fas fa-seedling"></i>
-                        </div>
-                        <div class="recipe-content">
-                            <h3 class="recipe-title">Quinoa and Roasted Vegetable Bowl</h3>
-                            <p class="recipe-description">Complete protein with fiber-rich vegetables</p>
-                            <div class="recipe-tags">
-                                <span class="tag">Complete Protein</span>
-                                <span class="tag">Fiber</span>
-                                <span class="tag">Plant-Based</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="recipe-card">
-                        <div class="recipe-image">
-                            <i class="fas fa-leaf"></i>
-                        </div>
-                        <div class="recipe-content">
-                            <h3 class="recipe-title">Mediterranean Chickpea Salad</h3>
-                            <p class="recipe-description">Light and refreshing with heart-healthy fats</p>
-                            <div class="recipe-tags">
-                                <span class="tag">Heart Health</span>
-                                <span class="tag">Mediterranean</span>
-                                <span class="tag">Low Calorie</span>
-                            </div>
-                        </div>
-                    </div>
+                <div class="recipe-cards-container" id="recipe-cards-container">
+                    <!-- Recipe cards will be loaded dynamically -->
                 </div>
             </div>
         </section>
@@ -248,8 +176,13 @@
             <div class="modal-backdrop"></div>
             <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
                 <button class="modal-close" aria-label="Close">&times;</button>
+                
+                <!-- Recipe Image in Modal -->
+                <div id="recipe-modal-image" class="modal-recipe-image" style="display:none;">
+                    <img id="recipe-modal-img" src="" alt="" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;">
+                </div>
+                
                 <h2 id="recipe-modal-title" class="recipe-title"></h2>
-                <p class="recipe-brief" id="recipe-brief"></p>
 
                 <div class="modal-cols">
                     <div class="modal-col">
@@ -268,66 +201,14 @@
                         <button id="add-to-dashboard" class="btn btn-primary" style="margin-top:1rem;">
                             Add to Nutrition Dashboard
                         </button>
-                        <p class="fine-print" style="color:#777;margin-top:.5rem;">
-                            Iteration 1 demo: nutrition is approximated per 100g per matched ingredient.
-                        </p>
+                        <button id="view-dashboard" class="btn btn-secondary" style="margin-top:0.5rem;">
+                            <i class="fas fa-chart-line"></i>
+                            View Dashboard
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-            <div id="recipe-modal" class="modal" aria-hidden="true">
-                <div class="modal-backdrop"></div>
-                <div class="modal-card">
-                    <button class="modal-close" aria-label="Close">&times;</button>
-                    <h2 class="modal-title"></h2>
-                    <p class="modal-description"></p>
-                    <div class="modal-cols">
-                        <div>
-                            <h3>Ingredients</h3>
-                            <!-- Recipe Modal -->
-                            <div id="recipe-modal" class="modal" aria-hidden="true" style="display:none">
-                                <div class="modal-backdrop"></div>
-                                <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
-                                    <button class="modal-close" aria-label="Close">&times;</button>
-
-                                    <h2 id="recipe-modal-title"></h2>
-                                    <p id="recipe-brief" class="recipe-brief"></p>
-
-                                    <div class="modal-cols">
-                                        <div class="modal-col">
-                                            <h3>Ingredients</h3>
-                                            <ul id="recipe-ingredients" class="ingredients-list"></ul>
-
-                                            <h3>Instructions</h3>
-                                            <ol id="recipe-directions" class="directions-list"></ol>
-                                        </div>
-
-                                        <div class="modal-col">
-                                            <h3>Nutrition</h3>
-                                            <div id="nutrition-summary" class="nutri-grid"></div>
-
-                                            <button id="add-to-dashboard" class="btn btn-primary" style="margin-top:1rem;">
-                                                Add to Nutrition Dashboard
-                                            </button>
-
-                                            <p class="fine-print" style="color:#777;margin-top:.5rem;">
-                                                Iteration 1 demo: nutrition is approximated per 100g per matched ingredient.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <h3>Instructions</h3>
-                            <ol class="modal-instructions"></ol>
-                        </div>
-                        <div>
-                            <h3>Nutrition</h3>
-                            <div class="modal-nutrition"></div>
-                            <button class="btn btn-primary modal-dashboard-btn">Add to Dashboard</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </main>
 
     <script src="script.js"></script>

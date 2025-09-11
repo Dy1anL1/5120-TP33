@@ -12,6 +12,7 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.879.0",
     "@aws-sdk/lib-dynamodb": "^3.879.0",
-    "csv-parser": "^3.2.0"
+    "csv-parser": "^3.2.0",
+    "node-fetch": "^3.3.2"
   }
 }

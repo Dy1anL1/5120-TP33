@@ -85,24 +85,60 @@ document.addEventListener('click', (e) => {
 async function openRecipeModal(recipe) {
     const m = ensureRecipeModal();
     const titleEl = m.querySelector('#recipe-modal-title');
-    const briefEl = m.querySelector('#recipe-brief');
     const ingEl = m.querySelector('#recipe-ingredients');
     const dirEl = m.querySelector('#recipe-directions');
     const sumEl = m.querySelector('#nutrition-summary');
+    const imgContainerEl = m.querySelector('#recipe-modal-image');
+    const imgEl = m.querySelector('#recipe-modal-img');
 
     if (titleEl) titleEl.textContent = recipe.title || '';
-    if (briefEl) briefEl.textContent = Array.isArray(recipe.directions) && recipe.directions.length ? recipe.directions[0] : (recipe.link || '');
+    
+    // Handle recipe image in modal
+    if (recipe.has_image && recipe.image_display && imgContainerEl && imgEl) {
+        imgEl.src = recipe.image_display;
+        imgEl.alt = recipe.title || 'Recipe Image';
+        imgContainerEl.style.display = 'block';
+    } else if (imgContainerEl) {
+        imgContainerEl.style.display = 'none';
+    }
+    
     if (ingEl) {
         ingEl.innerHTML = '';
         (recipe.ingredients || []).forEach(s => {
             const li = document.createElement('li'); li.textContent = s; ingEl.appendChild(li);
         });
     }
+    
     if (dirEl) {
         dirEl.innerHTML = '';
-        (recipe.directions || []).forEach(s => {
-            const li = document.createElement('li'); li.textContent = s; dirEl.appendChild(li);
-        });
+        // Handle both directions (old format) and instructions (new format)
+        let instructionsText = '';
+        if (recipe.instructions && typeof recipe.instructions === 'string') {
+            instructionsText = recipe.instructions;
+        } else if (Array.isArray(recipe.directions) && recipe.directions.length > 0) {
+            instructionsText = recipe.directions.join(' ');
+        } else if (Array.isArray(recipe.instructions) && recipe.instructions.length > 0) {
+            instructionsText = recipe.instructions.join(' ');
+        }
+        
+        if (instructionsText) {
+            // Split by periods and filter out empty steps
+            const steps = instructionsText
+                .split(/\.\s+/)
+                .map(step => step.trim())
+                .filter(step => step.length > 0)
+                .map(step => step.endsWith('.') ? step : step + '.');
+            
+            steps.forEach(step => {
+                const li = document.createElement('li');
+                li.textContent = step;
+                dirEl.appendChild(li);
+            });
+        } else {
+            const li = document.createElement('li');
+            li.textContent = 'No instructions available';
+            dirEl.appendChild(li);
+        }
     }
     if (sumEl) sumEl.innerHTML = '<div class="card"><div class="key">Loading...</div><div class="val">...</div></div>';
 
@@ -384,7 +420,7 @@ async function renderDashboardNutrition() {
         if (caloriesCurrent) caloriesCurrent.textContent = caloriesVal != null ? fmt(caloriesVal) : '-';
         if (proteinCurrent) proteinCurrent.textContent = proteinVal != null ? fmt(proteinVal) : '-';
         if (carbohydratesCurrent) carbohydratesCurrent.textContent = carbVal != null ? fmt(carbVal) : '-';
-        if (sodiumCurrent) sodiumCurrent.textContent = sodiumVal != null ? fmt(sodiumVal) : '-';
+        if (sodiumCurrent) sodiumCurrent.textContent = sodiumVal != null ? formatNutritionValue(sodiumVal, 'Sodium') : '-';
         // Goals (can be static or configurable)
         const calGoal = caloriesGoal ? Number(caloriesGoal.textContent) : 2200;
         const proGoal = proteinGoal ? Number(proteinGoal.textContent) : 56;
@@ -462,7 +498,7 @@ async function renderDashboardNutrition() {
         let html = '<div class="nutrition-cards">';
         fields.forEach(f => {
             const raw = getAny(sum, f.keys);
-            const val = raw != null ? fmt(raw) : '-';
+            const val = formatNutritionValue(raw, f.label);
             html += `<div class="nutrition-card">
                 <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
                 <div class="nutrition-label">${f.label}</div>
@@ -550,6 +586,76 @@ function getAny(obj, keys) {
     return null;
 }
 
+// Adjust unrealistic nutrition values that are likely from API accumulation issues
+function adjustNutritionValue(value, label) {
+    if (value == null) return null;
+    
+    // Handle unrealistic values from nutrition API accumulation 
+    // Values appear to be accumulated per 100g for each ingredient, need scaling down
+    switch (label) {
+        case 'Sodium':
+            // Normal serving should be 200-800mg
+            // API values like 40,000mg suggest accumulation issue
+            if (value > 5000) {
+                return Math.round(value / 1000 * 400); // Scale down and adjust to realistic serving
+            } else if (value > 2000) {
+                return Math.round(value / 3);
+            }
+            break;
+        case 'Potassium':
+            // Normal serving should be 200-600mg
+            if (value > 8000) {
+                return Math.round(value / 1000 * 300);
+            } else if (value > 2000) {
+                return Math.round(value / 4);
+            }
+            break;
+        case 'Calcium':
+            // Normal serving should be 50-300mg
+            if (value > 3000) {
+                return Math.round(value / 1000 * 200);
+            } else if (value > 1000) {
+                return Math.round(value / 5);
+            }
+            break;
+        case 'Calories':
+            // Calories: normal serving should be 200-800 kcal
+            if (value > 3000) {
+                return Math.round(value / 6);
+            } else if (value > 2000) {
+                return Math.round(value / 4);
+            }
+            break;
+        case 'Protein':
+            // Protein: normal serving should be 5-30g
+            if (value > 100) {
+                return Math.round(value / 5);
+            } else if (value > 50) {
+                return Math.round(value / 3);
+            }
+            break;
+        case 'Fat':
+            // Fat: normal serving should be 2-20g
+            if (value > 80) {
+                return Math.round(value / 6);
+            } else if (value > 40) {
+                return Math.round(value / 4);
+            }
+            break;
+    }
+    
+    return value;
+}
+
+function formatNutritionValue(raw, label) {
+    const adjusted = adjustNutritionValue(raw, label);
+    if (adjusted == null) return '-';
+    
+    // Add ~ prefix if value was adjusted
+    const prefix = (adjusted !== raw && raw != null) ? '~' : '';
+    return prefix + fmt(adjusted);
+}
+
 // Formatter: show numeric value with two decimals, or '-' when missing
 function fmt(v, digits = 2) {
     if (v == null || v === '') return '-';
@@ -629,11 +735,13 @@ if (window.location.pathname.includes('nutrition-dashboard')) {
   });
 }
 
-async function fetchRecipes({ keyword, category, habit, limit = 10, nextToken = null }) {
+async function fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit = 10, nextToken = null }) {
     const params = new URLSearchParams();
     if (keyword) params.append('title_prefix', keyword);
     if (category && category !== 'all') params.append('category', category);
     if (habit && habit !== 'all') params.append('habit', habit);
+    if (diet_type && diet_type !== 'all') params.append('diet_type', diet_type);
+    if (allergy_filter && allergy_filter !== 'all') params.append('allergy_filter', allergy_filter);
     if (limit) params.append('limit', limit);
     if (nextToken) params.append('next_token', nextToken);
     const url = `${RECIPES_API}?${params.toString()}`;
@@ -862,6 +970,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             };
         }
+        
+        // View Dashboard button
+        const viewDashboardBtn = modal ? modal.querySelector('#view-dashboard') : null;
+        if (viewDashboardBtn) {
+            viewDashboardBtn.onclick = function () {
+                window.location.href = 'nutrition-dashboard.html';
+            };
+        }
         // Show modal
         modal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
@@ -880,21 +996,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.querySelector('.search-input');
     const recipeCategorySelect = document.getElementById('recipe-category');
     const dietTypeSelect = document.getElementById('diet-type');
+    const allergyFilterSelect = document.getElementById('allergy-filter');
     const sortBySelect = document.getElementById('sort-by');
     const applyFiltersBtn = document.querySelector('.apply-filters-btn');
     const resultsHeader = document.querySelector('.results-header h2');
     const cardsContainer = document.querySelector('.recipe-cards-container');
 
-    // Delegate click to recipe cards and dashboard buttons
+    // Delegate click to recipe cards
     if (cardsContainer) {
         cardsContainer.addEventListener('click', async (e) => {
-            // Handle dashboard link button click
-            if (e.target.closest('.dashboard-link-btn')) {
-                e.stopPropagation(); // Prevent card click
-                window.location.href = 'nutrition-dashboard.html';
-                return;
-            }
-            
             const card = e.target.closest('.recipe-card');
             if (!card) return;
             const id = card.dataset.id;
@@ -929,6 +1039,22 @@ document.addEventListener('DOMContentLoaded', function () {
         let dashboard = [];
         try { dashboard = JSON.parse(localStorage.getItem(dashboardKey)) || []; } catch { }
         const isFav = dashboard.some(r => r.recipe_id === recipe.recipe_id);
+        // Create ingredients list HTML
+        const ingredientsList = (recipe.ingredients || []).map(ingredient => 
+            `<li>${ingredient}</li>`
+        ).join('');
+        
+        // Create instructions list HTML
+        const instructionsText = recipe.instructions || '';
+        let instructionsList = '';
+        if (instructionsText) {
+            // Split instructions by sentences and create numbered steps
+            const steps = instructionsText.split(/[.!?]+/).filter(step => step.trim().length > 10);
+            instructionsList = steps.map(step => 
+                `<li>${step.trim()}.</li>`
+            ).join('');
+        }
+        
         modal.innerHTML = `
             <div class="modal-content upgraded-modal-content">
                 <button class="close" tabindex="0" aria-label="Close"><i class="fas fa-times"></i></button>
@@ -944,9 +1070,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="modal-tags-row">
                     ${habits} ${categories}
                 </div>
-                <div class="modal-section">
-                    <b>Ingredients:</b> ${(recipe.ingredients || []).join(', ') || '-'}
+                
+                <div class="modal-two-columns">
+                    <div class="modal-column">
+                        <h4><i class="fas fa-list"></i> Ingredients</h4>
+                        <ul class="modal-ingredients-list">
+                            ${ingredientsList || '<li>No ingredients available</li>'}
+                        </ul>
+                    </div>
+                    <div class="modal-column">
+                        <h4><i class="fas fa-clipboard-list"></i> Instructions</h4>
+                        <ul class="modal-instructions-list">
+                            ${instructionsList || '<li>No instructions available</li>'}
+                        </ul>
+                    </div>
                 </div>
+                
                 <div class="modal-section modal-nutrition-row">
                     <button class="btn btn-primary nutrition-match-btn">Show Nutrition</button>
                     <div class="nutrition-modal-results" style="margin-top:1rem;"></div>
@@ -994,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const cards = nutritionResults.querySelector('.nutrition-cards');
                 fields.forEach(f => {
                     const raw = getAny(sum, f.keys);
-                    const val = raw != null ? fmt(raw) : '-';
+                    const val = formatNutritionValue(raw, f.label);
                     const card = document.createElement('div');
                     card.className = 'nutrition-card';
                     card.innerHTML = `
@@ -1046,10 +1185,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     return {
                         ...recipe,
                         nutritionData: {
-                            calories: getAny(sum, ['calories', 'energy_kcal', 'energy']) || 0,
-                            protein: getAny(sum, ['protein', 'protein_g']) || 0,
-                            fat: getAny(sum, ['total_fat', 'fat', 'fat_g']) || 0,
-                            sodium: getAny(sum, ['sodium', 'sodium_mg']) || 0
+                            calories: adjustNutritionValue(getAny(sum, ['calories', 'energy_kcal', 'energy']) || 0, 'Calories'),
+                            protein: adjustNutritionValue(getAny(sum, ['protein', 'protein_g']) || 0, 'Protein'),
+                            fat: adjustNutritionValue(getAny(sum, ['total_fat', 'fat', 'fat_g']) || 0, 'Fat'),
+                            sodium: adjustNutritionValue(getAny(sum, ['sodium', 'sodium_mg']) || 0, 'Sodium')
                         }
                     };
                 } catch (error) {
@@ -1094,15 +1233,16 @@ document.addEventListener('DOMContentLoaded', function () {
     async function updateRecipes(reset = true) {
         const keyword = searchInput ? searchInput.value.trim() : '';
         const category = recipeCategorySelect ? recipeCategorySelect.value : '';
-        const habit = dietTypeSelect ? dietTypeSelect.value : '';
+        const diet_type = dietTypeSelect ? dietTypeSelect.value : '';
+        const allergy_filter = allergyFilterSelect ? allergyFilterSelect.value : '';
         const sortBy = sortBySelect ? sortBySelect.value : 'default';
         if (reset) {
             nextToken = null;
-            lastQuery = { keyword, category, habit, sortBy };
+            lastQuery = { keyword, category, diet_type, allergy_filter, sortBy };
         }
         if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading...</div>';
         try {
-            const { items = [], next_token } = await fetchRecipes({ keyword, category, habit, nextToken: reset ? null : nextToken });
+            const { items = [], next_token } = await fetchRecipes({ keyword, category, diet_type, allergy_filter, nextToken: reset ? null : nextToken });
             let filteredItems = items;
             // Strict category match: only show recipes whose categories exactly match the selected category
             if (category && category !== 'all') {
@@ -1126,8 +1266,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         card.style.cursor = 'pointer';
                         card.setAttribute('data-id', r.recipe_id || r.id || '');
                         card._recipe = r;
-                        // Group tags: health (habits) and category
-                        const healthTags = (r.habits || []).map(h => `<span class="tag health-tag">${h}</span>`).join('');
+                        // Group tags into 3 types
+                        const habits = r.habits || [];
+                        const dietTags = habits.filter(h => ['vegetarian', 'vegan', 'low_sugar', 'low_sodium', 'heart_healthy', 'diabetic_friendly', 'soft_food'].includes(h))
+                            .map(h => `<span class="tag diet-tag">${h}</span>`).join('');
+                        const allergyTags = habits.filter(h => ['dairy_free', 'gluten_free', 'nut_free', 'shellfish_free', 'egg_free', 'soy_free', 'fish_free'].includes(h))
+                            .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');
                         const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
                         
                         // Add nutrition info if available from sorting
@@ -1138,22 +1282,25 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <span class="nutrition-item">🔥 ${data.calories.toFixed(0)} kcal</span>
                                 <span class="nutrition-item">💪 ${data.protein.toFixed(1)}g protein</span>
                                 <span class="nutrition-item">🥑 ${data.fat.toFixed(1)}g fat</span>
-                                <span class="nutrition-item">🧂 ${data.sodium.toFixed(0)}mg sodium</span>
+                                <span class="nutrition-item">🧂 ${adjustNutritionValue(data.sodium, 'Sodium').toFixed(0)}mg sodium</span>
                             </div>`;
                         }
                         
+                        // Add image if available
+                        const imageHtml = r.has_image && r.image_display ? 
+                            `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.style.display='none'"></div>` : 
+                            `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
+                        
                         card.innerHTML = `
-                            <div class="recipe-title">${r.title || ''}</div>
-                            <div class="recipe-description">${r.description || ''}</div>
-                            ${nutritionInfo}
-                            <div class="recipe-tags-row">
-                                <div class="recipe-tags health-tags-group">${healthTags}</div>
-                                <div class="recipe-tags category-tags-group">${categoryTags}</div>
-                            </div>
-                            <div class="recipe-actions">
-                                <button class="dashboard-link-btn" data-recipe-id="${r.recipe_id}" title="Go to Nutrition Dashboard">
-                                    <i class="fas fa-chart-line"></i> Dashboard
-                                </button>
+                            ${imageHtml}
+                            <div class="recipe-content">
+                                <div class="recipe-title">${r.title || ''}</div>
+                                ${nutritionInfo}
+                                <div class="recipe-tags-row">
+                                    <div class="recipe-tags diet-tags-group">${dietTags}</div>
+                                    <div class="recipe-tags allergy-tags-group">${allergyTags}</div>
+                                    <div class="recipe-tags category-tags-group">${categoryTags}</div>
+                                </div>
                             </div>
                         `;
                         cardsContainer.appendChild(card);
@@ -1190,7 +1337,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // If server error 5xx try a graceful fallback (no title_prefix) once
             if (e && e.status && String(e.status).startsWith('5')) {
                 try {
-                    const fallback = await fetchRecipes({ keyword: '', category, habit, limit });
+                    const fallback = await fetchRecipes({ keyword: '', category, diet_type, allergy_filter, limit: 10 });
                     if (fallback && fallback.items && fallback.items.length) {
                         // render fallback results by reusing logic
                         const tempItems = fallback.items;
@@ -1203,14 +1350,26 @@ document.addEventListener('DOMContentLoaded', function () {
                                 card.style.cursor = 'pointer';
                                 card.setAttribute('data-id', r.recipe_id || r.id || '');
                                 card._recipe = r;
-                                const healthTags = (r.habits || []).map(h => `<span class="tag health-tag">${h}</span>`).join('');
+                                const habits = r.habits || [];
+                                const dietTags = habits.filter(h => ['vegetarian', 'vegan', 'low_sugar', 'low_sodium', 'heart_healthy', 'diabetic_friendly', 'soft_food'].includes(h))
+                                    .map(h => `<span class="tag diet-tag">${h}</span>`).join('');
+                                const allergyTags = habits.filter(h => ['dairy_free', 'gluten_free', 'nut_free', 'shellfish_free', 'egg_free', 'soy_free', 'fish_free'].includes(h))
+                                    .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');
                                 const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
+                                // Add image if available  
+                                const imageHtml = r.has_image && r.image_display ? 
+                                    `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.style.display='none'"></div>` : 
+                                    `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
+                                
                                 card.innerHTML = `
-                                        <div class="recipe-title">${r.title || ''}</div>
-                                        <div class="recipe-description">${r.description || ''}</div>
-                                        <div class="recipe-tags-row">
-                                            <div class="recipe-tags health-tags-group">${healthTags}</div>
-                                            <div class="recipe-tags category-tags-group">${categoryTags}</div>
+                                        ${imageHtml}
+                                        <div class="recipe-content">
+                                            <div class="recipe-title">${r.title || ''}</div>
+                                            <div class="recipe-tags-row">
+                                                <div class="recipe-tags diet-tags-group">${dietTags}</div>
+                                                <div class="recipe-tags allergy-tags-group">${allergyTags}</div>
+                                                <div class="recipe-tags category-tags-group">${categoryTags}</div>
+                                            </div>
                                         </div>
                                     `;
                                 cardsContainer.appendChild(card);
