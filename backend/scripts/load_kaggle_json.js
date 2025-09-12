@@ -1,8 +1,14 @@
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 import fetch from "node-fetch";
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const REGION = "ap-southeast-2";
 const TABLE = "Recipes_i2";
@@ -10,7 +16,7 @@ const TARGET_RECIPES = 1000;
 
 // Ingredient quota targets
 const INGREDIENT_QUOTAS = {
-  meat: { total: 250, chicken: 100, pork: 80, beef: 50, lamb: 20 },
+  meat: { total: 300, chicken: 120, pork: 100, beef: 70, lamb: 10 },
   seafood: { total: 150, fish: 100, shellfish: 30, other: 20 },
   vegetable: { total: 300, leafy: 80, root: 80, gourd: 60, mushroom: 40, other: 40 },
   staple: { total: 200, rice: 80, pasta: 60, beans: 40, other: 20 },
@@ -98,9 +104,9 @@ function classifyByIngredients(title, ingredients, tags) {
   
   // Meat classification
   const meatClassification = {
-    chicken: ['chicken', 'poultry', 'hen', 'rooster'],
-    pork: ['pork', 'bacon', 'ham', 'sausage', 'chorizo', 'prosciutto'],
-    beef: ['beef', 'steak', 'ground beef', 'chuck', 'sirloin', 'brisket'],
+    chicken: ['chicken', 'poultry', 'hen', 'rooster', 'chicken breast', 'chicken thigh', 'chicken wing'],
+    pork: ['pork', 'bacon', 'ham', 'pork chop', 'pork tenderloin', 'pork shoulder', 'chorizo', 'prosciutto', 'pancetta', 'pork belly', 'pork loin', 'pulled pork', 'pork ribs', 'italian sausage', 'bratwurst', 'pork sausage'],
+    beef: ['beef', 'steak', 'ground beef', 'chuck', 'sirloin', 'brisket', 'ribeye', 'filet mignon', 'tenderloin', 'roast beef', 'beef patty', 'angus', 'wagyu', 'flank', 'strip steak', 'prime rib', 'corned beef', 'beef roast', 'beef stew'],
     lamb: ['lamb', 'mutton', 'goat']
   };
   
@@ -134,9 +140,9 @@ function classifyByIngredients(title, ingredients, tags) {
     dairy: ['milk', 'cheese', 'butter', 'cream', 'yogurt', 'sour cream']
   };
   
-  const result = { type: 'other', subtype: 'other', priority: 0 };
+  let result = { type: 'other', subtype: 'other', priority: 0 };
   
-  // Check each classification
+  // Check each classification - find BEST match, not just first match
   for (const [mainType, subTypes] of Object.entries({
     meat: meatClassification,
     seafood: seafoodClassification,
@@ -146,10 +152,15 @@ function classifyByIngredients(title, ingredients, tags) {
   })) {
     for (const [subType, keywords] of Object.entries(subTypes)) {
       if (anyWord(allText, keywords)) {
-        result.type = mainType;
-        result.subtype = subType;
-        result.priority = keywords.some(k => hasWord(text, k)) ? 2 : 1; // title/ingredients have higher priority
-        return result;
+        const priority = keywords.some(k => hasWord(text, k)) ? 2 : 1; // title/ingredients have higher priority
+        // Only update if this match has higher priority
+        if (priority > result.priority || (priority === result.priority && mainType === 'meat')) {
+          result = {
+            type: mainType,
+            subtype: subType,
+            priority: priority
+          };
+        }
       }
     }
   }
@@ -182,6 +193,10 @@ function getSeniorFriendlyScore(title, ingredients, instructions, cookingTime) {
   if (hasWord(text, 'low sodium') || hasWord(text, 'low salt')) score += 4;
   if (hasWord(text, 'soft') || hasWord(text, 'tender')) score += 4;
   if (hasWord(text, 'easy') || hasWord(text, 'simple')) score += 2;
+  
+  // Boost score for protein-rich foods (important for seniors)
+  if (hasWord(text, 'beef') || hasWord(text, 'steak')) score += 3; // Protein boost
+  if (hasWord(text, 'lean') || hasWord(text, 'protein')) score += 2;
   
   // Cooking time scoring
   if (cookingTime && cookingTime <= 30) score += 3;
@@ -310,19 +325,30 @@ function getDietHabits(title, ingredients, tags) {
   
   // Allergen detection (if not marked in tags)
   const allergens = {
-    dairy: ['milk', 'cheese', 'butter', 'cream', 'yogurt'],
-    gluten: ['wheat', 'flour', 'bread', 'pasta'],
-    nuts: ['peanut', 'almond', 'walnut', 'cashew'],
-    shellfish: ['shrimp', 'crab', 'lobster'],
-    eggs: ['egg', 'eggs', 'mayonnaise'],
-    soy: ['soy', 'tofu', 'miso'],
-    fish: ['fish', 'salmon', 'tuna']
+    dairy: ['milk', 'cheese', 'butter', 'cream', 'yogurt', 'sour cream', 'heavy cream', 'whipped cream', 'cottage cheese', 'ricotta', 'parmesan', 'mozzarella', 'cheddar'],
+    gluten: ['wheat', 'flour', 'bread', 'pasta', 'noodle', 'spaghetti', 'linguine', 'penne', 'lasagna', 'ravioli', 'couscous', 'bulgur', 'semolina', 'rye', 'barley'],
+    nuts: ['peanut', 'almond', 'walnut', 'cashew', 'pecan', 'hazelnut', 'pistachio', 'brazil nut', 'macadamia', 'pine nut'],
+    shellfish: ['shrimp', 'crab', 'lobster', 'scallop', 'oyster', 'clam', 'mussel'],
+    eggs: ['egg', 'eggs', 'omelet', 'omelette', 'frittata', 'quiche', 'mayonnaise', 'hollandaise', 'custard', 'meringue', 'soufflé', 'egg noodle', 'carbonara', 'caesar dressing', 'aioli'],
+    soy: ['soy', 'tofu', 'miso', 'soy sauce', 'tamari', 'tempeh', 'edamame'],
+    fish: ['fish', 'salmon', 'tuna', 'cod', 'bass', 'tilapia', 'snapper', 'halibut', 'trout', 'mackerel', 'anchovy', 'sardine']
   };
   
+  // More conservative allergen-free detection - only mark as free if explicitly safe
   Object.entries(allergens).forEach(([allergen, keywords]) => {
     const tag = `${allergen}_free`;
-    if (!habits.includes(tag) && notAnyWord(text, keywords)) {
-      habits.push(tag);
+    // Only add allergen-free tag if recipe is clearly free of that allergen AND has substantial other ingredients
+    if (!habits.includes(tag) && notAnyWord(text, keywords) && ingredients.length >= 3) {
+      // Additional check for egg-free: be extra conservative
+      if (allergen === 'eggs') {
+        // Only mark as egg-free if it's clearly a recipe that wouldn't typically contain eggs
+        const eggFreeCategories = ['salad', 'soup', 'vegetable', 'fruit', 'beverage', 'smoothie'];
+        if (eggFreeCategories.some(cat => hasWord(text, cat))) {
+          habits.push(tag);
+        }
+      } else {
+        habits.push(tag);
+      }
     }
   });
   
@@ -393,18 +419,15 @@ async function main() {
   console.log(`📊 Target: ${TARGET_RECIPES} recipes with precise ingredient distribution\n`);
   
   console.log("📖 Reading JSON file...");
-  const rawData = fs.readFileSync("recipes_images.json", 'utf8');
+  const rawData = fs.readFileSync(__dirname + "/recipes_with_images.json", 'utf8');
   const allRecipes = JSON.parse(rawData);
   
   console.log(`📊 Found ${allRecipes.length.toLocaleString()} total recipes`);
   
-  // Filter recipes that have images
-  const recipesWithImages = allRecipes.filter(recipe => 
-    recipe.image_filename && recipe.image_filename !== null
-  );
+  // All recipes already have images (pre-filtered)
+  const recipesWithImages = allRecipes;
   
-  
-  console.log(`📸 Recipes with images: ${recipesWithImages.length.toLocaleString()}`);
+  console.log(`📸 All recipes have images: ${recipesWithImages.length.toLocaleString()}`);
   
   // Calculate classification and score for each recipe
   console.log("🔍 Analyzing and classifying recipes...");
@@ -433,12 +456,12 @@ async function main() {
     };
   });
   
-  // Nutrition validation filter - only validate the top 3000 high scoring recipes (to ensure 1000 nutritious ones can be found)
+  // Nutrition validation filter - validate ALL recipes with images to ensure complete ingredient coverage
   console.log("🥗 Validating nutrition data for top recipes (this may take a while)...");
   
-  // Sort by score, only validate the top 3000 best recipes
-  const sortedForValidation = [...analyzedRecipes].sort((a, b) => b.seniorScore - a.seniorScore).slice(0, 3000);
-  console.log(`🎯 Validating top ${sortedForValidation.length} recipes to find 1000 with nutrition data`);
+  // Sort by score, validate ALL recipes with images to ensure complete coverage
+  const sortedForValidation = [...analyzedRecipes].sort((a, b) => b.seniorScore - a.seniorScore);
+  console.log(`🎯 Validating all ${sortedForValidation.length} recipes to find 1000 with nutrition data`);
   
   const validatedRecipes = [];
   const batchSize = 10; // reduce concurrency to avoid 503 errors
@@ -499,9 +522,14 @@ async function main() {
     }
   });
   
-  // Sort each group by score
+  // Sort each group by score, with additional boost for beef recipes
   Object.keys(typeGroups).forEach(type => {
-    typeGroups[type].sort((a, b) => b.seniorScore - a.seniorScore);
+    typeGroups[type].sort((a, b) => {
+      // Boost beef recipes slightly to help meet quota
+      const aBoost = a.classification.subtype === 'beef' ? 2 : 0;
+      const bBoost = b.classification.subtype === 'beef' ? 2 : 0;
+      return (b.seniorScore + bBoost) - (a.seniorScore + aBoost);
+    });
   });
   
   // Distribute recipes - multi-round strategy to ensure reaching 1000
