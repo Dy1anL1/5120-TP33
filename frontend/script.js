@@ -1288,7 +1288,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         
                         // Add image if available
                         const imageHtml = r.has_image && r.image_display ? 
-                            `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.style.display='none'"></div>` : 
+                            `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` : 
                             `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
                         
                         card.innerHTML = `
@@ -1358,7 +1358,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
                                 // Add image if available  
                                 const imageHtml = r.has_image && r.image_display ? 
-                                    `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.style.display='none'"></div>` : 
+                                    `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` : 
                                     `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
                                 
                                 card.innerHTML = `
