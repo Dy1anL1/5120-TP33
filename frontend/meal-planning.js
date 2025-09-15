@@ -973,7 +973,7 @@ async function renderWeeklyDays() {
     container.innerHTML = dayHTML.join('');
 }
 
-// Render large recipe card
+// Render large recipe card (same style as explore-recipes)
 async function renderLargeRecipeCard(mealType, recipe) {
     if (!recipe) {
         return `
@@ -985,86 +985,94 @@ async function renderLargeRecipeCard(mealType, recipe) {
         `;
     }
     
-    // Calculate nutrition information from ingredients
-    const nutrition = await calculateNutrition(recipe.ingredients, recipe.servings || 1);
-    const calories = Math.round(nutrition.calories || 0);
-    const protein = Math.round(nutrition.protein || 0);
-    const carbs = Math.round(nutrition.carbs || 0);
-    const fat = Math.round(nutrition.fat || 0);
+    // Group tags like explore-recipes
+    const habits = recipe.habits || [];
+    const dietTags = habits.filter(h => ['vegetarian', 'vegan', 'low_sugar', 'low_sodium', 'heart_healthy', 'diabetic_friendly', 'soft_food'].includes(h))
+        .map(h => `<span class="tag diet-tag">${h}</span>`).join('');
+    const allergyTags = habits.filter(h => ['dairy_free', 'gluten_free', 'nut_free', 'shellfish_free', 'egg_free', 'soy_free', 'fish_free'].includes(h))
+        .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');
+    const categoryTags = (recipe.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
     
-    // Get image URL if available
-    const imageUrl = recipe.image_name ? 
-        `https://tp33-data-recipe.s3.ap-southeast-2.amazonaws.com/raw/foodspics/${recipe.image_name}.jpg` : 
-        null;
+    // Calculate nutrition (similar to explore-recipes)
+    const nutrition = await calculateNutrition(recipe.ingredients, recipe.servings || 1);
+    const nutritionInfo = `<div class="recipe-nutrition-info">
+        <span class="nutrition-item">🔥 ${Math.round(nutrition.calories || 0)} kcal</span>
+        <span class="nutrition-item">💪 ${Math.round(nutrition.protein || 0)}g protein</span>
+        <span class="nutrition-item">🥑 ${Math.round(nutrition.fat || 0)}g fat</span>
+        <span class="nutrition-item">🧂 ${Math.round(nutrition.sodium || 0)}mg sodium</span>
+    </div>`;
+    
+    // Image handling (same as explore-recipes)
+    const imageHtml = recipe.has_image && recipe.image_display ? 
+        `<div class="recipe-image"><img src="${recipe.image_display}" alt="${recipe.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` : 
+        `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
     
     return `
-        <div class="recipe-card-large" onclick="openRecipeModal('${recipe.recipe_id}')">
-            <div class="recipe-card-image">
-                ${imageUrl ? 
-                    `<img src="${imageUrl}" alt="${recipe.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils placeholder-icon\\"></i>'">` :
-                    '<i class="fas fa-utensils placeholder-icon"></i>'
-                }
+        <div class="recipe-card" onclick="openRecipeModal('${recipe.recipe_id}')" style="cursor: pointer;">
+            ${imageHtml}
+            <div class="recipe-content">
+                <div class="recipe-title">${recipe.title}</div>
                 <div class="meal-type-badge ${mealType}">${mealType}</div>
-            </div>
-            <div class="recipe-card-content">
-                <h3 class="recipe-title-large">${recipe.title}</h3>
-                <div class="recipe-nutrition-info">
-                    <div class="nutrition-stat">
-                        <i class="fas fa-fire"></i>
-                        <span class="nutrition-value">${calories}</span>
-                        <span class="nutrition-label">cal</span>
-                    </div>
-                    <div class="nutrition-stat">
-                        <i class="fas fa-drumstick-bite"></i>
-                        <span class="nutrition-value">${protein}g</span>
-                        <span class="nutrition-label">protein</span>
-                    </div>
-                    <div class="nutrition-stat">
-                        <i class="fas fa-bread-slice"></i>
-                        <span class="nutrition-value">${carbs}g</span>
-                        <span class="nutrition-label">carbs</span>
-                    </div>
-                    <div class="nutrition-stat">
-                        <i class="fas fa-tint"></i>
-                        <span class="nutrition-value">${fat}g</span>
-                        <span class="nutrition-label">fat</span>
-                    </div>
+                ${nutritionInfo}
+                <div class="recipe-tags-row">
+                    <div class="recipe-tags diet-tags-group">${dietTags}</div>
+                    <div class="recipe-tags allergy-tags-group">${allergyTags}</div>
+                    <div class="recipe-tags category-tags-group">${categoryTags}</div>
                 </div>
             </div>
         </div>
     `;
 }
 
-// Render a meal card
+// Render a meal card (same style as explore-recipes)
 async function renderMealCard(mealType, recipe) {
     if (!recipe) {
         return `
-            <div class="meal-card">
-                <div class="meal-header">${mealType.charAt(0).toUpperCase() + mealType.slice(1)}</div>
-                <div class="meal-content">
-                    <div class="meal-title">No recipe found</div>
-                    <p>Please try regenerating the plan</p>
+            <div class="recipe-card">
+                <div class="recipe-image-placeholder">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <div class="recipe-content">
+                    <div class="recipe-title">No recipe found</div>
+                    <div class="meal-type-badge ${mealType}">${mealType}</div>
                 </div>
             </div>
         `;
     }
     
+    // Group tags like explore-recipes
+    const habits = recipe.habits || [];
+    const dietTags = habits.filter(h => ['vegetarian', 'vegan', 'low_sugar', 'low_sodium', 'heart_healthy', 'diabetic_friendly', 'soft_food'].includes(h))
+        .map(h => `<span class="tag diet-tag">${h}</span>`).join('');
+    const allergyTags = habits.filter(h => ['dairy_free', 'gluten_free', 'nut_free', 'shellfish_free', 'egg_free', 'soy_free', 'fish_free'].includes(h))
+        .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');
+    const categoryTags = (recipe.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
+    
+    // Calculate nutrition (similar to explore-recipes)
     const nutrition = await calculateNutrition(recipe.ingredients, recipe.servings || 1);
+    const nutritionInfo = `<div class="recipe-nutrition-info">
+        <span class="nutrition-item">🔥 ${Math.round(nutrition.calories || 0)} kcal</span>
+        <span class="nutrition-item">💪 ${Math.round(nutrition.protein || 0)}g protein</span>
+        <span class="nutrition-item">🥑 ${Math.round(nutrition.fat || 0)}g fat</span>
+        <span class="nutrition-item">🧂 ${Math.round(nutrition.sodium || 0)}mg sodium</span>
+    </div>`;
+    
+    // Image handling (same as explore-recipes)
+    const imageHtml = recipe.has_image && recipe.image_display ? 
+        `<div class="recipe-image"><img src="${recipe.image_display}" alt="${recipe.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` : 
+        `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
     
     return `
-        <div class="meal-card">
-            <div class="meal-header">${mealType.charAt(0).toUpperCase() + mealType.slice(1)}</div>
-            <div class="meal-content">
-                <div class="meal-title">${recipe.title}</div>
-                <div class="meal-nutrition">
-                    <div class="nutrition-item">
-                        <i class="fas fa-fire"></i>
-                        <span>${Math.round(nutrition.calories || 0)} cal</span>
-                    </div>
-                    <div class="nutrition-item">
-                        <i class="fas fa-drumstick-bite"></i>
-                        <span>${Math.round(nutrition.protein || 0)}g protein</span>
-                    </div>
+        <div class="recipe-card" onclick="openRecipeModal('${recipe.recipe_id}')" style="cursor: pointer;">
+            ${imageHtml}
+            <div class="recipe-content">
+                <div class="recipe-title">${recipe.title}</div>
+                <div class="meal-type-badge ${mealType}">${mealType}</div>
+                ${nutritionInfo}
+                <div class="recipe-tags-row">
+                    <div class="recipe-tags diet-tags-group">${dietTags}</div>
+                    <div class="recipe-tags allergy-tags-group">${allergyTags}</div>
+                    <div class="recipe-tags category-tags-group">${categoryTags}</div>
                 </div>
             </div>
         </div>
@@ -1090,11 +1098,168 @@ function updatePreferences() {
     renderCurrentStep();
 }
 
-// Open recipe modal (placeholder - connects with existing recipe modal)
-function openRecipeModal(recipeId) {
-    // This function should integrate with the existing recipe modal system
-    // For now, we'll show an alert
-    alert(`Recipe modal for ${recipeId} - This will integrate with the existing recipe modal system`);
+// Recipe modal functionality - integrated from explore-recipes
+function ensureRecipeModal() {
+    let m = document.getElementById('recipe-modal');
+    if (m) return m;
+    
+    // Create modal if it doesn't exist
+    const modalHTML = `
+    <div id="recipe-modal" class="modal" aria-hidden="true" style="display:none">
+        <div class="modal-backdrop"></div>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
+            <button class="modal-close" aria-label="Close">&times;</button>
+            <div id="recipe-modal-image" style="text-align: center; margin-bottom: 1rem;">
+                <img id="recipe-modal-img" alt="Recipe Image" style="max-width: 100%; height: auto; border-radius: 8px; max-height: 200px;">
+            </div>
+            <h2 id="recipe-modal-title"></h2>
+            <p id="recipe-brief" class="recipe-brief"></p>
+            <div class="modal-cols">
+                <div class="modal-col">
+                    <h3>Ingredients</h3>
+                    <ul id="recipe-ingredients"></ul>
+                </div>
+                <div class="modal-col">
+                    <h3>Instructions</h3>
+                    <ol id="recipe-directions"></ol>
+                </div>
+            </div>
+            <div id="nutrition-summary" class="nutrition-summary">
+                <h3>Nutrition Summary</h3>
+            </div>
+        </div>
+    </div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    m = document.getElementById('recipe-modal');
+    
+    // Add close functionality
+    const closeBtn = m.querySelector('.modal-close');
+    const backdrop = m.querySelector('.modal-backdrop');
+    
+    function closeModal() {
+        m.setAttribute('aria-hidden', 'true');
+        m.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (backdrop) backdrop.addEventListener('click', closeModal);
+    
+    // ESC key to close
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && m.style.display === 'block') {
+            closeModal();
+        }
+    });
+    
+    return m;
+}
+
+function openModal() {
+    const m = ensureRecipeModal();
+    m.setAttribute('aria-hidden', 'false');
+    m.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+// Open recipe modal and fetch recipe details
+async function openRecipeModal(recipeId) {
+    try {
+        // Fetch recipe details
+        const response = await fetch(`${API_URL}?recipe_id=${recipeId}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const recipe = await response.json();
+        
+        const m = ensureRecipeModal();
+        const titleEl = m.querySelector('#recipe-modal-title');
+        const ingEl = m.querySelector('#recipe-ingredients');
+        const dirEl = m.querySelector('#recipe-directions');
+        const sumEl = m.querySelector('#nutrition-summary');
+        const imgContainerEl = m.querySelector('#recipe-modal-image');
+        const imgEl = m.querySelector('#recipe-modal-img');
+
+        if (titleEl) titleEl.textContent = recipe.title || '';
+        
+        // Handle recipe image in modal
+        if (recipe.has_image && recipe.image_display && imgContainerEl && imgEl) {
+            imgEl.src = recipe.image_display;
+            imgEl.alt = recipe.title || 'Recipe Image';
+            imgEl.style.display = 'block';
+            imgContainerEl.style.display = 'block';
+        } else {
+            if (imgContainerEl) imgContainerEl.style.display = 'none';
+        }
+
+        // Populate ingredients
+        if (ingEl) {
+            ingEl.innerHTML = '';
+            if (Array.isArray(recipe.ingredients)) {
+                recipe.ingredients.forEach(ingredient => {
+                    const li = document.createElement('li');
+                    li.textContent = ingredient;
+                    ingEl.appendChild(li);
+                });
+            } else {
+                ingEl.innerHTML = '<li>No ingredients available</li>';
+            }
+        }
+
+        // Populate directions/instructions
+        if (dirEl) {
+            dirEl.innerHTML = '';
+            let instructions = recipe.directions || recipe.instructions || [];
+            
+            // Handle different instruction formats
+            if (typeof instructions === 'object' && !Array.isArray(instructions)) {
+                // Convert object to array
+                instructions = Object.values(instructions);
+            }
+            
+            if (Array.isArray(instructions) && instructions.length > 0) {
+                instructions.forEach(instruction => {
+                    const li = document.createElement('li');
+                    // Handle both string instructions and object instructions
+                    const text = typeof instruction === 'string' ? instruction : (instruction.text || instruction);
+                    li.textContent = text;
+                    dirEl.appendChild(li);
+                });
+            } else {
+                dirEl.innerHTML = '<li>No instructions available</li>';
+            }
+        }
+
+        // Show nutrition info
+        if (sumEl && recipe.nutrition) {
+            const nutrition = recipe.nutrition;
+            sumEl.innerHTML = `
+                <h3>Nutrition Summary</h3>
+                <div class="nutrition-grid">
+                    <div class="nutrition-item">
+                        <strong>Calories:</strong> ${Math.round(nutrition.calories || 0)}
+                    </div>
+                    <div class="nutrition-item">
+                        <strong>Protein:</strong> ${Math.round(nutrition.protein_g || 0)}g
+                    </div>
+                    <div class="nutrition-item">
+                        <strong>Carbs:</strong> ${Math.round(nutrition.carbs_g || 0)}g
+                    </div>
+                    <div class="nutrition-item">
+                        <strong>Sodium:</strong> ${Math.round(nutrition.sodium_mg || 0)}mg
+                    </div>
+                </div>
+            `;
+        }
+
+        openModal();
+        
+    } catch (error) {
+        console.error('Error opening recipe modal:', error);
+        alert('Sorry, there was an error loading the recipe details.');
+    }
 }
 
 // Print meal plan
