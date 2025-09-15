@@ -10,14 +10,19 @@ const client = new DynamoDBClient({ region: REGION });
 const ddb = DynamoDBDocumentClient.from(client);
 
 function normalizeRecipe(item) {
-  if (!item) return item;
+  if (!item) return null;
   
-  // Handle both old format (directions, NER) and new format (instructions)
-  for (const key of ['ingredients', 'directions', 'instructions', 'NER']) {
-    if (typeof item[key] === 'string') {
-      try { item[key] = JSON.parse(item[key]); } catch {}
+  try {
+    // Handle both old format (directions, NER) and new format (instructions)
+    for (const key of ['ingredients', 'directions', 'instructions', 'NER']) {
+      if (item[key] && typeof item[key] === 'string') {
+        try { 
+          item[key] = JSON.parse(item[key]); 
+        } catch (e) {
+          console.warn(`Failed to parse ${key} for recipe ${item.recipe_id}:`, e.message);
+        }
+      }
     }
-  }
   
   // For backward compatibility, map instructions to directions if directions doesn't exist
   if (!item.directions && item.instructions) {
@@ -54,9 +59,13 @@ function normalizeRecipe(item) {
   } else if (item.image_display && !item.image_display.includes('.jpg') && !item.image_display.includes('.jpeg')) {
     // Fix missing .jpg extension in existing URLs
     item.image_display = item.image_display + '.jpg';
+    }
+    
+    return item;
+  } catch (error) {
+    console.error(`Error normalizing recipe ${item?.recipe_id}:`, error.message);
+    return null;
   }
-  
-  return item;
 }
 
 // --- tagging utils ---
@@ -163,7 +172,9 @@ exports.handler = async (event) => {
       };
       // Use QueryCommand when using KeyConditionExpression against the GSI
       const data = await ddb.send(new QueryCommand(queryParams));
-      const items = (data.Items || []).map(normalizeRecipe);
+      const items = (data.Items || [])
+        .map(normalizeRecipe)
+        .filter(r => r !== null); // Remove null items from normalization errors
       let filtered = items;
       if (habit)    filtered = filtered.filter(r => Array.isArray(r.habits) && r.habits.includes(habit));
       if (category) filtered = filtered.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
@@ -243,13 +254,15 @@ exports.handler = async (event) => {
           ExclusiveStartKey: lastKey,
         };
         const data = await ddb.send(new ScanCommand(scanParams));
-        let pageItems = (data.Items || []).map(normalizeRecipe);
+        let pageItems = (data.Items || [])
+          .map(normalizeRecipe)
+          .filter(r => r !== null); // Remove null items from normalization errors
         
         // Apply filters
-        if (habit) pageItems = pageItems.filter(r => Array.isArray(r.habits) && r.habits.includes(habit));
-        if (category) pageItems = pageItems.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
-        if (diet_type && diet_type !== 'all') pageItems = pageItems.filter(r => Array.isArray(r.habits) && r.habits.includes(diet_type));
-        if (allergy_filter && allergy_filter !== 'all') pageItems = pageItems.filter(r => Array.isArray(r.habits) && r.habits.includes(allergy_filter));
+        if (habit) pageItems = pageItems.filter(r => r && Array.isArray(r.habits) && r.habits.includes(habit));
+        if (category) pageItems = pageItems.filter(r => r && Array.isArray(r.categories) && r.categories.includes(category));
+        if (diet_type && diet_type !== 'all') pageItems = pageItems.filter(r => r && Array.isArray(r.habits) && r.habits.includes(diet_type));
+        if (allergy_filter && allergy_filter !== 'all') pageItems = pageItems.filter(r => r && Array.isArray(r.habits) && r.habits.includes(allergy_filter));
         
         items = items.concat(pageItems);
         scanned += (data.Items || []).length;

@@ -11,6 +11,150 @@ let currentStep = 1;
 let userPreferences = {};
 let weeklyPlan = null;
 
+// Cache for nutrition calculations
+const nutritionCache = new Map();
+
+// Rate limiting for API requests
+let lastNutritionRequest = 0;
+const NUTRITION_REQUEST_DELAY = 100; // 100ms delay between requests
+
+// Simple estimated nutrition based on common ingredients (fallback)
+function estimateNutrition(ingredients, servings = 1) {
+    if (!ingredients || !Array.isArray(ingredients)) {
+        return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    }
+
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFat = 0;
+
+    // Basic estimates per common ingredient type
+    const estimates = {
+        // Proteins
+        'chicken': { cal: 165, prot: 31, carb: 0, fat: 3.6 },
+        'beef': { cal: 250, prot: 26, carb: 0, fat: 15 },
+        'fish': { cal: 140, prot: 25, carb: 0, fat: 3 },
+        'egg': { cal: 70, prot: 6, carb: 1, fat: 5 },
+        
+        // Carbs
+        'rice': { cal: 130, prot: 2.7, carb: 28, fat: 0.3 },
+        'pasta': { cal: 131, prot: 5, carb: 25, fat: 1.1 },
+        'bread': { cal: 265, prot: 9, carb: 49, fat: 3.2 },
+        'potato': { cal: 77, prot: 2, carb: 17, fat: 0.1 },
+        
+        // Vegetables
+        'tomato': { cal: 18, prot: 0.9, carb: 3.9, fat: 0.2 },
+        'onion': { cal: 40, prot: 1.1, carb: 9.3, fat: 0.1 },
+        'carrot': { cal: 41, prot: 0.9, carb: 9.6, fat: 0.2 },
+        
+        // Default
+        'default': { cal: 50, prot: 2, carb: 8, fat: 1 }
+    };
+
+    ingredients.forEach(ingredient => {
+        const ing = (typeof ingredient === 'string' ? ingredient : ingredient.text || '').toLowerCase();
+        let matched = false;
+        
+        for (const [key, values] of Object.entries(estimates)) {
+            if (ing.includes(key)) {
+                totalCalories += values.cal;
+                totalProtein += values.prot;
+                totalCarbs += values.carb;
+                totalFat += values.fat;
+                matched = true;
+                break;
+            }
+        }
+        
+        if (!matched) {
+            const def = estimates.default;
+            totalCalories += def.cal;
+            totalProtein += def.prot;
+            totalCarbs += def.carb;
+            totalFat += def.fat;
+        }
+    });
+
+    return {
+        calories: Math.round(totalCalories / servings),
+        protein: Math.round(totalProtein / servings),
+        carbs: Math.round(totalCarbs / servings),
+        fat: Math.round(totalFat / servings)
+    };
+}
+
+// Nutrition calculation using the nutrition API with caching and fallback
+async function calculateNutrition(ingredients, servings = 1) {
+    if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
+        return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    }
+
+    // Create cache key
+    const cacheKey = JSON.stringify({ ingredients, servings });
+    if (nutritionCache.has(cacheKey)) {
+        return nutritionCache.get(cacheKey);
+    }
+
+    try {
+        // Rate limiting - wait if needed
+        const now = Date.now();
+        const timeSinceLastRequest = now - lastNutritionRequest;
+        if (timeSinceLastRequest < NUTRITION_REQUEST_DELAY) {
+            await new Promise(resolve => setTimeout(resolve, NUTRITION_REQUEST_DELAY - timeSinceLastRequest));
+        }
+        lastNutritionRequest = Date.now();
+
+        const normalized = ingredients.map(ingredient => ({
+            text: typeof ingredient === 'string' ? ingredient : ingredient.text || ingredient.name || '',
+            label: 'fresh'
+        }));
+
+        const response = await fetch(NUTRITION_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ingredients: normalized }),
+            signal: AbortSignal.timeout(8000) // 8 second timeout
+        });
+
+        if (!response.ok) {
+            console.warn('Nutrition API request failed:', response.status);
+            // Use estimation for any API failure (503, 500, etc.)
+            const estimated = estimateNutrition(ingredients, servings);
+            nutritionCache.set(cacheKey, estimated);
+            return estimated;
+        }
+
+        const data = await response.json();
+        
+        if (!data.summary_100g_sum) {
+            console.warn('No nutrition summary found in API response - using estimation');
+            const estimated = estimateNutrition(ingredients, servings);
+            nutritionCache.set(cacheKey, estimated);
+            return estimated;
+        }
+
+        const sum = data.summary_100g_sum;
+        const nutrition = {
+            calories: Math.round((sum.calories || sum.energy_kcal || sum.energy || 0) / servings),
+            protein: Math.round((sum.protein_g || sum.protein || 0) / servings),
+            carbs: Math.round((sum.carbohydrate_g || sum.carbohydrate || sum.carbs || 0) / servings),
+            fat: Math.round((sum.total_fat || sum.fat_g || sum.fat || 0) / servings)
+        };
+
+        // Cache the result
+        nutritionCache.set(cacheKey, nutrition);
+        return nutrition;
+    } catch (error) {
+        console.warn('Error calculating nutrition:', error.message, '- using estimation');
+        
+        // Use estimation as fallback when API fails
+        const estimated = estimateNutrition(ingredients, servings);
+        nutritionCache.set(cacheKey, estimated);
+        return estimated;
+    }
+}
+
 // Questionnaire data structure
 const questionnaireSteps = [
     {
@@ -178,14 +322,14 @@ const questionnaireSteps = [
 ];
 
 // Initialize the application
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('Weekly Meal Plan initialized');
-    loadUserPreferences();
+    await loadUserPreferences();
     renderCurrentStep();
 });
 
 // Load saved user preferences from localStorage
-function loadUserPreferences() {
+async function loadUserPreferences() {
     try {
         const saved = localStorage.getItem(PREFERENCES_KEY);
         if (saved) {
@@ -195,7 +339,7 @@ function loadUserPreferences() {
             const savedPlan = localStorage.getItem(STORAGE_KEY);
             if (savedPlan && isPreferencesComplete()) {
                 weeklyPlan = JSON.parse(savedPlan);
-                showWeeklyPlan();
+                await showWeeklyPlan();
                 return;
             }
         }
@@ -231,13 +375,13 @@ function showQuestionnaire() {
 }
 
 // Show weekly plan interface
-function showWeeklyPlan() {
+async function showWeeklyPlan() {
     document.getElementById('questionnaire-container').style.display = 'none';
     document.getElementById('weekly-plan-display').classList.add('active');
     document.getElementById('loading-spinner').classList.add('hidden');
     
     if (weeklyPlan) {
-        renderWeeklyPlan();
+        await renderWeeklyPlan();
     }
 }
 
@@ -571,7 +715,7 @@ async function generateMealPlan() {
         // Save to localStorage
         localStorage.setItem(STORAGE_KEY, JSON.stringify(weeklyPlan));
         
-        showWeeklyPlan();
+        await showWeeklyPlan();
         
     } catch (error) {
         console.error('Error generating meal plan:', error);
@@ -579,6 +723,7 @@ async function generateMealPlan() {
         showQuestionnaire();
     }
 }
+
 
 // Generate meals for a specific day
 async function generateDayMeals(day) {
@@ -590,6 +735,8 @@ async function generateDayMeals(day) {
             const recipe = await fetchRandomRecipe(mealType);
             if (recipe) {
                 meals[mealType] = recipe;
+            } else {
+                console.warn(`No recipe found for ${mealType} on ${day} - API may be returning errors`);
             }
         } catch (error) {
             console.error(`Error fetching ${mealType} for ${day}:`, error);
@@ -667,13 +814,17 @@ async function fetchRandomRecipe(mealType) {
                 const data = await response.json();
                 console.log(`Strategy ${i + 1} response:`, data);
                 
-                if (data.recipes && data.recipes.length > 0) {
+                if (data.items && data.items.length > 0) {
+                    console.log(`Got ${data.items.length} recipes for ${mealType}`);
+                    
                     // Filter recipes based on user preferences
-                    let filteredRecipes = filterRecipesByPreferences(data.recipes);
+                    let filteredRecipes = filterRecipesByPreferences(data.items);
+                    console.log(`After filtering: ${filteredRecipes.length} recipes for ${mealType}`);
                     
                     // If filtering results in no recipes, use original list
                     if (filteredRecipes.length === 0) {
-                        filteredRecipes = data.recipes;
+                        console.log(`Using original ${data.items.length} recipes for ${mealType} (no filter matches)`);
+                        filteredRecipes = data.items;
                     }
                     
                     // Filter by meal type if we used fallback strategy
@@ -698,41 +849,14 @@ async function fetchRandomRecipe(mealType) {
         }
         
         console.warn(`No recipes found for ${mealType} after all strategies`);
-        return createFallbackRecipe(mealType);
+        return null;
         
     } catch (error) {
         console.error('Error fetching recipe:', error);
-        return createFallbackRecipe(mealType);
+        return null;
     }
 }
 
-// Create a fallback recipe when API fails
-function createFallbackRecipe(mealType) {
-    const fallbackRecipes = {
-        breakfast: {
-            title: "Simple Oatmeal with Berries",
-            nutrition: { calories: 320, protein: 8, fat: 6, sodium: 150 },
-            recipe_id: `fallback_${mealType}_${Date.now()}`
-        },
-        lunch: {
-            title: "Garden Salad with Grilled Protein",
-            nutrition: { calories: 450, protein: 25, fat: 18, sodium: 400 },
-            recipe_id: `fallback_${mealType}_${Date.now()}`
-        },
-        dinner: {
-            title: "Baked Fish with Vegetables",
-            nutrition: { calories: 520, protein: 35, fat: 15, sodium: 380 },
-            recipe_id: `fallback_${mealType}_${Date.now()}`
-        },
-        snack: {
-            title: "Mixed Nuts and Fruit",
-            nutrition: { calories: 180, protein: 6, fat: 12, sodium: 5 },
-            recipe_id: `fallback_${mealType}_${Date.now()}`
-        }
-    };
-    
-    return fallbackRecipes[mealType] || fallbackRecipes.lunch;
-}
 
 // Filter recipes based on user preferences
 function filterRecipesByPreferences(recipes) {
@@ -770,7 +894,7 @@ function getWeekStartDate() {
 }
 
 // Render the weekly meal plan
-function renderWeeklyPlan() {
+async function renderWeeklyPlan() {
     if (!weeklyPlan) {
         renderPlanLoading();
         return;
@@ -789,7 +913,7 @@ function renderWeeklyPlan() {
     document.getElementById('plan-date-range').textContent = dateRange;
     
     // Render weekly days
-    renderWeeklyDays();
+    await renderWeeklyDays();
 }
 
 // Render plan loading state
@@ -804,18 +928,30 @@ function renderPlanLoading() {
 }
 
 // Render the weekly days layout
-function renderWeeklyDays() {
+async function renderWeeklyDays() {
     const container = document.getElementById('weekly-days-container');
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     
     const weekStart = new Date(weeklyPlan.weekStarting);
     
-    container.innerHTML = days.map((day, index) => {
+    // Generate day sections with async meal cards
+    const dayPromises = days.map(async (day, index) => {
         const currentDate = new Date(weekStart);
         currentDate.setDate(weekStart.getDate() + index);
         
         const dayMeals = weeklyPlan.plan[day] || {};
         const dayDate = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        
+        let mealsHTML = '';
+        if (Object.keys(dayMeals).length > 0) {
+            const mealPromises = Object.entries(dayMeals).map(([mealType, recipe]) => 
+                renderLargeRecipeCard(mealType, recipe)
+            );
+            const mealCards = await Promise.all(mealPromises);
+            mealsHTML = mealCards.join('');
+        } else {
+            mealsHTML = '<div class="empty-meal-slot"><i class="fas fa-utensils"></i><h4>No meals planned</h4><p>Generate a meal plan to see recipes here</p></div>';
+        }
         
         return `
             <div class="day-section">
@@ -827,20 +963,18 @@ function renderWeeklyDays() {
                     <span class="day-date-info">${dayDate}</span>
                 </div>
                 <div class="day-meals-grid">
-                    ${Object.keys(dayMeals).length > 0 
-                        ? Object.entries(dayMeals).map(([mealType, recipe]) => 
-                            renderLargeRecipeCard(mealType, recipe)
-                        ).join('')
-                        : '<div class="empty-meal-slot"><i class="fas fa-utensils"></i><h4>No meals planned</h4><p>Generate a meal plan to see recipes here</p></div>'
-                    }
+                    ${mealsHTML}
                 </div>
             </div>
         `;
-    }).join('');
+    });
+    
+    const dayHTML = await Promise.all(dayPromises);
+    container.innerHTML = dayHTML.join('');
 }
 
 // Render large recipe card
-function renderLargeRecipeCard(mealType, recipe) {
+async function renderLargeRecipeCard(mealType, recipe) {
     if (!recipe) {
         return `
             <div class="empty-meal-slot">
@@ -851,10 +985,11 @@ function renderLargeRecipeCard(mealType, recipe) {
         `;
     }
     
-    const nutrition = recipe.nutrition || {};
+    // Calculate nutrition information from ingredients
+    const nutrition = await calculateNutrition(recipe.ingredients, recipe.servings || 1);
     const calories = Math.round(nutrition.calories || 0);
     const protein = Math.round(nutrition.protein || 0);
-    const carbs = Math.round(nutrition.carbohydrates || 0);
+    const carbs = Math.round(nutrition.carbs || 0);
     const fat = Math.round(nutrition.fat || 0);
     
     // Get image URL if available
@@ -901,7 +1036,7 @@ function renderLargeRecipeCard(mealType, recipe) {
 }
 
 // Render a meal card
-function renderMealCard(mealType, recipe) {
+async function renderMealCard(mealType, recipe) {
     if (!recipe) {
         return `
             <div class="meal-card">
@@ -914,7 +1049,7 @@ function renderMealCard(mealType, recipe) {
         `;
     }
     
-    const nutrition = recipe.nutrition || {};
+    const nutrition = await calculateNutrition(recipe.ingredients, recipe.servings || 1);
     
     return `
         <div class="meal-card">

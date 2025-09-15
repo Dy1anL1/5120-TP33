@@ -1,3 +1,6 @@
+// ====== API Configuration ======
+const NUTRITION_API = "https://0brixnxwq3.execute-api.ap-southeast-2.amazonaws.com/prod/match";
+
 // ====== Compact Nutrition Goals (10 key nutrients for dashboard) ======
 const NUTRIENT_GOALS = {
     female_51: {
@@ -544,7 +547,6 @@ async function renderDashboardNutrition() {
     }
 }
 
-const NUTRITION_API = "https://0brixnxwq3.execute-api.ap-southeast-2.amazonaws.com/prod/match";
 const RECIPES_API = "https://97xkjqjeuc.execute-api.ap-southeast-2.amazonaws.com/prod/recipes";
 
 async function fetchNutrition(ingredients) {
@@ -991,8 +993,8 @@ document.addEventListener('DOMContentLoaded', function () {
         modalDashboardBtn.disabled = false;
     }
 
-    modalCloseBtn.onclick = closeModal;
-    modalBackdrop.onclick = closeModal;
+    if (modalCloseBtn) modalCloseBtn.onclick = closeModal;
+    if (modalBackdrop) modalBackdrop.onclick = closeModal;
     const searchInput = document.querySelector('.search-input');
     const recipeCategorySelect = document.getElementById('recipe-category');
     const dietTypeSelect = document.getElementById('diet-type');
