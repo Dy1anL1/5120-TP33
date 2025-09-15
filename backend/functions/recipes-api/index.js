@@ -116,7 +116,7 @@ function getCategories(recipe) {
   if (hasAny(txt, ["soup","broth","chowder","bisque"])) cat.add("soup");
   if (hasAny(txt, ["salad"])) cat.add("salad");
   if (hasAny(txt, ["smoothie","juice","latte","milkshake","punch","lemonade","drink"])) cat.add("drink");
-  if (hasAny(txt, ["pancake","waffle","oatmeal","cereal","muffin","granola","omelet"])) cat.add("breakfast");
+  if (hasAny(txt, ["pancake","waffle","oatmeal","cereal","muffin","granola","omelet","breakfast","toast","bagel","eggs","brunch"])) cat.add("breakfast");
   if (hasAny(txt, ["dip","nacho","popcorn","bar"])) cat.add("snack");
 
   if (hasAny(txt, ["casserole","stew","roast","pasta","rice","noodle","chicken","beef","pork","fish"])) {
