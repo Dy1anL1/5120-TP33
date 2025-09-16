@@ -3425,35 +3425,79 @@ html {
     animation-delay: 0.4s;
 }
 
-/* Weekly Summary Styles - Updated Modern Design */
+/* Weekly Summary Styles - Simplified Single Card */
 .weekly-summary-section {
     margin-top: 2rem;
     margin-bottom: 2rem;
 }
 
 .weekly-summary-section h3 {
+    display: none; /* Hide the original h3 title since we moved it inside */
+}
+
+.simple-weekly-summary {
+    display: flex;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.summary-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(102,126,234,0.12);
+    padding: 2rem;
+    max-width: 1400px;
+    width: 100%;
+}
+
+.summary-title {
     color: var(--text-color);
     margin-bottom: 1.5rem;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: 600;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
+    text-align: center;
+    margin: 0 0 2rem 0;
 }
 
-.weekly-summary-cards {
+.summary-metrics {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: 1.5rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
 }
 
-/* Nutrition Overview Card */
-.summary-overview-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+.summary-metrics .metric-item {
+    text-align: center;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem 1rem;
+}
+
+.summary-metrics .metric-label {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.75rem;
+    display: block;
+    font-weight: 500;
+}
+
+.summary-metrics .metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #4CAF50;
+    display: block;
+}
+
+/* All Summary Cards */
+.summary-overview-card, .summary-stats-card, .summary-insights-card {
+    background: #fff;
     border-radius: 16px;
-    padding: 1.5rem;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    box-shadow: 0 8px 32px rgba(102,126,234,0.12);
+    padding: 2rem;
+    min-width: 0;
 }
 
 .overview-header {
@@ -3463,14 +3507,19 @@ html {
     margin-bottom: 1.5rem;
 }
 
-.overview-header h4 {
+.overview-header h4, .summary-stats-card h4, .summary-insights-card h4 {
     margin: 0;
     font-size: 1.2rem;
     font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .period-badge {
-    background: rgba(255,255,255,0.2);
+    background: #e3f2fd;
+    color: #1976d2;
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
     font-size: 0.8rem;
@@ -3484,56 +3533,38 @@ html {
 }
 
 .metric-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1rem;
 }
 
 .metric-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    background: rgba(255,255,255,0.1);
-    padding: 0.75rem;
+    flex: 1;
+    background: #f8f9fa;
     border-radius: 12px;
-    backdrop-filter: blur(10px);
+    padding: 1rem;
+    text-align: center;
 }
 
 .metric-icon {
-    font-size: 1.5rem;
-}
-
-.metric-data {
-    display: flex;
-    flex-direction: column;
-}
-
-.metric-value {
-    font-size: 1.25rem;
-    font-weight: 700;
-    line-height: 1.2;
+    font-size: 1.2rem;
 }
 
 .metric-label {
-    font-size: 0.8rem;
-    opacity: 0.9;
-    line-height: 1.2;
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+    display: block;
 }
 
-/* Weekly Stats Card */
-.summary-stats-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #4CAF50;
 }
 
 .summary-stats-card h4 {
-    margin: 0 0 1.5rem 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-color);
+    margin-bottom: 1.5rem;
 }
 
 .stats-grid {
@@ -3544,82 +3575,67 @@ html {
 
 .stat-box {
     background: #f8f9fa;
-    padding: 1rem;
     border-radius: 12px;
+    padding: 1rem;
     text-align: center;
-    border: 1px solid #e9ecef;
+    margin-bottom: 1rem;
+}
+
+.stat-label {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+    display: block;
 }
 
 .stat-number {
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: 700;
-    color: var(--primary-color);
-    display: block;
-    line-height: 1.2;
-}
-
-.stat-description {
-    font-size: 0.8rem;
-    color: var(--secondary-text);
-    margin-top: 0.25rem;
-    font-weight: 500;
-}
-
-/* Health Insights Card */
-.summary-insights-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    color: #764ba2;
 }
 
 .summary-insights-card h4 {
-    margin: 0 0 1.5rem 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-color);
+    margin-bottom: 1.5rem;
 }
 
 .insights-list {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    margin-top: 1rem;
 }
 
 .insight-badge {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 1rem;
     font-weight: 500;
-    border: 1px solid;
+    background: #e8f5e9;
+    color: #43a047;
+    margin-bottom: 0.5rem;
 }
 
 .insight-badge.success {
     background: #d4edda;
     color: #155724;
-    border-color: #c3e6cb;
 }
 
 .insight-badge.safe {
     background: #d1ecf1;
     color: #0c5460;
-    border-color: #bee5eb;
 }
 
 .insight-badge.healthy {
     background: #f8d7da;
     color: #721c24;
-    border-color: #f5c6cb;
 }
 
 .insight-badge.quality {
     background: #fff3cd;
     color: #856404;
-    border-color: #ffeaa7;
 }
 
 .insight-badge i {
@@ -3627,15 +3643,38 @@ html {
 }
 
 /* Responsive Design for Summary */
-@media (max-width: 1024px) {
-    .weekly-summary-cards {
-        grid-template-columns: 1fr;
+@media (max-width: 768px) {
+    .summary-card {
+        padding: 1.5rem;
+    }
+
+    .summary-title {
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .summary-metrics {
+        grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
     }
 
-    .metric-row {
+    .summary-metrics .metric-item {
+        padding: 1rem;
+    }
+
+    .summary-metrics .metric-value {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .summary-card {
+        padding: 1rem;
+    }
+
+    .summary-metrics {
         grid-template-columns: 1fr;
-        gap: 0.75rem;
+        gap: 1rem;
     }
 }
 

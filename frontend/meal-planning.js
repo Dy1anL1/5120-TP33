@@ -326,6 +326,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('Weekly Meal Plan initialized');
     await loadUserPreferences();
     renderCurrentStep();
+
+    // Always show the Weekly Summary (even with placeholder data)
+    generateWeeklySummary();
 });
 
 // Load saved user preferences from localStorage
@@ -1247,7 +1250,37 @@ function printMealPlan() {
 // Generate Weekly Summary
 function generateWeeklySummary(weeklyPlan) {
     const summaryContainer = document.getElementById('weekly-summary');
-    if (!summaryContainer || !weeklyPlan || !weeklyPlan.days) return;
+    if (!summaryContainer) return;
+
+    // If no plan data, show default/placeholder summary
+    if (!weeklyPlan || !weeklyPlan.days) {
+        summaryContainer.innerHTML = `
+            <div class="simple-weekly-summary">
+                <div class="summary-card">
+                    <h4 class="summary-title"><i class="fas fa-chart-bar"></i> Weekly Summary</h4>
+                    <div class="summary-metrics">
+                        <div class="metric-item">
+                            <span class="metric-label">Days Planned</span>
+                            <span class="metric-value">0</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Meals Included</span>
+                            <span class="metric-value">0</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Avg Daily Calories</span>
+                            <span class="metric-value">--</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Health Goals Met</span>
+                            <span class="metric-value">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        return;
+    }
 
     let totalCalories = 0;
     let totalProtein = 0;
@@ -1276,92 +1309,29 @@ function generateWeeklySummary(weeklyPlan) {
     const avgCarbs = totalMeals > 0 ? totalCarbs / daysWithData : 0;
     const avgSodium = totalMeals > 0 ? totalSodium / daysWithData : 0;
 
+    // Calculate Health Goals Met (simple example)
+    const healthGoalsMet = totalMeals > 0 ? Math.min(4, Math.round(totalMeals / 3)) : 0;
+
     summaryContainer.innerHTML = `
-        <div class="weekly-summary-cards">
-            <!-- Nutrition Overview Card -->
-            <div class="summary-overview-card">
-                <div class="overview-header">
-                    <h4>📊 Nutrition Overview</h4>
-                    <span class="period-badge">This Week</span>
-                </div>
-                <div class="nutrition-metrics">
-                    <div class="metric-row">
-                        <div class="metric-item">
-                            <div class="metric-icon">🔥</div>
-                            <div class="metric-data">
-                                <span class="metric-value">${Math.round(avgCalories)}</span>
-                                <span class="metric-label">Avg Daily Calories</span>
-                            </div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-icon">💪</div>
-                            <div class="metric-data">
-                                <span class="metric-value">${Math.round(avgProtein)}g</span>
-                                <span class="metric-label">Avg Daily Protein</span>
-                            </div>
-                        </div>
+        <div class="simple-weekly-summary">
+            <div class="summary-card">
+                <h4 class="summary-title"><i class="fas fa-chart-bar"></i> Weekly Summary</h4>
+                <div class="summary-metrics">
+                    <div class="metric-item">
+                        <span class="metric-label">Days Planned</span>
+                        <span class="metric-value">${daysWithData}</span>
                     </div>
-                    <div class="metric-row">
-                        <div class="metric-item">
-                            <div class="metric-icon">🌾</div>
-                            <div class="metric-data">
-                                <span class="metric-value">${Math.round(avgCarbs)}g</span>
-                                <span class="metric-label">Avg Daily Carbs</span>
-                            </div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-icon">🧂</div>
-                            <div class="metric-data">
-                                <span class="metric-value">${Math.round(avgSodium)}mg</span>
-                                <span class="metric-label">Avg Daily Sodium</span>
-                            </div>
-                        </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Meals Included</span>
+                        <span class="metric-value">${totalMeals}</span>
                     </div>
-                </div>
-            </div>
-
-            <!-- Weekly Stats Card -->
-            <div class="summary-stats-card">
-                <h4>📈 Weekly Statistics</h4>
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <div class="stat-number">${Math.round(totalCalories)}</div>
-                        <div class="stat-description">Total Calories</div>
+                    <div class="metric-item">
+                        <span class="metric-label">Avg Daily Calories</span>
+                        <span class="metric-value">${Math.round(avgCalories)}</span>
                     </div>
-                    <div class="stat-box">
-                        <div class="stat-number">${Math.round(totalProtein)}g</div>
-                        <div class="stat-description">Total Protein</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-number">${totalMeals}</div>
-                        <div class="stat-description">Meals Planned</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-number">${daysWithData}</div>
-                        <div class="stat-description">Days Covered</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Health Insights Card -->
-            <div class="summary-insights-card">
-                <h4>🎯 Health Insights</h4>
-                <div class="insights-list">
-                    <div class="insight-badge success">
-                        <i class="fas fa-check-circle"></i>
-                        <span>Balanced Nutrition</span>
-                    </div>
-                    <div class="insight-badge safe">
-                        <i class="fas fa-shield-alt"></i>
-                        <span>Allergy-Safe Menu</span>
-                    </div>
-                    <div class="insight-badge healthy">
-                        <i class="fas fa-heart"></i>
-                        <span>Senior-Friendly</span>
-                    </div>
-                    <div class="insight-badge quality">
-                        <i class="fas fa-star"></i>
-                        <span>Quality Ingredients</span>
+                    <div class="metric-item">
+                        <span class="metric-label">Health Goals Met</span>
+                        <span class="metric-value">${healthGoalsMet}/4</span>
                     </div>
                 </div>
             </div>
