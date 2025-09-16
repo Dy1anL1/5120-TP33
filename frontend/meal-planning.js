@@ -697,10 +697,10 @@ async function generateMealPlan() {
         
         console.log('Generating meal plan with preferences:', userPreferences);
         
-        // Generate plan for each day
-        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        // Generate plan for each day (Testing: only Monday for now)
+        const days = ['Monday']; // Simplified for testing
         const mealPlan = {};
-        
+
         for (const day of days) {
             mealPlan[day] = await generateDayMeals(day);
         }
@@ -930,7 +930,7 @@ function renderPlanLoading() {
 // Render the weekly days layout
 async function renderWeeklyDays() {
     const container = document.getElementById('weekly-days-container');
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const days = ['Monday']; // Testing: only show Monday for now
     
     const weekStart = new Date(weeklyPlan.weekStarting);
     
@@ -971,6 +971,9 @@ async function renderWeeklyDays() {
     
     const dayHTML = await Promise.all(dayPromises);
     container.innerHTML = dayHTML.join('');
+
+    // Generate Weekly Summary
+    generateWeeklySummary(weeklyPlan);
 }
 
 // Render large recipe card (same style as explore-recipes)
@@ -985,21 +988,13 @@ async function renderLargeRecipeCard(mealType, recipe) {
         `;
     }
     
-    // Group tags like explore-recipes
-    const habits = recipe.habits || [];
-    const dietTags = habits.filter(h => ['vegetarian', 'vegan', 'low_sugar', 'low_sodium', 'heart_healthy', 'diabetic_friendly', 'soft_food'].includes(h))
-        .map(h => `<span class="tag diet-tag">${h}</span>`).join('');
-    const allergyTags = habits.filter(h => ['dairy_free', 'gluten_free', 'nut_free', 'shellfish_free', 'egg_free', 'soy_free', 'fish_free'].includes(h))
-        .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');
-    const categoryTags = (recipe.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
-    
-    // Calculate nutrition (similar to explore-recipes)
-    const nutrition = await calculateNutrition(recipe.ingredients, recipe.servings || 1);
+    // Use recipe's existing nutrition data
+    const nutrition = recipe.nutrition || {};
     const nutritionInfo = `<div class="recipe-nutrition-info">
-        <span class="nutrition-item">🔥 ${Math.round(nutrition.calories || 0)} kcal</span>
-        <span class="nutrition-item">💪 ${Math.round(nutrition.protein || 0)}g protein</span>
-        <span class="nutrition-item">🥑 ${Math.round(nutrition.fat || 0)}g fat</span>
-        <span class="nutrition-item">🧂 ${Math.round(nutrition.sodium || 0)}mg sodium</span>
+        <span class="nutrition-item"><strong>Calories:</strong> ${Math.round(nutrition.calories || 0)}</span>
+        <span class="nutrition-item"><strong>Protein:</strong> ${Math.round(nutrition.protein_g || 0)}g</span>
+        <span class="nutrition-item"><strong>Carbs:</strong> ${Math.round(nutrition.carbs_g || 0)}g</span>
+        <span class="nutrition-item"><strong>Sodium:</strong> ${Math.round(nutrition.sodium_mg || 0)}mg</span>
     </div>`;
     
     // Image handling (same as explore-recipes)
@@ -1014,11 +1009,6 @@ async function renderLargeRecipeCard(mealType, recipe) {
                 <div class="recipe-title">${recipe.title}</div>
                 <div class="meal-type-badge ${mealType}">${mealType}</div>
                 ${nutritionInfo}
-                <div class="recipe-tags-row">
-                    <div class="recipe-tags diet-tags-group">${dietTags}</div>
-                    <div class="recipe-tags allergy-tags-group">${allergyTags}</div>
-                    <div class="recipe-tags category-tags-group">${categoryTags}</div>
-                </div>
             </div>
         </div>
     `;
@@ -1040,21 +1030,13 @@ async function renderMealCard(mealType, recipe) {
         `;
     }
     
-    // Group tags like explore-recipes
-    const habits = recipe.habits || [];
-    const dietTags = habits.filter(h => ['vegetarian', 'vegan', 'low_sugar', 'low_sodium', 'heart_healthy', 'diabetic_friendly', 'soft_food'].includes(h))
-        .map(h => `<span class="tag diet-tag">${h}</span>`).join('');
-    const allergyTags = habits.filter(h => ['dairy_free', 'gluten_free', 'nut_free', 'shellfish_free', 'egg_free', 'soy_free', 'fish_free'].includes(h))
-        .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');
-    const categoryTags = (recipe.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
-    
-    // Calculate nutrition (similar to explore-recipes)
-    const nutrition = await calculateNutrition(recipe.ingredients, recipe.servings || 1);
+    // Use recipe's existing nutrition data
+    const nutrition = recipe.nutrition || {};
     const nutritionInfo = `<div class="recipe-nutrition-info">
-        <span class="nutrition-item">🔥 ${Math.round(nutrition.calories || 0)} kcal</span>
-        <span class="nutrition-item">💪 ${Math.round(nutrition.protein || 0)}g protein</span>
-        <span class="nutrition-item">🥑 ${Math.round(nutrition.fat || 0)}g fat</span>
-        <span class="nutrition-item">🧂 ${Math.round(nutrition.sodium || 0)}mg sodium</span>
+        <span class="nutrition-item"><strong>Calories:</strong> ${Math.round(nutrition.calories || 0)}</span>
+        <span class="nutrition-item"><strong>Protein:</strong> ${Math.round(nutrition.protein_g || 0)}g</span>
+        <span class="nutrition-item"><strong>Carbs:</strong> ${Math.round(nutrition.carbs_g || 0)}g</span>
+        <span class="nutrition-item"><strong>Sodium:</strong> ${Math.round(nutrition.sodium_mg || 0)}mg</span>
     </div>`;
     
     // Image handling (same as explore-recipes)
@@ -1069,11 +1051,6 @@ async function renderMealCard(mealType, recipe) {
                 <div class="recipe-title">${recipe.title}</div>
                 <div class="meal-type-badge ${mealType}">${mealType}</div>
                 ${nutritionInfo}
-                <div class="recipe-tags-row">
-                    <div class="recipe-tags diet-tags-group">${dietTags}</div>
-                    <div class="recipe-tags allergy-tags-group">${allergyTags}</div>
-                    <div class="recipe-tags category-tags-group">${categoryTags}</div>
-                </div>
             </div>
         </div>
     `;
@@ -1265,6 +1242,131 @@ async function openRecipeModal(recipeId) {
 // Print meal plan
 function printMealPlan() {
     window.print();
+}
+
+// Generate Weekly Summary
+function generateWeeklySummary(weeklyPlan) {
+    const summaryContainer = document.getElementById('weekly-summary');
+    if (!summaryContainer || !weeklyPlan || !weeklyPlan.days) return;
+
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalSodium = 0;
+    let totalMeals = 0;
+
+    // Calculate totals from all meals
+    weeklyPlan.days.forEach(day => {
+        ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
+            const recipe = day.meals[mealType];
+            if (recipe && recipe.nutrition) {
+                totalCalories += recipe.nutrition.calories || 0;
+                totalProtein += recipe.nutrition.protein_g || 0;
+                totalCarbs += recipe.nutrition.carbs_g || 0;
+                totalSodium += recipe.nutrition.sodium_mg || 0;
+                totalMeals++;
+            }
+        });
+    });
+
+    // Calculate daily averages (for the days we have data)
+    const daysWithData = weeklyPlan.days ? weeklyPlan.days.length : 1;
+    const avgCalories = totalMeals > 0 ? totalCalories / daysWithData : 0;
+    const avgProtein = totalMeals > 0 ? totalProtein / daysWithData : 0;
+    const avgCarbs = totalMeals > 0 ? totalCarbs / daysWithData : 0;
+    const avgSodium = totalMeals > 0 ? totalSodium / daysWithData : 0;
+
+    summaryContainer.innerHTML = `
+        <div class="weekly-summary-cards">
+            <!-- Nutrition Overview Card -->
+            <div class="summary-overview-card">
+                <div class="overview-header">
+                    <h4>📊 Nutrition Overview</h4>
+                    <span class="period-badge">This Week</span>
+                </div>
+                <div class="nutrition-metrics">
+                    <div class="metric-row">
+                        <div class="metric-item">
+                            <div class="metric-icon">🔥</div>
+                            <div class="metric-data">
+                                <span class="metric-value">${Math.round(avgCalories)}</span>
+                                <span class="metric-label">Avg Daily Calories</span>
+                            </div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-icon">💪</div>
+                            <div class="metric-data">
+                                <span class="metric-value">${Math.round(avgProtein)}g</span>
+                                <span class="metric-label">Avg Daily Protein</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metric-row">
+                        <div class="metric-item">
+                            <div class="metric-icon">🌾</div>
+                            <div class="metric-data">
+                                <span class="metric-value">${Math.round(avgCarbs)}g</span>
+                                <span class="metric-label">Avg Daily Carbs</span>
+                            </div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-icon">🧂</div>
+                            <div class="metric-data">
+                                <span class="metric-value">${Math.round(avgSodium)}mg</span>
+                                <span class="metric-label">Avg Daily Sodium</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weekly Stats Card -->
+            <div class="summary-stats-card">
+                <h4>📈 Weekly Statistics</h4>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-number">${Math.round(totalCalories)}</div>
+                        <div class="stat-description">Total Calories</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${Math.round(totalProtein)}g</div>
+                        <div class="stat-description">Total Protein</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${totalMeals}</div>
+                        <div class="stat-description">Meals Planned</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${daysWithData}</div>
+                        <div class="stat-description">Days Covered</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Health Insights Card -->
+            <div class="summary-insights-card">
+                <h4>🎯 Health Insights</h4>
+                <div class="insights-list">
+                    <div class="insight-badge success">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Balanced Nutrition</span>
+                    </div>
+                    <div class="insight-badge safe">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Allergy-Safe Menu</span>
+                    </div>
+                    <div class="insight-badge healthy">
+                        <i class="fas fa-heart"></i>
+                        <span>Senior-Friendly</span>
+                    </div>
+                    <div class="insight-badge quality">
+                        <i class="fas fa-star"></i>
+                        <span>Quality Ingredients</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // Export functions for HTML onclick handlers

@@ -35,6 +35,16 @@ Copy-Item -Path "index.js" -Destination $PkgDir -Force
 Copy-Item -Path "package.json" -Destination $PkgDir -Force
 Copy-Item -Path "node_modules" -Destination $PkgDir -Recurse -Force
 
+# Copy modular architecture directories
+if (Test-Path "config") {
+    Copy-Item -Path "config" -Destination $PkgDir -Recurse -Force
+    Write-Host "Copied config directory"
+}
+if (Test-Path "lib") {
+    Copy-Item -Path "lib" -Destination $PkgDir -Recurse -Force
+    Write-Host "Copied lib directory"
+}
+
 # 4) Compression
 Compress-Archive -Path "$PkgDir\*" -DestinationPath $Zip -Force
 Write-Host "Packed $Zip"
