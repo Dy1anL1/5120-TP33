@@ -602,11 +602,13 @@
 
 /* List Summary */
 .list-summary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    color: #2c3e50;
     padding: 2rem;
     border-radius: 12px;
     margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .summary-stats {
@@ -642,7 +644,7 @@
 .progress-bar {
     flex: 1;
     height: 8px;
-    background: rgba(255, 255, 255, 0.3);
+    background: #dee2e6;
     border-radius: 4px;
     overflow: hidden;
 }
@@ -766,8 +768,8 @@
 
 .item-actions {
     display: flex;
-    gap: 0.5rem;
-    opacity: 0;
+    gap: 0.75rem;
+    opacity: 0.7;
     transition: opacity 0.2s ease;
 }
 
@@ -780,14 +782,29 @@
     border: none;
     color: #6c757d;
     cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 4px;
+    padding: 0.5rem;
+    border-radius: 6px;
     transition: all 0.2s ease;
+    font-size: 1.1rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .item-action-btn:hover {
     background: #e9ecef;
     color: #495057;
+}
+
+.have-at-home-btn {
+    color: #28a745 !important;
+}
+
+.have-at-home-btn:hover {
+    background: #d4edda !important;
+    color: #155724 !important;
 }
 
 /* Empty State */
@@ -1357,6 +1374,19 @@ body {
     display: flex;
     align-items: center;
     gap: 15px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.nav-logo:hover {
+    opacity: 0.8;
+    text-decoration: none;
+}
+
+.nav-logo:visited {
+    color: inherit;
 }
 
 .logo-icon {

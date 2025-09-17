@@ -1173,6 +1173,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     let nextToken = null;
     let lastQuery = {};
+    let displayedRecipeIds = new Set(); // Track displayed recipes to avoid duplicates
 
     // Sort recipes by nutrition values
     async function sortRecipesByNutrition(recipes, sortBy) {
@@ -1241,14 +1242,24 @@ document.addEventListener('DOMContentLoaded', function () {
         if (reset) {
             nextToken = null;
             lastQuery = { keyword, category, diet_type, allergy_filter, sortBy };
+            displayedRecipeIds.clear(); // Clear displayed recipes on new search
         }
         if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading...</div>';
         try {
             const { items = [], next_token } = await fetchRecipes({ keyword, category, diet_type, allergy_filter, nextToken: reset ? null : nextToken });
             let filteredItems = items;
+
+            // Remove duplicates and already displayed recipes
+            filteredItems = filteredItems.filter(r => {
+                if (displayedRecipeIds.has(r.recipe_id)) {
+                    return false; // Skip already displayed recipes
+                }
+                return true;
+            });
+
             // Strict category match: only show recipes whose categories exactly match the selected category
             if (category && category !== 'all') {
-                filteredItems = items.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
+                filteredItems = filteredItems.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
             }
 
             // Apply sorting by nutrition values
@@ -1262,6 +1273,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">No related recipes provided</div>';
                 } else {
                     filteredItems.forEach(r => {
+                        // Add to displayed recipes set
+                        displayedRecipeIds.add(r.recipe_id);
+
                         const card = document.createElement('div');
                         card.className = 'recipe-card';
                         card.tabIndex = 0;
@@ -1320,7 +1334,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 loadMoreBtn.textContent = 'Load more';
                 loadMoreBtn.style.display = 'block';
                 loadMoreBtn.style.margin = '1.5rem auto';
-                loadMoreBtn.onclick = function () { updateRecipes(false); };
+                loadMoreBtn.onclick = function () {
+                    loadMoreBtn.textContent = 'Loading...';
+                    loadMoreBtn.disabled = true;
+                    updateRecipes(false);
+                };
                 cardsContainer.appendChild(loadMoreBtn);
             } else if (!nextToken && filteredItems.length > 0 && cardsContainer) {
                 // Show "No more recipe available" when there is no more data

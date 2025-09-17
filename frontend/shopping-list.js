@@ -50,7 +50,56 @@ document.addEventListener('DOMContentLoaded', function() {
     loadShoppingList();
     setupEventListeners();
     renderShoppingList();
+    setupMealPlanSync();
 });
+
+// Setup automatic meal plan synchronization
+function setupMealPlanSync() {
+    // Check for meal plan changes every 5 seconds
+    setInterval(() => {
+        checkMealPlanChanges();
+    }, 5000);
+
+    // Listen for storage events (when meal plan is updated in another tab)
+    window.addEventListener('storage', function(e) {
+        if (e.key === MEAL_PLAN_KEY) {
+            setTimeout(() => {
+                autoUpdateFromMealPlan();
+            }, 100); // Small delay to ensure storage is updated
+        }
+    });
+}
+
+// Check if meal plan has changed and auto-update if needed
+async function checkMealPlanChanges() {
+    const source = shoppingList.source;
+    if (source === 'meal-plan' || source === 'both') {
+        try {
+            const mealPlan = localStorage.getItem(MEAL_PLAN_KEY);
+            if (mealPlan) {
+                const currentPlan = JSON.parse(mealPlan);
+                const lastModified = currentPlan.lastModified || currentPlan.generatedAt;
+
+                if (lastModified && (!shoppingList.lastMealPlanSync || new Date(lastModified) > new Date(shoppingList.lastMealPlanSync))) {
+                    await autoUpdateFromMealPlan();
+                }
+            }
+        } catch (error) {
+            console.error('Error checking meal plan changes:', error);
+        }
+    }
+}
+
+// Auto-update shopping list from meal plan changes
+async function autoUpdateFromMealPlan() {
+    try {
+        shoppingList.lastMealPlanSync = new Date().toISOString();
+        await generateShoppingList();
+        showNotification('Shopping list updated from meal plan changes', 'info');
+    } catch (error) {
+        console.error('Error auto-updating shopping list:', error);
+    }
+}
 
 // Setup event listeners
 function setupEventListeners() {
@@ -222,17 +271,38 @@ function categorizeIngredient(ingredient) {
     return 'other';
 }
 
-// Remove duplicate items
+// Remove duplicate items and items marked as "have at home"
 function removeDuplicateItems(items) {
     const seen = new Set();
+    const haveAtHomeItems = getHaveAtHomeItems();
+
     return items.filter(item => {
         const key = item.name.toLowerCase().trim();
+
+        // Skip if already seen (duplicate)
         if (seen.has(key)) {
             return false;
         }
+
+        // Skip if marked as "have at home"
+        if (haveAtHomeItems.has(key)) {
+            return false;
+        }
+
         seen.add(key);
         return true;
     });
+}
+
+// Get items marked as "have at home"
+function getHaveAtHomeItems() {
+    const haveAtHomeItems = new Set();
+    shoppingList.items.forEach(item => {
+        if (item.haveAtHome) {
+            haveAtHomeItems.add(item.name.toLowerCase().trim());
+        }
+    });
+    return haveAtHomeItems;
 }
 
 // Add custom item
@@ -274,6 +344,23 @@ function toggleItemCompletion(itemId) {
         item.completedDate = item.completed ? new Date().toISOString() : null;
         saveShoppingList();
         renderShoppingList();
+
+        // Show appropriate feedback
+        if (item.completed) {
+            showNotification(`"${item.name}" marked as purchased`, 'success');
+        }
+    }
+}
+
+// Mark item as "Have at Home"
+function markAsHaveAtHome(itemId) {
+    const item = shoppingList.items.find(item => item.id === itemId);
+    if (item) {
+        item.haveAtHome = true;
+        item.haveAtHomeDate = new Date().toISOString();
+        saveShoppingList();
+        renderShoppingList();
+        showNotification(`"${item.name}" marked as already at home`, 'info');
     }
 }
 
@@ -317,11 +404,13 @@ function renderShoppingList() {
 
 // Update summary statistics
 function updateSummaryStats() {
-    const totalItems = shoppingList.items.length;
-    const completedItems = shoppingList.items.filter(item => item.completed).length;
+    // Only count items that need to be bought (not "have at home")
+    const itemsToBuy = shoppingList.items.filter(item => !item.haveAtHome);
+    const totalItems = itemsToBuy.length;
+    const completedItems = itemsToBuy.filter(item => item.completed).length;
     const remainingItems = totalItems - completedItems;
     const progressPercentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
-    
+
     document.getElementById('total-items').textContent = totalItems;
     document.getElementById('completed-items').textContent = completedItems;
     document.getElementById('remaining-items').textContent = remainingItems;
@@ -346,14 +435,17 @@ function hideEmptyState() {
 // Render categorized items
 function renderCategorizedItems() {
     const categoriesContainer = document.getElementById('shopping-categories');
-    
-    // Group items by category
+
+    // Group items by category (only show items that need to be bought)
     const itemsByCategory = {};
     shoppingList.items.forEach(item => {
-        if (!itemsByCategory[item.category]) {
-            itemsByCategory[item.category] = [];
+        // Only show items that are not marked as "have at home"
+        if (!item.haveAtHome) {
+            if (!itemsByCategory[item.category]) {
+                itemsByCategory[item.category] = [];
+            }
+            itemsByCategory[item.category].push(item);
         }
-        itemsByCategory[item.category].push(item);
     });
     
     // Sort categories by priority
@@ -390,12 +482,15 @@ function renderShoppingItem(item) {
             </div>
             <div class="item-details">
                 <div class="item-name">${item.name}</div>
-                ${item.source === 'meal-plan' && item.recipe ? 
-                    `<div class="item-source">From: ${item.recipe}</div>` : 
+                ${item.source === 'meal-plan' && item.recipe ?
+                    `<div class="item-source">From: ${item.recipe}</div>` :
                     `<div class="item-source">Custom item</div>`
                 }
             </div>
             <div class="item-actions">
+                <button class="item-action-btn have-at-home-btn" onclick="markAsHaveAtHome('${item.id}')" title="Mark as have at home">
+                    <i class="fas fa-home"></i>
+                </button>
                 <button class="item-action-btn" onclick="removeItem('${item.id}')" title="Remove item">
                     <i class="fas fa-trash"></i>
                 </button>
@@ -537,3 +632,4 @@ function generateItemId() {
 // Export functions for global access
 window.toggleItemCompletion = toggleItemCompletion;
 window.removeItem = removeItem;
+window.markAsHaveAtHome = markAsHaveAtHome;
