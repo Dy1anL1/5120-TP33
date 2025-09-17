@@ -95,7 +95,7 @@ async function openRecipeModal(recipe) {
     const imgEl = m.querySelector('#recipe-modal-img');
 
     if (titleEl) titleEl.textContent = recipe.title || '';
-    
+
     // Handle recipe image in modal
     if (recipe.has_image && recipe.image_display && imgContainerEl && imgEl) {
         imgEl.src = recipe.image_display;
@@ -104,14 +104,14 @@ async function openRecipeModal(recipe) {
     } else if (imgContainerEl) {
         imgContainerEl.style.display = 'none';
     }
-    
+
     if (ingEl) {
         ingEl.innerHTML = '';
         (recipe.ingredients || []).forEach(s => {
             const li = document.createElement('li'); li.textContent = s; ingEl.appendChild(li);
         });
     }
-    
+
     if (dirEl) {
         dirEl.innerHTML = '';
         // Handle both directions (old format) and instructions (new format)
@@ -123,7 +123,7 @@ async function openRecipeModal(recipe) {
         } else if (Array.isArray(recipe.instructions) && recipe.instructions.length > 0) {
             instructionsText = recipe.instructions.join(' ');
         }
-        
+
         if (instructionsText) {
             // Split by periods and filter out empty steps
             const steps = instructionsText
@@ -131,7 +131,7 @@ async function openRecipeModal(recipe) {
                 .map(step => step.trim())
                 .filter(step => step.length > 0)
                 .map(step => step.endsWith('.') ? step : step + '.');
-            
+
             steps.forEach(step => {
                 const li = document.createElement('li');
                 li.textContent = step;
@@ -191,73 +191,73 @@ async function openRecipeModal(recipe) {
     // Add to Dashboard
     const addBtn = m.querySelector('#add-to-dashboard');
     if (addBtn) {
-      // Update button text based on current count for this specific recipe
-      const updateButtonText = () => {
-        const day = todayKey();
-        const todaysRecipes = readDashboard().filter(x => x.day === day);
-        const thisRecipeCount = todaysRecipes.filter(x => x.recipe_id === recipe.recipe_id).length;
-        
-        if (thisRecipeCount >= 3) {
-          addBtn.textContent = `Recipe Limit Reached (${thisRecipeCount}/3)`;
-          addBtn.disabled = true;
-          addBtn.style.background = '#888';
-        } else {
-          addBtn.textContent = `Add to Dashboard (${thisRecipeCount}/3)`;
-          addBtn.disabled = false;
-          addBtn.style.background = '';
-        }
-      };
-      
-      // Initial update
-      updateButtonText();
-      
-      addBtn.onclick = () => {
-        const day = todayKey();
-        const todaysRecipes = readDashboard().filter(x => x.day === day);
-        const thisRecipeCount = todaysRecipes.filter(x => x.recipe_id === recipe.recipe_id).length;
-        
-        // Check if this recipe limit reached
-        if (thisRecipeCount >= 3) {
-          addBtn.textContent = 'Recipe Limit Reached (3/3)';
-          return;
-        }
-        
-        // Get nutrition summary, use calories if available, otherwise null
-        let calories = null;
-        const sumEl = m.querySelector('#nutrition-summary');
-        if (sumEl) {
-          const calCard = sumEl.querySelector('.card .key')?.textContent?.toLowerCase() === 'calories'
-            ? sumEl.querySelector('.card .val')?.textContent
-            : null;
-          if (calCard && !isNaN(Number(calCard))) calories = Number(calCard);
-        }
-        addToDashboard({
-          recipe_id: recipe.recipe_id,
-          title: recipe.title,
-          ingredients: recipe.ingredients || [],
-          calories,
-          added_at: Date.now(),
-          day
-        });
-        
-        // Update button text with new count for this recipe
-        const newCount = thisRecipeCount + 1;
-        addBtn.textContent = `Added! (${newCount}/3)`;
-        addBtn.disabled = true;
-        addBtn.style.background = '#4CAF50';
-        
-        setTimeout(() => {
-          updateButtonText();
-        }, 1200);
-      };
+        // Update button text based on current count for this specific recipe
+        const updateButtonText = () => {
+            const day = todayKey();
+            const todaysRecipes = readDashboard().filter(x => x.day === day);
+            const thisRecipeCount = todaysRecipes.filter(x => x.recipe_id === recipe.recipe_id).length;
+
+            if (thisRecipeCount >= 3) {
+                addBtn.textContent = `Recipe Limit Reached (${thisRecipeCount}/3)`;
+                addBtn.disabled = true;
+                addBtn.style.background = '#888';
+            } else {
+                addBtn.textContent = `Add to Dashboard (${thisRecipeCount}/3)`;
+                addBtn.disabled = false;
+                addBtn.style.background = '';
+            }
+        };
+
+        // Initial update
+        updateButtonText();
+
+        addBtn.onclick = () => {
+            const day = todayKey();
+            const todaysRecipes = readDashboard().filter(x => x.day === day);
+            const thisRecipeCount = todaysRecipes.filter(x => x.recipe_id === recipe.recipe_id).length;
+
+            // Check if this recipe limit reached
+            if (thisRecipeCount >= 3) {
+                addBtn.textContent = 'Recipe Limit Reached (3/3)';
+                return;
+            }
+
+            // Get nutrition summary, use calories if available, otherwise null
+            let calories = null;
+            const sumEl = m.querySelector('#nutrition-summary');
+            if (sumEl) {
+                const calCard = sumEl.querySelector('.card .key')?.textContent?.toLowerCase() === 'calories'
+                    ? sumEl.querySelector('.card .val')?.textContent
+                    : null;
+                if (calCard && !isNaN(Number(calCard))) calories = Number(calCard);
+            }
+            addToDashboard({
+                recipe_id: recipe.recipe_id,
+                title: recipe.title,
+                ingredients: recipe.ingredients || [],
+                calories,
+                added_at: Date.now(),
+                day
+            });
+
+            // Update button text with new count for this recipe
+            const newCount = thisRecipeCount + 1;
+            addBtn.textContent = `Added! (${newCount}/3)`;
+            addBtn.disabled = true;
+            addBtn.style.background = '#4CAF50';
+
+            setTimeout(() => {
+                updateButtonText();
+            }, 1200);
+        };
     }
 
     // View Dashboard button
     const viewBtn = m.querySelector('#view-dashboard');
     if (viewBtn) {
-      viewBtn.onclick = () => {
-        window.location.href = 'nutrition-dashboard.html';
-      };
+        viewBtn.onclick = () => {
+            window.location.href = 'nutrition-dashboard.html';
+        };
     }
 }
 
@@ -266,52 +266,52 @@ async function openRecipeModal(recipe) {
 const DASHBOARD_KEY = 'nss_dashboard';
 
 function todayKey() {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
 }
 
 function readDashboard() {
-  try { return JSON.parse(localStorage.getItem(DASHBOARD_KEY)) || []; }
-  catch { return []; }
+    try { return JSON.parse(localStorage.getItem(DASHBOARD_KEY)) || []; }
+    catch { return []; }
 }
 
 function writeDashboard(list) {
-  localStorage.setItem(DASHBOARD_KEY, JSON.stringify(list || []));
+    localStorage.setItem(DASHBOARD_KEY, JSON.stringify(list || []));
 }
 
 function addToDashboard(item) {
-  const list = readDashboard();
-  // Add unique identifier to each dashboard entry
-  const uniqueItem = {
-    ...item,
-    dashboard_entry_id: Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-  };
-  list.push(uniqueItem);
-  writeDashboard(list);
+    const list = readDashboard();
+    // Add unique identifier to each dashboard entry
+    const uniqueItem = {
+        ...item,
+        dashboard_entry_id: Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+    };
+    list.push(uniqueItem);
+    writeDashboard(list);
 }
 
 function removeFromDashboardByIdAndDay(recipe_id, day) {
-  const list = readDashboard();
-  const next = list.filter(x => !(String(x.recipe_id) === String(recipe_id) && x.day === day));
-  writeDashboard(next);
-  return
+    const list = readDashboard();
+    const next = list.filter(x => !(String(x.recipe_id) === String(recipe_id) && x.day === day));
+    writeDashboard(next);
+    return
 }
 
 function removeFromDashboardByEntryId(dashboard_entry_id) {
-  const list = readDashboard();
-  const next = list.filter(x => x.dashboard_entry_id !== dashboard_entry_id);
-  writeDashboard(next);
-  return
+    const list = readDashboard();
+    const next = list.filter(x => x.dashboard_entry_id !== dashboard_entry_id);
+    writeDashboard(next);
+    return
 }
 
 function clearAllMealsForDay(day) {
-  const list = readDashboard();
-  const next = list.filter(x => x.day !== day);
-  writeDashboard(next);
-  return
+    const list = readDashboard();
+    const next = list.filter(x => x.day !== day);
+    writeDashboard(next);
+    return
 }
 
 async function renderDashboardNutrition() {
@@ -362,7 +362,7 @@ async function renderDashboardNutrition() {
         } catch { }
         if (!Array.isArray(dashboard) || dashboard.length === 0) {
             dashDiv.innerHTML = '<div style="color:#888;text-align:center;">No dashboard recipes found.</div>';
-            
+
             // Reset all nutrition values to zero when no meals
             if (caloriesCurrent) caloriesCurrent.textContent = '0';
             if (proteinCurrent) proteinCurrent.textContent = '0';
@@ -374,7 +374,7 @@ async function renderDashboardNutrition() {
                 progressFill.style.width = '0%';
                 progressFill.style.background = '';
             }
-            
+
             // Reset progress bars in cards
             const cardFields = [
                 { curId: 'calories-current', goalId: 'calories-goal' },
@@ -395,7 +395,7 @@ async function renderDashboardNutrition() {
                     card.classList.remove('over-goal');
                 }
             });
-            
+
             return;
         }
 
@@ -591,7 +591,7 @@ function getAny(obj, keys) {
 // Adjust unrealistic nutrition values that are likely from API accumulation issues
 function adjustNutritionValue(value, label) {
     if (value == null) return null;
-    
+
     // Handle unrealistic values from nutrition API accumulation 
     // Values appear to be accumulated per 100g for each ingredient, need scaling down
     switch (label) {
@@ -645,14 +645,14 @@ function adjustNutritionValue(value, label) {
             }
             break;
     }
-    
+
     return value;
 }
 
 function formatNutritionValue(raw, label) {
     const adjusted = adjustNutritionValue(raw, label);
     if (adjusted == null) return '-';
-    
+
     // Add ~ prefix if value was adjusted
     const prefix = (adjusted !== raw && raw != null) ? '~' : '';
     return prefix + fmt(adjusted);
@@ -729,12 +729,12 @@ async function renderNutritionDashboard() {
 
 // Auto-execute on page load
 if (window.location.pathname.includes('nutrition-dashboard')) {
-  document.addEventListener('DOMContentLoaded', () => {
-    renderMealsAddedList();
-    if (typeof renderDashboardNutrition === 'function') {
-      renderDashboardNutrition();
-    }
-  });
+    document.addEventListener('DOMContentLoaded', () => {
+        renderMealsAddedList();
+        if (typeof renderDashboardNutrition === 'function') {
+            renderDashboardNutrition();
+        }
+    });
 }
 
 async function fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit = 10, nextToken = null }) {
@@ -833,16 +833,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // Mobile menu functionality
     const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
     const navLinks = document.querySelector('.nav-links');
-    
+
     if (mobileMenuBtn && navLinks) {
-        mobileMenuBtn.addEventListener('click', function(e) {
+        mobileMenuBtn.addEventListener('click', function (e) {
             e.preventDefault();
             navLinks.classList.toggle('show');
-            
+
             // Update aria-expanded for accessibility
             const isExpanded = navLinks.classList.contains('show');
             mobileMenuBtn.setAttribute('aria-expanded', isExpanded);
-            
+
             // Change icon
             const icon = mobileMenuBtn.querySelector('i');
             if (icon) {
@@ -853,7 +853,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
         });
-        
+
         // Close mobile menu when clicking on a nav link
         navLinks.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', () => {
@@ -865,9 +865,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         });
-        
+
         // Close mobile menu when clicking outside
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
             if (!mobileMenuBtn.contains(e.target) && !navLinks.contains(e.target)) {
                 navLinks.classList.remove('show');
                 mobileMenuBtn.setAttribute('aria-expanded', 'false');
@@ -878,7 +878,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-    
+
     // Features section routing
     const mealPlanning = document.getElementById('feature-meal-planning');
     const shoppingList = document.getElementById('feature-shopping-list');
@@ -972,7 +972,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             };
         }
-        
+
         // View Dashboard button
         const viewDashboardBtn = modal ? modal.querySelector('#view-dashboard') : null;
         if (viewDashboardBtn) {
@@ -1042,21 +1042,21 @@ document.addEventListener('DOMContentLoaded', function () {
         try { dashboard = JSON.parse(localStorage.getItem(dashboardKey)) || []; } catch { }
         const isFav = dashboard.some(r => r.recipe_id === recipe.recipe_id);
         // Create ingredients list HTML
-        const ingredientsList = (recipe.ingredients || []).map(ingredient => 
+        const ingredientsList = (recipe.ingredients || []).map(ingredient =>
             `<li>${ingredient}</li>`
         ).join('');
-        
+
         // Create instructions list HTML
         const instructionsText = recipe.instructions || '';
         let instructionsList = '';
         if (instructionsText) {
             // Split instructions by sentences and create numbered steps
             const steps = instructionsText.split(/[.!?]+/).filter(step => step.trim().length > 10);
-            instructionsList = steps.map(step => 
+            instructionsList = steps.map(step =>
                 `<li>${step.trim()}.</li>`
             ).join('');
         }
-        
+
         modal.innerHTML = `
             <div class="modal-content upgraded-modal-content">
                 <button class="close" tabindex="0" aria-label="Close"><i class="fas fa-times"></i></button>
@@ -1177,7 +1177,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Sort recipes by nutrition values
     async function sortRecipesByNutrition(recipes, sortBy) {
         if (sortBy === 'default' || !recipes.length) return recipes;
-        
+
         // Fetch nutrition data for all recipes
         const recipesWithNutrition = await Promise.all(
             recipes.map(async (recipe) => {
@@ -1201,12 +1201,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
         );
-        
+
         // Sort based on the selected option
         const sorted = recipesWithNutrition.sort((a, b) => {
             const aNutrition = a.nutritionData;
             const bNutrition = b.nutritionData;
-            
+
             switch (sortBy) {
                 case 'calories-high':
                     return bNutrition.calories - aNutrition.calories;
@@ -1228,7 +1228,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     return 0;
             }
         });
-        
+
         return sorted;
     }
 
@@ -1250,7 +1250,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (category && category !== 'all') {
                 filteredItems = items.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
             }
-            
+
             // Apply sorting by nutrition values
             if (sortBy !== 'default') {
                 if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition data for sorting...</div>';
@@ -1275,7 +1275,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const allergyTags = habits.filter(h => ['dairy_free', 'gluten_free', 'nut_free', 'shellfish_free', 'egg_free', 'soy_free', 'fish_free'].includes(h))
                             .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');
                         const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
-                        
+
                         // Add nutrition info if available from sorting
                         let nutritionInfo = '';
                         if (r.nutritionData) {
@@ -1287,12 +1287,12 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <span class="nutrition-item">🧂 ${adjustNutritionValue(data.sodium, 'Sodium').toFixed(0)}mg sodium</span>
                             </div>`;
                         }
-                        
+
                         // Add image if available
-                        const imageHtml = r.has_image && r.image_display ? 
-                            `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` : 
+                        const imageHtml = r.has_image && r.image_display ?
+                            `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` :
                             `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
-                        
+
                         card.innerHTML = `
                             ${imageHtml}
                             <div class="recipe-content">
@@ -1359,10 +1359,10 @@ document.addEventListener('DOMContentLoaded', function () {
                                     .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');
                                 const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
                                 // Add image if available  
-                                const imageHtml = r.has_image && r.image_display ? 
-                                    `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` : 
+                                const imageHtml = r.has_image && r.image_display ?
+                                    `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` :
                                     `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
-                                
+
                                 card.innerHTML = `
                                         ${imageHtml}
                                         <div class="recipe-content">
@@ -1404,80 +1404,80 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function renderMealsAddedList() {
-  const ul = document.querySelector('.meals-added-list');
-  const clearAllBtn = document.getElementById('clear-all-meals');
-  if (!ul) return;
+    const ul = document.querySelector('.meals-added-list');
+    const clearAllBtn = document.getElementById('clear-all-meals');
+    if (!ul) return;
 
-  const day = todayKey();
-  const all = readDashboard();
-  const todays = all.filter(x => x.day === day);
+    const day = todayKey();
+    const all = readDashboard();
+    const todays = all.filter(x => x.day === day);
 
-  ul.innerHTML = '';
+    ul.innerHTML = '';
 
-  if (todays.length === 0) {
-    ul.innerHTML = `<li class="meal-item"><div class="meal-left">
+    if (todays.length === 0) {
+        ul.innerHTML = `<li class="meal-item"><div class="meal-left">
         <div class="meal-name" style="color:#888;">No meals added yet</div>
       </div></li>`;
-    
-    // Hide clear all button when no meals
-    if (clearAllBtn) clearAllBtn.style.display = 'none';
-    
-    // Auto-refresh nutrition data to show zeros
-    if (typeof renderDashboardNutrition === 'function') {
-      renderDashboardNutrition();
-    }
-    return;
-  }
 
-  // Show clear all button when there are meals
-  if (clearAllBtn) {
-    clearAllBtn.style.display = 'block';
-    // Bind clear all button if not already bound
-    if (!clearAllBtn._bound) {
-      clearAllBtn._bound = true;
-      clearAllBtn.onclick = function() {
-        if (confirm('Are you sure you want to clear all meals for today?')) {
-          clearAllMealsForDay(day);
-          renderMealsAddedList();
-          if (typeof renderDashboardNutrition === 'function') {
+        // Hide clear all button when no meals
+        if (clearAllBtn) clearAllBtn.style.display = 'none';
+
+        // Auto-refresh nutrition data to show zeros
+        if (typeof renderDashboardNutrition === 'function') {
             renderDashboardNutrition();
-          }
         }
-      };
+        return;
     }
-  }
 
-  // Group recipes by recipe_id and title
-  const groupedRecipes = {};
-  todays.forEach(item => {
-    const key = `${item.recipe_id}_${item.title}`;
-    if (!groupedRecipes[key]) {
-      groupedRecipes[key] = {
-        recipe_id: item.recipe_id,
-        title: item.title,
-        day: item.day,
-        entries: [],
-        totalCalories: 0
-      };
+    // Show clear all button when there are meals
+    if (clearAllBtn) {
+        clearAllBtn.style.display = 'block';
+        // Bind clear all button if not already bound
+        if (!clearAllBtn._bound) {
+            clearAllBtn._bound = true;
+            clearAllBtn.onclick = function () {
+                if (confirm('Are you sure you want to clear all meals for today?')) {
+                    clearAllMealsForDay(day);
+                    renderMealsAddedList();
+                    if (typeof renderDashboardNutrition === 'function') {
+                        renderDashboardNutrition();
+                    }
+                }
+            };
+        }
     }
-    groupedRecipes[key].entries.push(item);
-    if (typeof item.calories === 'number' && !Number.isNaN(item.calories)) {
-      groupedRecipes[key].totalCalories += item.calories;
-    }
-  });
 
-  // Render grouped recipes
-  Object.values(groupedRecipes).forEach(group => {
-    const li = document.createElement('li');
-    li.className = 'meal-item';
-    li.dataset.recipeId = group.recipe_id;
-    li.dataset.day = group.day;
-    
-    const count = group.entries.length;
-    const displayTitle = count > 1 ? `${group.title} ×${count}` : group.title;
-    const totalKcal = group.totalCalories > 0 ? `${group.totalCalories.toFixed(0)} kcal` : '-';
+    // Group recipes by recipe_id and title
+    const groupedRecipes = {};
+    todays.forEach(item => {
+        const key = `${item.recipe_id}_${item.title}`;
+        if (!groupedRecipes[key]) {
+            groupedRecipes[key] = {
+                recipe_id: item.recipe_id,
+                title: item.title,
+                day: item.day,
+                entries: [],
+                totalCalories: 0
+            };
+        }
+        groupedRecipes[key].entries.push(item);
+        if (typeof item.calories === 'number' && !Number.isNaN(item.calories)) {
+            groupedRecipes[key].totalCalories += item.calories;
+        }
+    });
 
-    li.innerHTML = `
+    // Render grouped recipes
+    Object.values(groupedRecipes).forEach(group => {
+        const li = document.createElement('li');
+        li.className = 'meal-item';
+        li.dataset.recipeId = group.recipe_id;
+        li.dataset.day = group.day;
+
+        const count = group.entries.length;
+        const displayTitle = count > 1 ? `${group.title} ×${count}` : group.title;
+        const totalKcal = group.totalCalories > 0 ? `${group.totalCalories.toFixed(0)} kcal` : '-';
+
+        li.innerHTML = `
       <div class="meal-left">
         <div class="meal-name">${displayTitle}</div>
         <div class="meal-meta">Added today</div>
@@ -1494,59 +1494,59 @@ function renderMealsAddedList() {
         </div>
       </div>
     `;
-    
-    // Store entries data for deletion
-    li._entries = group.entries;
-    ul.appendChild(li);
-  });
 
-  // Bind add/remove events
-  ul.querySelectorAll('.meal-add').forEach(btn => {
-    btn.onclick = function() {
-      const li = btn.closest('.meal-item');
-      const entries = li?._entries;
-      const recipeId = btn.getAttribute('data-recipe-id');
-      
-      if (!entries || entries.length === 0 || entries.length >= 3) return;
-      
-      // Use the first entry as template to add another one
-      const template = entries[0];
-      addToDashboard({
-        recipe_id: template.recipe_id,
-        title: template.title,
-        ingredients: template.ingredients || [],
-        calories: template.calories,
-        added_at: Date.now(),
-        day: template.day
-      });
-      
-      renderMealsAddedList(); // refresh list
-      if (typeof renderDashboardNutrition === 'function') {
-        renderDashboardNutrition(); // refresh nutrition summary
-      }
-    };
-  });
+        // Store entries data for deletion
+        li._entries = group.entries;
+        ul.appendChild(li);
+    });
 
-  ul.querySelectorAll('.meal-delete').forEach(btn => {
-    btn.onclick = function() {
-      const li = btn.closest('.meal-item');
-      const entries = li?._entries;
-      
-      if (!entries || entries.length === 0) return;
-      
-      // Remove one entry (the most recent one)
-      const entryToRemove = entries[entries.length - 1];
-      if (entryToRemove.dashboard_entry_id) {
-        removeFromDashboardByEntryId(entryToRemove.dashboard_entry_id);
-      } else {
-        // Fallback for old entries
-        removeFromDashboardByIdAndDay(entryToRemove.recipe_id, entryToRemove.day);
-      }
-      
-      renderMealsAddedList(); // refresh list
-      if (typeof renderDashboardNutrition === 'function') {
-        renderDashboardNutrition(); // refresh nutrition summary
-      }
-    };
-  });
+    // Bind add/remove events
+    ul.querySelectorAll('.meal-add').forEach(btn => {
+        btn.onclick = function () {
+            const li = btn.closest('.meal-item');
+            const entries = li?._entries;
+            const recipeId = btn.getAttribute('data-recipe-id');
+
+            if (!entries || entries.length === 0 || entries.length >= 3) return;
+
+            // Use the first entry as template to add another one
+            const template = entries[0];
+            addToDashboard({
+                recipe_id: template.recipe_id,
+                title: template.title,
+                ingredients: template.ingredients || [],
+                calories: template.calories,
+                added_at: Date.now(),
+                day: template.day
+            });
+
+            renderMealsAddedList(); // refresh list
+            if (typeof renderDashboardNutrition === 'function') {
+                renderDashboardNutrition(); // refresh nutrition summary
+            }
+        };
+    });
+
+    ul.querySelectorAll('.meal-delete').forEach(btn => {
+        btn.onclick = function () {
+            const li = btn.closest('.meal-item');
+            const entries = li?._entries;
+
+            if (!entries || entries.length === 0) return;
+
+            // Remove one entry (the most recent one)
+            const entryToRemove = entries[entries.length - 1];
+            if (entryToRemove.dashboard_entry_id) {
+                removeFromDashboardByEntryId(entryToRemove.dashboard_entry_id);
+            } else {
+                // Fallback for old entries
+                removeFromDashboardByIdAndDay(entryToRemove.recipe_id, entryToRemove.day);
+            }
+
+            renderMealsAddedList(); // refresh list
+            if (typeof renderDashboardNutrition === 'function') {
+                renderDashboardNutrition(); // refresh nutrition summary
+            }
+        };
+    });
 }

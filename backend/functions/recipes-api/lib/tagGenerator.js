@@ -99,7 +99,7 @@ function getCategories(recipe) {
   if (hasAny(txt, CATEGORY_KEYWORDS.DESSERT)) cat.add("dessert");
   if (hasAny(txt, CATEGORY_KEYWORDS.SOUP)) cat.add("soup");
   if (hasAny(txt, CATEGORY_KEYWORDS.SALAD)) cat.add("salad");
-  if (hasAny(txt, CATEGORY_KEYWORDS.DRINK)) cat.add("drink");
+  if (hasAny(txt, CATEGORY_KEYWORDS.BEVERAGE)) cat.add("beverage");
   if (hasAny(txt, CATEGORY_KEYWORDS.BREAKFAST)) cat.add("breakfast");
   if (hasAny(txt, CATEGORY_KEYWORDS.SNACK)) cat.add("snack");
 
@@ -128,7 +128,7 @@ function getAllAvailableHabits() {
  * Get all available categories in the system
  */
 function getAllAvailableCategories() {
-  return ['breakfast', 'lunch', 'dinner', 'dessert', 'soup', 'salad', 'snack', 'drink'];
+  return ['breakfast', 'lunch', 'dinner', 'dessert', 'soup', 'salad', 'snack', 'beverage'];
 }
 
 module.exports = {

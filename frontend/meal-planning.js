@@ -230,8 +230,7 @@ const questionnaireSteps = [
                     { value: "lunch", text: "Lunch" },
                     { value: "dinner", text: "Dinner" },
                     { value: "soup", text: "Soup" },
-                    { value: "salad", text: "Salad" },
-                    { value: "snack", text: "Snack" }
+                    { value: "salad", text: "Salad" }
                 ],
                 validation: {
                     minSelected: 2,
@@ -279,15 +278,14 @@ const questionnaireSteps = [
         questions: [
             {
                 id: "calorie_target",
-                label: "Daily Calorie Target",
+                label: "Daily Energy Needs",
                 type: "select",
                 required: true,
                 options: [
-                    { value: "", text: "Select your calorie target" },
-                    { value: "1200-1500", text: "1200-1500 calories (Weight loss)" },
-                    { value: "1500-1800", text: "1500-1800 calories (Maintenance for women)" },
-                    { value: "1800-2200", text: "1800-2200 calories (Maintenance for men)" },
-                    { value: "2200+", text: "2200+ calories (Weight gain/very active)" }
+                    { value: "", text: "Select your daily energy needs" },
+                    { value: "1200-1500", text: "1200-1500 calories (Lower energy needs)" },
+                    { value: "1500-1800", text: "1500-1800 calories (Women's standard needs)" },
+                    { value: "1800-2200", text: "1800-2200 calories (Men's standard needs)" }
                 ]
             },
             {
@@ -700,8 +698,8 @@ async function generateMealPlan() {
         
         console.log('Generating meal plan with preferences:', userPreferences);
         
-        // Generate plan for each day (Testing: 3 days)
-        const days = ['Monday', 'Tuesday', 'Wednesday']; // 3 days for testing
+        // Generate plan for each day (Full week)
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']; // Full week
         const mealPlan = {};
 
         for (const day of days) {
@@ -874,15 +872,6 @@ async function fetchRandomRecipe(mealType) {
                         );
                     }
 
-                    // For snack, prefer smaller portions or breakfast items
-                    if (mealType === 'snack') {
-                        return recipe.categories && (
-                            recipe.categories.includes('breakfast') ||
-                            recipe.title.toLowerCase().includes('snack') ||
-                            recipe.title.toLowerCase().includes('cookie') ||
-                            recipe.title.toLowerCase().includes('bar')
-                        );
-                    }
 
                     // For other meal types, try to match categories or general suitability
                     if (recipe.categories) {

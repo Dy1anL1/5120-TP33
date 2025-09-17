@@ -1517,15 +1517,6 @@ body {
 /* Main content area */
 .main-content {
     margin-top: 0;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0; /* Allow flex item to shrink */
-}
-
-/* Ensure page sections work with sticky footer */
-.page-header {
-    flex-shrink: 0;
 }
 
 .questionnaire-container,
@@ -1921,7 +1912,7 @@ html {
 
 .filter-options {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 30px;
     margin-bottom: 0px;
 }
@@ -2742,9 +2733,6 @@ html {
         padding: 30px 20px;
     }
 
-    .filter-options {
-        grid-template-columns: 1fr;
-    }
 
     .recipe-cards-container {
         grid-template-columns: 1fr;
@@ -2794,6 +2782,13 @@ html {
     }
 }
 
+@media (max-width: 900px) {
+    .filter-options {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+}
+
 @media (max-width: 480px) {
     .nav-container {
         padding: 0 10px;
@@ -2815,6 +2810,11 @@ html {
     
     .main-content {
         margin-top: 70px;
+    }
+
+    .filter-options {
+        grid-template-columns: 1fr;
+        gap: 15px;
     }
 
     .hero-section {

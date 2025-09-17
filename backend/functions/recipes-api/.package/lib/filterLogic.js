@@ -116,7 +116,7 @@ function validateFilters(params) {
   const errors = [];
 
   // Check for valid category values
-  const validCategories = ['all', 'breakfast', 'lunch', 'dinner', 'dessert', 'soup', 'salad', 'snack', 'drink'];
+  const validCategories = ['all', 'breakfast', 'lunch', 'dinner', 'dessert', 'soup', 'salad', 'snack', 'beverage'];
   if (params.category && !validCategories.includes(params.category)) {
     errors.push(`Invalid category: ${params.category}`);
   }

@@ -84,7 +84,7 @@ const INGREDIENT_KEYWORDS = {
 // Nutrition thresholds for health tags
 const NUTRITION_THRESHOLDS = {
   low_sodium: { sodium_mg: 600 },
-  diabetic_friendly: { 
+  diabetic_friendly: {
     carbs_g: 30,
     sugar_g: 10,
     sodium_mg: 800
@@ -99,12 +99,12 @@ const NUTRITION_THRESHOLDS = {
 // --- Nutrition Functions ---
 function adjustNutritionValue(value, label) {
   if (value == null || isNaN(Number(value))) return 0;
-  
+
   const num = Number(value);
   if (num <= 0) return 0;
-  
+
   const lowerLabel = label.toLowerCase();
-  
+
   // Sodium adjustment - more aggressive for very high values
   if (lowerLabel.includes('sodium')) {
     if (num > 10000) return Math.round(num / 1000 * 200);
@@ -112,40 +112,40 @@ function adjustNutritionValue(value, label) {
     if (num > 2000) return Math.round(num * 0.6);
     return num;
   }
-  
+
   // Sugar adjustment
   if (lowerLabel.includes('sugar')) {
     if (num > 100) return Math.round(num * 0.3);
     return num;
   }
-  
+
   // Carbs adjustment
   if (lowerLabel.includes('carb')) {
     if (num > 200) return Math.round(num * 0.4);
     return num;
   }
-  
+
   return num;
 }
 
 async function fetchNutrition(ingredients) {
   try {
-    const normalized = (ingredients || []).map(s => ({ 
+    const normalized = (ingredients || []).map(s => ({
       text: typeof s === 'string' ? s : (s.text || s.name || ''),
       label: 'fresh'
     }));
-    
+
     const res = await fetch(NUTRITION_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ingredients: normalized })
     });
-    
+
     if (!res.ok) return null;
     const data = await res.json();
-    
+
     if (!data.summary_100g_sum) return null;
-    
+
     const sum = data.summary_100g_sum;
     const nutrition = {
       calories: adjustNutritionValue(sum.calories || sum.energy_kcal || sum.energy, 'calories'),
@@ -155,7 +155,7 @@ async function fetchNutrition(ingredients) {
       saturated_fat_g: adjustNutritionValue(sum.saturated_fat_g || sum.saturated_fat, 'saturated fat'),
       protein_g: adjustNutritionValue(sum.protein_g || sum.protein, 'protein')
     };
-    
+
     return nutrition;
   } catch (error) {
     console.error('Nutrition fetch error:', error.message);
@@ -163,76 +163,179 @@ async function fetchNutrition(ingredients) {
   }
 }
 
+// --- Classification Configuration ---
+const SOUP_NEGATIVES = [
+  'fried rice', 'risotto', 'pilaf', 'stir-fry',
+  'paella', 'biryani', 'casserole', 'baked pasta', 'noodle stir-fry'
+];
+
+const BEVERAGE_KEYWORDS = {
+  hot_indicators: ['hot', 'warm'],
+  cold_indicators: ['iced', 'cold', 'frozen'],
+  coffee_types: ['coffee', 'latte', 'espresso', 'mocha', 'cappuccino'],
+  tea_types: ['tea', 'chai', 'matcha', 'green tea', 'black tea'],
+  smoothie_types: ['smoothie', 'shake', 'milkshake'],
+  juice_types: ['juice', 'lemonade'],
+  other_beverages: ['frappe', 'punch', 'mocktail', 'cocktail', 'hot chocolate', 'cocoa']
+};
+
 // --- Classification Functions ---
+function getBeverageTags(title) {
+  const titleLower = title.toLowerCase();
+  const tags = [];
+
+  // Temperature tags
+  if (anyWord(titleLower, BEVERAGE_KEYWORDS.hot_indicators)) {
+    tags.push('hot');
+  } else if (anyWord(titleLower, BEVERAGE_KEYWORDS.cold_indicators)) {
+    tags.push('cold');
+  } else {
+    tags.push('cold'); // Default to cold
+  }
+
+  // Type tags
+  if (anyWord(titleLower, BEVERAGE_KEYWORDS.coffee_types)) tags.push('coffee');
+  if (anyWord(titleLower, BEVERAGE_KEYWORDS.tea_types)) tags.push('tea');
+  if (anyWord(titleLower, BEVERAGE_KEYWORDS.smoothie_types)) tags.push('smoothie');
+  if (anyWord(titleLower, BEVERAGE_KEYWORDS.juice_types)) tags.push('juice');
+
+  return tags;
+}
+
+function isSoup(title, ingredients) {
+  const titleLower = title.toLowerCase();
+  const ingredientsText = (ingredients || []).join(' ').toLowerCase();
+
+  // Strong negation check first
+  for (const negative of SOUP_NEGATIVES) {
+    if (titleLower.includes(negative)) {
+      return { result: false, reason: `blocked_by: ${negative}` };
+    }
+  }
+
+  // Positive soup indicators
+  if (anyWord(titleLower, ['soup', 'chowder', 'pho', 'ramen', 'bisque', 'gazpacho', 'congee'])) {
+    return { result: true, reason: 'title_keyword' };
+  }
+
+  return { result: false, reason: 'no_soup_signal' };
+}
+
 function classifyRecipe(title, ingredients) {
   const titleLower = W(title);
   const ingredientsText = (ingredients || []).join(' ').toLowerCase();
   const combined = `${titleLower} ${ingredientsText}`;
+  const debug = { title, rules: [] };
 
   // Priority 1: Dessert (highest priority)
   if (anyWord(combined, [
     'chocolate cake', 'brownie', 'ice cream', 'candy', 'frosting',
     'chocolate chip cookie', 'sugar cookie', 'cheesecake', 'pie',
-    'chocolate mousse', 'tiramisu', 'fudge', 'caramel'
+    'chocolate mousse', 'tiramisu', 'fudge', 'caramel', 'cupcake', 'pudding'
   ])) {
-    return { primary: 'dessert', all: ['dessert'] };
+    debug.rules.push('dessert_keyword');
+    return { primary: 'dessert', all: ['dessert'], secondary: [], debug };
   }
 
-  // Priority 2: Soup
-  if (anyWord(combined, ['soup', 'broth', 'chowder', 'bisque'])) {
-    return { primary: 'soup', all: ['soup'] };
+  // Priority 2: Beverage (new category)
+  const allBeverageKeywords = [
+    ...BEVERAGE_KEYWORDS.coffee_types,
+    ...BEVERAGE_KEYWORDS.tea_types,
+    ...BEVERAGE_KEYWORDS.smoothie_types,
+    ...BEVERAGE_KEYWORDS.juice_types,
+    ...BEVERAGE_KEYWORDS.other_beverages
+  ];
+
+  if (anyWord(titleLower, allBeverageKeywords)) {
+    const beverageTags = getBeverageTags(title);
+    debug.rules.push('beverage_keyword', `tags: ${beverageTags.join(',')}`);
+    return { primary: 'beverage', all: ['beverage'], secondary: beverageTags, debug };
   }
 
-  // Priority 3: Breakfast 
+  // Priority 3: Soup (with strong negation)
+  const soupCheck = isSoup(title, ingredients);
+  if (soupCheck.result) {
+    debug.rules.push(soupCheck.reason);
+    return { primary: 'soup', all: ['soup'], secondary: [], debug };
+  } else if (soupCheck.reason.startsWith('blocked_by')) {
+    debug.rules.push(soupCheck.reason);
+  }
+
+  // Priority 4: Breakfast
   if (anyWord(combined, [
     'breakfast', 'morning', 'pancake', 'pancakes', 'waffle', 'waffles',
-    'oatmeal', 'cereal', 'granola', 'muesli', 'porridge', 'toast',
+    'oatmeal', 'overnight oats', 'cereal', 'granola', 'muesli', 'porridge', 'toast',
     'muffin', 'muffins', 'bagel', 'bagels', 'scone', 'scones',
-    'omelet', 'omelette', 'scrambled eggs', 'fried eggs', 'brunch'
+    'omelet', 'omelette', 'scrambled eggs', 'fried eggs', 'brunch', 'hash brown', 'frittata', 'french toast'
   ])) {
-    return { primary: 'breakfast', all: ['breakfast'] };
+    debug.rules.push('breakfast_keyword');
+    return { primary: 'breakfast', all: ['breakfast'], secondary: [], debug };
   }
 
-  // Priority 4: Snack
+  // Priority 5: Snack (precise phrases only)
   if (anyWord(combined, [
-    'chips', 'dip', 'nuts', 'crackers', 'popcorn', 'bar'
+    'chips', 'dip', 'trail mix', 'jerky', 'energy ball', 'energy bites',
+    'granola bar', 'protein bar', 'popcorn', 'crackers'
   ])) {
-    return { primary: 'snack', all: ['snack'] };
+    debug.rules.push('snack_keyword');
+    return { primary: 'snack', all: ['snack'], secondary: [], debug };
   }
 
-  // Priority 5: Salad (only if no major protein)
-  if (anyWord(titleLower, ['salad']) && 
-      !anyWord(ingredientsText, ['chicken', 'beef', 'pork', 'fish', 'salmon', 'tuna'])) {
-    return { primary: 'salad', all: ['salad'] };
+  // Priority 6: Salad (relaxed rules - allow protein salads)
+  if (anyWord(titleLower, ['salad'])) {
+    const secondary = [];
+    if (anyWord(ingredientsText, [
+      'chicken', 'beef', 'pork', 'ham', 'bacon', 'turkey', 'tuna', 'salmon',
+      'shrimp', 'prawn', 'tofu', 'tempeh', 'egg', 'eggs', 'chickpea'
+    ])) {
+      secondary.push('protein_salad');
+    }
+    debug.rules.push('salad_keyword');
+    return { primary: 'salad', all: ['salad'], secondary, debug };
   }
 
-  // Priority 6: Main dishes (lunch and dinner can coexist)
+  // Priority 7: Main dishes (lunch and dinner can coexist)
   const categories = new Set();
-  
+
   // Lunch-specific items
-  if (anyWord(combined, ['lunch', 'sandwich', 'wrap', 'burger'])) {
+  if (anyWord(combined, ['lunch', 'sandwich', 'wrap', 'burger', 'burrito', 'taco', 'pita', 'panini', 'sub'])) {
     categories.add('lunch');
+    debug.rules.push('lunch_keyword');
   }
-  
+
   // Dinner items (many can also be lunch)
-  if (anyWord(combined, ['dinner', 'casserole', 'stew', 'roast', 'pasta', 'rice', 'noodle', 'chicken', 'beef', 'pork', 'fish'])) {
-    categories.add('lunch');
+  if (anyWord(combined, [
+    'dinner', 'casserole', 'stew', 'roast', 'pasta', 'rice', 'noodle',
+    'stir-fry', 'gratin', 'curry', 'chicken', 'beef', 'pork', 'fish'
+  ])) {
     categories.add('dinner');
+    debug.rules.push('dinner_keyword');
   }
-  
-  // Default to dinner if no specific category
+
+  // Main protein + main carb = dinner
+  const hasProtein = anyWord(combined, ['chicken', 'beef', 'pork', 'fish', 'seafood']);
+  const hasCarb = anyWord(combined, ['rice', 'noodle', 'pasta']);
+  if (hasProtein && hasCarb) {
+    categories.add('dinner');
+    debug.rules.push('protein_carb_combo');
+  }
+
+  // No category matched - return uncategorized
   if (categories.size === 0) {
-    categories.add('dinner');
+    debug.rules.push('no_match');
+    return { primary: 'uncategorized', all: [], secondary: [], debug };
   }
-  
+
   // Return object with primary category and all categories
   const allCategories = Array.from(categories);
-  const primaryCategory = categories.has('dinner') ? 'dinner' : 
-                         categories.has('lunch') ? 'lunch' : 'dinner';
-  
+  const primaryCategory = categories.has('dinner') ? 'dinner' :
+    categories.has('lunch') ? 'lunch' : 'dinner';
+
   return {
     primary: primaryCategory,
-    all: allCategories
+    all: allCategories,
+    secondary: [],
+    debug
   };
 }
 
@@ -265,38 +368,38 @@ function analyzeIngredients(ingredients) {
 function detectAllergens(ingredients) {
   const ingredientsText = (ingredients || []).join(' ').toLowerCase();
   const allergenAnalysis = {};
-  
+
   Object.entries(ENHANCED_ALLERGEN_MAP).forEach(([allergen, config]) => {
     let score = 0;
     let present = false;
     let sources = [];
-    
+
     // Check obvious allergens
     if (anyWord(ingredientsText, config.obvious)) {
       score += 3;
       present = true;
       sources.push('obvious');
     }
-    
+
     // Check hidden allergens
     if (anyWord(ingredientsText, config.hidden)) {
       score += 2;
       present = true;
       sources.push('hidden');
     }
-    
+
     // Check cross-contamination risk
     if (anyWord(ingredientsText, config.crossContamination)) {
       score += 1;
       if (!present) sources.push('cross-contamination');
     }
-    
+
     if (present || score > 0) {
       let riskLevel = 'low';
       if (score >= 4) riskLevel = 'critical';
       else if (score >= 3) riskLevel = 'high';
       else if (score >= 2) riskLevel = 'moderate';
-      
+
       allergenAnalysis[allergen] = {
         score,
         riskLevel,
@@ -305,7 +408,7 @@ function detectAllergens(ingredients) {
       };
     }
   });
-  
+
   return allergenAnalysis;
 }
 
@@ -348,7 +451,7 @@ function generateHabitTags(analysis, allergenAnalysis, nutrition, title = '') {
 
   // Soft food check - based on preparation methods and ingredients
   if (anyWord(ingredientText, INGREDIENT_KEYWORDS.soft_food_keywords) ||
-      anyWord(title.toLowerCase(), INGREDIENT_KEYWORDS.soft_food_keywords)) {
+    anyWord(title.toLowerCase(), INGREDIENT_KEYWORDS.soft_food_keywords)) {
     habits.add('soft_food');
   }
 
@@ -372,15 +475,15 @@ function generateHabitTags(analysis, allergenAnalysis, nutrition, title = '') {
     // Diabetic friendly
     const diabetic = NUTRITION_THRESHOLDS.diabetic_friendly;
     if (nutrition.carbs_g <= diabetic.carbs_g &&
-        nutrition.sugar_g <= diabetic.sugar_g &&
-        nutrition.sodium_mg <= diabetic.sodium_mg) {
+      nutrition.sugar_g <= diabetic.sugar_g &&
+      nutrition.sodium_mg <= diabetic.sodium_mg) {
       habits.add('diabetic_friendly');
     }
 
     // Heart healthy
     const heart = NUTRITION_THRESHOLDS.heart_healthy;
     if (nutrition.sodium_mg <= heart.sodium_mg &&
-        nutrition.saturated_fat_g <= heart.saturated_fat_g) {
+      nutrition.saturated_fat_g <= heart.saturated_fat_g) {
       habits.add('heart_healthy');
     }
 
@@ -403,12 +506,12 @@ class QuotaManager {
   constructor() {
     this.quotas = JSON.parse(JSON.stringify(INGREDIENT_QUOTAS));
   }
-  
+
   canAccept(ingredientType, ingredientSubtype) {
-    return this.quotas[ingredientType] && 
-           this.quotas[ingredientType][ingredientSubtype] > 0;
+    return this.quotas[ingredientType] &&
+      this.quotas[ingredientType][ingredientSubtype] > 0;
   }
-  
+
   consume(ingredientType, ingredientSubtype) {
     if (this.canAccept(ingredientType, ingredientSubtype)) {
       this.quotas[ingredientType][ingredientSubtype]--;
@@ -417,7 +520,7 @@ class QuotaManager {
     }
     return false;
   }
-  
+
   getStats() {
     return this.quotas;
   }
@@ -427,47 +530,58 @@ class QuotaManager {
 async function main() {
   console.log("🥗 Loading and Enhancing Recipe Database");
   console.log("========================================\n");
-  
+
   console.log("📖 Reading recipes_with_images.json...");
   const rawData = fs.readFileSync(path.join(__dirname, "recipes_with_images.json"), 'utf8');
   const allRecipes = JSON.parse(rawData);
-  
+
   console.log(`📊 Found ${allRecipes.length.toLocaleString()} total recipes`);
   console.log(`🎯 Target: ${TARGET_RECIPES} recipes with enhanced processing\n`);
-  
+
   const quotaManager = new QuotaManager();
   const finalItems = [];
+  const skippedItems = [];
   const categoryStats = {};
   const tagStats = {};
   let processed = 0;
-  
+
   console.log("🔄 Processing recipes with full enhancement...\n");
-  
+
   for (const recipe of allRecipes) {
     if (finalItems.length >= TARGET_RECIPES) break;
-    
+
     processed++;
-    if (processed % 100 === 0) {
+    if (processed % 500 === 0) {
       console.log(`   Processed ${processed}/${allRecipes.length} recipes, selected ${finalItems.length}...`);
     }
-    
+
     // Basic validation
-    if (!recipe.title || 
-        !recipe.ingredients || 
-        !Array.isArray(recipe.ingredients) || 
-        recipe.ingredients.length === 0) {
+    if (!recipe.title ||
+      !recipe.ingredients ||
+      !Array.isArray(recipe.ingredients) ||
+      recipe.ingredients.length === 0) {
       continue;
     }
-    
+
     // Classification
     const classificationResult = classifyRecipe(recipe.title, recipe.ingredients);
-    
+
+    // Skip uncategorized recipes
+    if (classificationResult.primary === 'uncategorized') {
+      skippedItems.push({
+        title: recipe.title,
+        reason: classificationResult.debug.rules,
+        debug: classificationResult.debug
+      });
+      continue;
+    }
+
     // Ingredient analysis
     const analysis = analyzeIngredients(recipe.ingredients);
-    
+
     // Allergen detection
     const allergenAnalysis = detectAllergens(recipe.ingredients);
-    
+
     // Nutrition analysis (with rate limiting)
     let nutrition = null;
     try {
@@ -477,35 +591,37 @@ async function main() {
     } catch (error) {
       console.warn(`Nutrition fetch failed for "${recipe.title}": ${error.message}`);
     }
-    
+
     // Generate habit tags
     const habits = generateHabitTags(analysis, allergenAnalysis, nutrition, recipe.title);
-    
+
     // Create final recipe object
     const finalRecipe = {
       recipe_id: `json_${String(finalItems.length).padStart(4, '0')}`,
       title: recipe.title,
       ingredients: recipe.ingredients,
       instructions: recipe.instructions || recipe.directions || '',
-      
-      // Classification  
+
+      // Classification
       categories: classificationResult.all,
       categories_csv: classificationResult.all.join(','),
-      
+      secondary_tags: classificationResult.secondary || [],
+      classification_debug: classificationResult.debug,
+
       // Tags
       habits: habits,
       habits_csv: habits.join(','),
-      
+
       // Analysis results
       allergen_analysis: allergenAnalysis,
       nutrition: nutrition,
-      
+
       // Image and metadata
       has_image: !!recipe.image_filename,
-      image_display: recipe.image_filename ? 
+      image_display: recipe.image_filename ?
         `https://tp33-data-recipe.s3.ap-southeast-2.amazonaws.com/raw/foodspics/${recipe.image_filename}.jpg` : null,
       image_name: recipe.image_filename,
-      
+
       // Metadata
       created_at: new Date().toISOString(),
       source: "recipes_with_images",
@@ -515,9 +631,9 @@ async function main() {
       cooking_time: recipe.cooking_time || null,
       description: recipe.description || ""
     };
-    
+
     finalItems.push(finalRecipe);
-    
+
     // Update statistics (count each category separately)
     classificationResult.all.forEach(cat => {
       categoryStats[cat] = (categoryStats[cat] || 0) + 1;
@@ -526,12 +642,13 @@ async function main() {
       tagStats[tag] = (tagStats[tag] || 0) + 1;
     });
   }
-  
+
   // Statistics
   console.log("\n📈 PROCESSING COMPLETE!");
   console.log("═══════════════════════════════════");
   console.log(`✅ Selected ${finalItems.length} recipes from ${processed} processed`);
-  
+  console.log(`⏭️ Skipped ${skippedItems.length} uncategorized recipes`);
+
   console.log("\n📊 CATEGORY DISTRIBUTION:");
   Object.entries(categoryStats)
     .sort((a, b) => b[1] - a[1])
@@ -539,7 +656,7 @@ async function main() {
       const percentage = ((count / finalItems.length) * 100).toFixed(1);
       console.log(`  📋 ${category}: ${count} recipes (${percentage}%)`);
     });
-  
+
   console.log("\n🏷️ TOP HABIT TAGS:");
   Object.entries(tagStats)
     .sort((a, b) => b[1] - a[1])
@@ -548,15 +665,23 @@ async function main() {
       const percentage = ((count / finalItems.length) * 100).toFixed(1);
       console.log(`  🏷️ ${tag}: ${count} recipes (${percentage}%)`);
     });
-  
+
+  // Show sample skipped recipes for debugging
+  if (skippedItems.length > 0) {
+    console.log("\n🚫 SAMPLE SKIPPED RECIPES (first 10):");
+    skippedItems.slice(0, 10).forEach((item, index) => {
+      console.log(`  ${index + 1}. "${item.title}" - Reason: ${item.reason.join(', ')}`);
+    });
+  }
+
   // Upload to DynamoDB
   console.log("\n🚀 Uploading to DynamoDB...");
   const batchSize = 25;
   let uploaded = 0;
-  
+
   for (let i = 0; i < finalItems.length; i += batchSize) {
     const batch = finalItems.slice(i, i + batchSize);
-    
+
     const params = {
       RequestItems: {
         [TABLE]: batch.map(item => ({
@@ -564,11 +689,11 @@ async function main() {
         }))
       }
     };
-    
+
     try {
       await ddb.send(new BatchWriteCommand(params));
       uploaded += batch.length;
-      
+
       if (uploaded % 100 === 0 || uploaded === finalItems.length) {
         console.log(`   📤 Uploaded ${uploaded}/${finalItems.length} recipes...`);
       }
@@ -576,7 +701,7 @@ async function main() {
       console.error(`❌ Error uploading batch starting at ${i}:`, error.message);
     }
   }
-  
+
   console.log("\n🎉 SUCCESS!");
   console.log("================");
   console.log(`✅ Successfully uploaded ${uploaded} enhanced recipes to DynamoDB`);

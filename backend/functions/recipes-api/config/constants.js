@@ -37,7 +37,7 @@ const CATEGORY_KEYWORDS = {
   DESSERT: ["cake", "cookie", "brownie", "pie", "pudding", "mousse", "tart", "frosting"],
   SOUP: ["soup", "broth", "chowder", "bisque"],
   SALAD: ["salad"],
-  DRINK: ["smoothie", "juice", "latte", "milkshake", "punch", "lemonade", "drink"],
+  BEVERAGE: ["smoothie", "juice", "latte", "milkshake", "punch", "lemonade", "drink"],
   BREAKFAST: ["pancake", "waffle", "oatmeal", "cereal", "muffin", "granola", "omelet", "breakfast", "toast", "bagel", "eggs", "brunch"],
   SNACK: ["dip", "nacho", "popcorn", "bar"],
   MAIN_DISH: ["casserole", "stew", "roast", "pasta", "rice", "noodle", "chicken", "beef", "pork", "fish"],
