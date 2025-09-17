@@ -65,7 +65,20 @@ const ENHANCED_ALLERGEN_MAP = {
     hidden: ['soy sauce', 'beer', 'malt', 'brewer\'s yeast', 'seitan', 'couscous', 'bulgur', 'spelt'],
     crossContamination: ['oats', 'shared surfaces', 'fried foods'],
     severity: 'moderate'
+  },
+  soy: {
+    obvious: ['soy', 'soy sauce', 'tofu', 'tempeh', 'miso', 'edamame'],
+    hidden: ['lecithin', 'textured vegetable protein', 'vegetable oil', 'asian sauces'],
+    crossContamination: ['asian cuisine', 'processed foods'],
+    severity: 'moderate'
   }
+};
+
+// Additional ingredient detection keywords
+const INGREDIENT_KEYWORDS = {
+  fish: ['fish', 'salmon', 'tuna', 'cod', 'bass', 'tilapia', 'trout', 'mackerel', 'sardine', 'anchovy', 'halibut', 'sole', 'flounder'],
+  shellfish: ['shrimp', 'crab', 'lobster', 'scallop', 'oyster', 'mussel', 'clam', 'crawfish', 'crayfish', 'prawn'],
+  soft_food_keywords: ['soup', 'puree', 'mashed', 'smooth', 'creamy', 'soft', 'yogurt', 'pudding', 'smoothie', 'porridge', 'custard', 'mousse']
 };
 
 // Nutrition thresholds for health tags
@@ -226,7 +239,7 @@ function classifyRecipe(title, ingredients) {
 // --- Ingredient Analysis ---
 function analyzeIngredients(ingredients) {
   const ingredientsText = (ingredients || []).join(' ').toLowerCase();
-  
+
   return {
     hasMeat: anyWord(ingredientsText, [
       'chicken', 'beef', 'pork', 'lamb', 'fish', 'seafood', 'bacon', 'ham', 'turkey'
@@ -243,7 +256,8 @@ function analyzeIngredients(ingredients) {
     ]),
     hasSugar: anyWord(ingredientsText, [
       'sugar', 'syrup', 'honey', 'molasses', 'fructose'
-    ])
+    ]),
+    ingredientText: ingredientsText
   };
 }
 
@@ -296,24 +310,48 @@ function detectAllergens(ingredients) {
 }
 
 // --- Habit Tags Generation ---
-function generateHabitTags(analysis, allergenAnalysis, nutrition) {
+function generateHabitTags(analysis, allergenAnalysis, nutrition, title = '') {
   const habits = new Set();
-  
+
   // Diet tags
   if (!analysis.hasMeat) {
     habits.add('vegetarian');
-    
+
     if (!analysis.hasDairy && !analysis.hasEggs) {
       habits.add('vegan');
     }
   }
-  
+
   // Allergy-free tags
   if (!analysis.hasDairy) habits.add('dairy_free');
   if (!analysis.hasEggs) habits.add('egg_free');
   if (!analysis.hasGluten) habits.add('gluten_free');
   if (!analysis.hasNuts) habits.add('nut_free');
-  
+
+  // Additional allergy-free tags based on ingredient analysis
+  const ingredientText = analysis.ingredientText || '';
+
+  // Fish-free check
+  if (!anyWord(ingredientText, INGREDIENT_KEYWORDS.fish)) {
+    habits.add('fish_free');
+  }
+
+  // Shellfish-free check
+  if (!anyWord(ingredientText, INGREDIENT_KEYWORDS.shellfish)) {
+    habits.add('shellfish_free');
+  }
+
+  // Soy-free check
+  if (!anyWord(ingredientText, ENHANCED_ALLERGEN_MAP.soy.obvious.concat(ENHANCED_ALLERGEN_MAP.soy.hidden))) {
+    habits.add('soy_free');
+  }
+
+  // Soft food check - based on preparation methods and ingredients
+  if (anyWord(ingredientText, INGREDIENT_KEYWORDS.soft_food_keywords) ||
+      anyWord(title.toLowerCase(), INGREDIENT_KEYWORDS.soft_food_keywords)) {
+    habits.add('soft_food');
+  }
+
   // Allergen presence tags
   Object.entries(allergenAnalysis).forEach(([allergen, data]) => {
     if (data.present) {
@@ -323,29 +361,29 @@ function generateHabitTags(analysis, allergenAnalysis, nutrition) {
       }
     }
   });
-  
+
   // Nutrition-based health tags
   if (nutrition) {
     // Low sodium
     if (nutrition.sodium_mg <= NUTRITION_THRESHOLDS.low_sodium.sodium_mg) {
       habits.add('low_sodium');
     }
-    
+
     // Diabetic friendly
     const diabetic = NUTRITION_THRESHOLDS.diabetic_friendly;
-    if (nutrition.carbs_g <= diabetic.carbs_g && 
-        nutrition.sugar_g <= diabetic.sugar_g && 
+    if (nutrition.carbs_g <= diabetic.carbs_g &&
+        nutrition.sugar_g <= diabetic.sugar_g &&
         nutrition.sodium_mg <= diabetic.sodium_mg) {
       habits.add('diabetic_friendly');
     }
-    
+
     // Heart healthy
     const heart = NUTRITION_THRESHOLDS.heart_healthy;
-    if (nutrition.sodium_mg <= heart.sodium_mg && 
+    if (nutrition.sodium_mg <= heart.sodium_mg &&
         nutrition.saturated_fat_g <= heart.saturated_fat_g) {
       habits.add('heart_healthy');
     }
-    
+
     // Low sugar
     if (nutrition.sugar_g <= NUTRITION_THRESHOLDS.low_sugar.sugar_g) {
       habits.add('low_sugar');
@@ -356,7 +394,7 @@ function generateHabitTags(analysis, allergenAnalysis, nutrition) {
       habits.add('low_sugar');
     }
   }
-  
+
   return Array.from(habits);
 }
 
@@ -441,7 +479,7 @@ async function main() {
     }
     
     // Generate habit tags
-    const habits = generateHabitTags(analysis, allergenAnalysis, nutrition);
+    const habits = generateHabitTags(analysis, allergenAnalysis, nutrition, recipe.title);
     
     // Create final recipe object
     const finalRecipe = {

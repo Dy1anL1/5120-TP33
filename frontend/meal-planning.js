@@ -700,17 +700,24 @@ async function generateMealPlan() {
         
         console.log('Generating meal plan with preferences:', userPreferences);
         
-        // Generate plan for each day (Testing: only Monday for now)
-        const days = ['Monday']; // Simplified for testing
+        // Generate plan for each day (Testing: 3 days)
+        const days = ['Monday', 'Tuesday', 'Wednesday']; // 3 days for testing
         const mealPlan = {};
 
         for (const day of days) {
             mealPlan[day] = await generateDayMeals(day);
         }
         
+        // Convert plan object to days array for compatibility with rendering functions
+        const daysArray = Object.keys(mealPlan).map(dayName => ({
+            name: dayName,
+            meals: mealPlan[dayName]
+        }));
+
         weeklyPlan = {
             preferences: userPreferences,
             plan: mealPlan,
+            days: daysArray, // Add days array for Weekly Summary
             generatedDate: new Date().toISOString(),
             weekStarting: getWeekStartDate()
         };
@@ -851,7 +858,56 @@ async function fetchRandomRecipe(mealType) {
             }
         }
         
-        console.warn(`No recipes found for ${mealType} after all strategies`);
+        // Fallback strategy: try to find recipes from broader search
+        console.log(`Fallback: Trying broader search for ${mealType}`);
+        try {
+            const fallbackResponse = await fetch(`${API_URL}?limit=100`);
+            if (fallbackResponse.ok) {
+                const fallbackData = await fallbackResponse.json();
+                const suitableRecipes = fallbackData.items.filter(recipe => {
+                    // For salad, prefer vegetarian dishes
+                    if (mealType === 'salad') {
+                        return recipe.habits && (
+                            recipe.habits.includes('vegetarian') ||
+                            recipe.habits.includes('vegan') ||
+                            recipe.title.toLowerCase().includes('salad')
+                        );
+                    }
+
+                    // For snack, prefer smaller portions or breakfast items
+                    if (mealType === 'snack') {
+                        return recipe.categories && (
+                            recipe.categories.includes('breakfast') ||
+                            recipe.title.toLowerCase().includes('snack') ||
+                            recipe.title.toLowerCase().includes('cookie') ||
+                            recipe.title.toLowerCase().includes('bar')
+                        );
+                    }
+
+                    // For other meal types, try to match categories or general suitability
+                    if (recipe.categories) {
+                        return recipe.categories.includes(mealType) ||
+                               recipe.categories.includes('lunch') ||
+                               recipe.categories.includes('dinner');
+                    }
+
+                    return false;
+                });
+
+                if (suitableRecipes.length > 0) {
+                    const filtered = filterRecipesByPreferences(suitableRecipes);
+                    if (filtered.length > 0) {
+                        const selected = filtered[Math.floor(Math.random() * filtered.length)];
+                        console.log(`Fallback success: Selected ${selected.title} for ${mealType}`);
+                        return selected;
+                    }
+                }
+            }
+        } catch (fallbackError) {
+            console.error('Fallback strategy failed:', fallbackError);
+        }
+
+        console.warn(`No recipes found for ${mealType} after all strategies including fallback`);
         return null;
         
     } catch (error) {
@@ -933,7 +989,8 @@ function renderPlanLoading() {
 // Render the weekly days layout
 async function renderWeeklyDays() {
     const container = document.getElementById('weekly-days-container');
-    const days = ['Monday']; // Testing: only show Monday for now
+    // Get the actual days from the plan
+    const days = Object.keys(weeklyPlan.plan || {}); // Use actual generated days
     
     const weekStart = new Date(weeklyPlan.weekStarting);
     
