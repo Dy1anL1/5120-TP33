@@ -807,6 +807,110 @@
     color: #155724 !important;
 }
 
+/* Nutrition Alert Banner */
+.nutrition-alert-banner {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    color: white;
+    padding: 1rem 0;
+    position: fixed;
+    top: 110px; /* Below navbar */
+    left: 0;
+    right: 0;
+    z-index: 999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideDown 0.3s ease-out;
+}
+
+.alert-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.alert-icon {
+    font-size: 1.5rem;
+    color: #fff3cd;
+}
+
+.alert-message {
+    flex: 1;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.alert-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.alert-close-btn:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Adjust main content when alert is shown */
+.main-content.alert-shown {
+    margin-top: 80px; /* Additional margin when alert is visible */
+}
+
+/* Nutrition Card Tips */
+.nutrition-card-tip {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-top: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #856404;
+}
+
+.nutrition-card-tip.warning {
+    background: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.nutrition-card-tip.severe {
+    background: #f5c6cb;
+    border-color: #f1b0b7;
+    color: #721c24;
+    font-weight: 600;
+}
+
+.nutrition-card-tip i {
+    font-size: 1rem;
+    color: inherit;
+}
+
 /* Empty State */
 .empty-state {
     text-align: center;
@@ -2083,22 +2187,25 @@ html {
 }
 
 .recipe-nutrition-info {
-    margin: 0.75rem 0;
-    padding: 0.5rem;
+    margin: 1rem 0;
+    padding: 1rem;
     background: rgba(76, 175, 80, 0.05);
     border-radius: 8px;
     border: 1px solid rgba(76, 175, 80, 0.1);
+    line-height: 1.6;
 }
 
 .nutrition-item {
     display: inline-block;
     margin-right: 0.75rem;
-    font-size: 0.85rem;
-    color: #555;
-    background: rgba(255, 255, 255, 0.8);
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    margin-bottom: 0.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    border: 1px solid rgba(76, 175, 80, 0.2);
 }
 
 .recipe-actions {
@@ -3121,7 +3228,11 @@ html {
     color: white;
 }
 
-.nutrition-icon { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); }
+.nutrition-icon {
+    background: transparent;
+    border: none;
+    color: #495057 !important;
+}
 .exercise-icon { background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); }
 .hydration-icon { background: linear-gradient(135deg, #00BCD4 0%, #0097A7 100%); }
 .sleep-icon { background: linear-gradient(135deg, #673AB7 0%, #512DA8 100%); }

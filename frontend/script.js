@@ -1,6 +1,16 @@
 // ====== API Configuration ======
 const NUTRITION_API = "https://0brixnxwq3.execute-api.ap-southeast-2.amazonaws.com/prod/match";
 
+// Format nutrition numbers to show 1-2 decimal places, avoiding zeros
+function formatNutritionNumber(value, unit = '') {
+    const num = Number(value) || 0;
+    if (num === 0) return `0${unit}`;
+    if (num < 0.1) return `<0.1${unit}`;
+    if (num < 1) return `${num.toFixed(2)}${unit}`;
+    if (num < 10) return `${num.toFixed(1)}${unit}`;
+    return `${Math.round(num)}${unit}`;
+}
+
 // ====== Compact Nutrition Goals (10 key nutrients for dashboard) ======
 const NUTRIENT_GOALS = {
     female_51: {
@@ -396,6 +406,9 @@ async function renderDashboardNutrition() {
                 }
             });
 
+            // Clear all nutrition alerts when no meals
+            clearAllNutritionAlerts();
+
             return;
         }
 
@@ -542,6 +555,9 @@ async function renderDashboardNutrition() {
             html += '</tbody></table>';
         }
         dashDiv.innerHTML = html;
+
+        // Check for nutrition excess and show alerts
+        checkNutritionExcess(cardFields);
     } catch (e) {
         dashDiv.innerHTML = `<div style="color:#c00;text-align:center;">${e.message}</div>`;
     }
@@ -588,64 +604,11 @@ function getAny(obj, keys) {
     return null;
 }
 
-// Adjust unrealistic nutrition values that are likely from API accumulation issues
+// Return nutrition values without any adjustments - shows real data
 function adjustNutritionValue(value, label) {
     if (value == null) return null;
 
-    // Handle unrealistic values from nutrition API accumulation 
-    // Values appear to be accumulated per 100g for each ingredient, need scaling down
-    switch (label) {
-        case 'Sodium':
-            // Normal serving should be 200-800mg
-            // API values like 40,000mg suggest accumulation issue
-            if (value > 5000) {
-                return Math.round(value / 1000 * 400); // Scale down and adjust to realistic serving
-            } else if (value > 2000) {
-                return Math.round(value / 3);
-            }
-            break;
-        case 'Potassium':
-            // Normal serving should be 200-600mg
-            if (value > 8000) {
-                return Math.round(value / 1000 * 300);
-            } else if (value > 2000) {
-                return Math.round(value / 4);
-            }
-            break;
-        case 'Calcium':
-            // Normal serving should be 50-300mg
-            if (value > 3000) {
-                return Math.round(value / 1000 * 200);
-            } else if (value > 1000) {
-                return Math.round(value / 5);
-            }
-            break;
-        case 'Calories':
-            // Calories: normal serving should be 200-800 kcal
-            if (value > 3000) {
-                return Math.round(value / 6);
-            } else if (value > 2000) {
-                return Math.round(value / 4);
-            }
-            break;
-        case 'Protein':
-            // Protein: normal serving should be 5-30g
-            if (value > 100) {
-                return Math.round(value / 5);
-            } else if (value > 50) {
-                return Math.round(value / 3);
-            }
-            break;
-        case 'Fat':
-            // Fat: normal serving should be 2-20g
-            if (value > 80) {
-                return Math.round(value / 6);
-            } else if (value > 40) {
-                return Math.round(value / 4);
-            }
-            break;
-    }
-
+    // Return raw nutrition values without any adjustments
     return value;
 }
 
@@ -653,9 +616,8 @@ function formatNutritionValue(raw, label) {
     const adjusted = adjustNutritionValue(raw, label);
     if (adjusted == null) return '-';
 
-    // Add ~ prefix if value was adjusted
-    const prefix = (adjusted !== raw && raw != null) ? '~' : '';
-    return prefix + fmt(adjusted);
+    // No longer add prefix since values are not adjusted
+    return fmt(adjusted);
 }
 
 // Formatter: show numeric value with two decimals, or '-' when missing
@@ -1295,10 +1257,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (r.nutritionData) {
                             const data = r.nutritionData;
                             nutritionInfo = `<div class="recipe-nutrition-info">
-                                <span class="nutrition-item">🔥 ${data.calories.toFixed(0)} kcal</span>
-                                <span class="nutrition-item">💪 ${data.protein.toFixed(1)}g protein</span>
-                                <span class="nutrition-item">🥑 ${data.fat.toFixed(1)}g fat</span>
-                                <span class="nutrition-item">🧂 ${adjustNutritionValue(data.sodium, 'Sodium').toFixed(0)}mg sodium</span>
+                                <span class="nutrition-item">🔥 ${formatNutritionNumber(data.calories)} kcal</span>
+                                <span class="nutrition-item">💪 ${formatNutritionNumber(data.protein, 'g')} protein</span>
+                                <span class="nutrition-item">🥑 ${formatNutritionNumber(data.fat, 'g')} fat</span>
+                                <span class="nutrition-item">🧂 ${formatNutritionNumber(adjustNutritionValue(data.sodium, 'Sodium'), 'mg')} sodium</span>
                             </div>`;
                         }
 
@@ -1568,3 +1530,165 @@ function renderMealsAddedList() {
         };
     });
 }
+
+// ========== Nutrition Excess Alert System ==========
+
+// Check for nutrition excess and show appropriate alerts
+function checkNutritionExcess(cardFields) {
+    const excessItems = [];
+    const severeExcessItems = [];
+
+    cardFields.forEach(({ curId, goalId }) => {
+        const curEl = document.getElementById(curId);
+        const goalEl = document.getElementById(goalId);
+        if (!curEl || !goalEl) return;
+
+        const current = Number(String(curEl.textContent).replace(/[^0-9\.\-]/g, '')) || 0;
+        const goal = Number(String(goalEl.textContent).replace(/[^0-9\.\-]/g, '')) || 1;
+        const percentage = (current / goal) * 100;
+
+        const nutritionName = getNutritionName(curId);
+
+        if (percentage > 200) {
+            // Severe excess (200%+)
+            severeExcessItems.push({ name: nutritionName, percentage: Math.round(percentage), current, goal });
+            addNutritionCardTip(curEl, 'severe', nutritionName, percentage);
+        } else if (percentage > 130) {
+            // Moderate excess (130-200%)
+            excessItems.push({ name: nutritionName, percentage: Math.round(percentage), current, goal });
+            addNutritionCardTip(curEl, 'warning', nutritionName, percentage);
+        } else if (percentage > 100) {
+            // Light excess (100-130%)
+            addNutritionCardTip(curEl, 'light', nutritionName, percentage);
+        } else {
+            // Remove any existing tips
+            removeNutritionCardTip(curEl);
+        }
+    });
+
+    // Show banner alert for moderate to severe excess
+    if (severeExcessItems.length > 0 || excessItems.length > 0) {
+        showNutritionBanner(severeExcessItems, excessItems);
+    } else {
+        hideNutritionBanner();
+    }
+}
+
+// Get nutrition name from element ID
+function getNutritionName(elementId) {
+    const names = {
+        'calories-current': 'Calories',
+        'protein-current': 'Protein',
+        'carbohydrates-current': 'Carbohydrates',
+        'sodium-current': 'Sodium'
+    };
+    return names[elementId] || elementId.replace('-current', '');
+}
+
+// Add tip to nutrition card
+function addNutritionCardTip(currentElement, severity, nutritionName, percentage) {
+    const card = currentElement.closest('.nutrition-card');
+    if (!card) return;
+
+    // Remove existing tip
+    removeNutritionCardTip(currentElement);
+
+    const tipMessages = {
+        'light': {
+            'Calories': '💡 Goal reached! Maintain balanced eating',
+            'Protein': '💡 Protein sufficient! Add more vegetables',
+            'Carbohydrates': '💡 Carbs on target! Choose whole grains',
+            'Sodium': '💡 Goal reached! Choose low-salt options'
+        },
+        'warning': {
+            'Calories': '⚠️ High calories - choose lighter foods',
+            'Protein': '⚠️ Excess protein - reduce meat intake',
+            'Carbohydrates': '⚠️ Too many carbs - reduce starches',
+            'Sodium': '⚠️ High sodium - avoid processed foods'
+        },
+        'severe': {
+            'Calories': '🚨 Calories severely high! Adjust diet now',
+            'Protein': '🚨 Protein too high! Consult nutritionist',
+            'Carbohydrates': '🚨 Carbs severely high! Reduce sugars',
+            'Sodium': '🚨 Sodium too high! Choose fresh foods'
+        }
+    };
+
+    const message = tipMessages[severity][nutritionName] || `${nutritionName} exceeds recommended amount by ${Math.round(percentage)}%`;
+
+    const tip = document.createElement('div');
+    tip.className = `nutrition-card-tip ${severity}`;
+    tip.innerHTML = `<span>${message}</span>`;
+
+    card.appendChild(tip);
+}
+
+// Remove tip from nutrition card
+function removeNutritionCardTip(currentElement) {
+    const card = currentElement.closest('.nutrition-card');
+    if (!card) return;
+
+    const existingTip = card.querySelector('.nutrition-card-tip');
+    if (existingTip) {
+        existingTip.remove();
+    }
+}
+
+// Show nutrition alert banner
+function showNutritionBanner(severeItems, moderateItems) {
+    const banner = document.getElementById('nutrition-alert-banner');
+    const alertText = document.getElementById('alert-text');
+    const mainContent = document.querySelector('.main-content');
+
+    if (!banner || !alertText) return;
+
+    let message = '';
+    if (severeItems.length > 0) {
+        const item = severeItems[0];
+        message = `🚨 ${item.name} intake severely high (${item.percentage}%) - adjust diet immediately`;
+    } else if (moderateItems.length > 0) {
+        const item = moderateItems[0];
+        message = `⚠️ ${item.name} intake exceeds goal (${item.percentage}%) - choose lighter foods`;
+    }
+
+    alertText.textContent = message;
+    banner.style.display = 'block';
+
+    // Add margin to main content
+    if (mainContent) {
+        mainContent.classList.add('alert-shown');
+    }
+}
+
+// Hide nutrition alert banner
+function hideNutritionBanner() {
+    const banner = document.getElementById('nutrition-alert-banner');
+    const mainContent = document.querySelector('.main-content');
+
+    if (banner) {
+        banner.style.display = 'none';
+    }
+
+    if (mainContent) {
+        mainContent.classList.remove('alert-shown');
+    }
+}
+
+// Close nutrition alert banner
+function closeNutritionAlert() {
+    hideNutritionBanner();
+}
+
+// Clear all nutrition alerts (both banner and card tips)
+function clearAllNutritionAlerts() {
+    // Hide banner
+    hideNutritionBanner();
+
+    // Remove all card tips
+    const allTips = document.querySelectorAll('.nutrition-card-tip');
+    allTips.forEach(tip => tip.remove());
+}
+
+// Make functions available globally
+window.closeNutritionAlert = closeNutritionAlert;
+window.clearAllNutritionAlerts = clearAllNutritionAlerts;

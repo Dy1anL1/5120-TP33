@@ -18,6 +18,16 @@ const nutritionCache = new Map();
 let lastNutritionRequest = 0;
 const NUTRITION_REQUEST_DELAY = 100; // 100ms delay between requests
 
+// Format nutrition numbers to show 1-2 decimal places, avoiding zeros
+function formatNutritionNumber(value, unit = '') {
+    const num = Number(value) || 0;
+    if (num === 0) return `0${unit}`;
+    if (num < 0.1) return `<0.1${unit}`;
+    if (num < 1) return `${num.toFixed(2)}${unit}`;
+    if (num < 10) return `${num.toFixed(1)}${unit}`;
+    return `${Math.round(num)}${unit}`;
+}
+
 // Simple estimated nutrition based on common ingredients (fallback)
 function estimateNutrition(ingredients, servings = 1) {
     if (!ingredients || !Array.isArray(ingredients)) {
@@ -1040,10 +1050,10 @@ async function renderLargeRecipeCard(mealType, recipe) {
     // Use recipe's existing nutrition data
     const nutrition = recipe.nutrition || {};
     const nutritionInfo = `<div class="recipe-nutrition-info">
-        <span class="nutrition-item"><strong>Calories:</strong> ${Math.round(nutrition.calories || 0)}</span>
-        <span class="nutrition-item"><strong>Protein:</strong> ${Math.round(nutrition.protein_g || 0)}g</span>
-        <span class="nutrition-item"><strong>Carbs:</strong> ${Math.round(nutrition.carbs_g || 0)}g</span>
-        <span class="nutrition-item"><strong>Sodium:</strong> ${Math.round(nutrition.sodium_mg || 0)}mg</span>
+        <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber(nutrition.calories || 0)}</span>
+        <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber(nutrition.protein_g || 0, 'g')}</span>
+        <span class="nutrition-item"><strong>Carbs:</strong> ${formatNutritionNumber(nutrition.carbs_g || 0, 'g')}</span>
+        <span class="nutrition-item"><strong>Sodium:</strong> ${formatNutritionNumber(nutrition.sodium_mg || 0, 'mg')}</span>
     </div>`;
     
     // Image handling (same as explore-recipes)
@@ -1082,10 +1092,10 @@ async function renderMealCard(mealType, recipe) {
     // Use recipe's existing nutrition data
     const nutrition = recipe.nutrition || {};
     const nutritionInfo = `<div class="recipe-nutrition-info">
-        <span class="nutrition-item"><strong>Calories:</strong> ${Math.round(nutrition.calories || 0)}</span>
-        <span class="nutrition-item"><strong>Protein:</strong> ${Math.round(nutrition.protein_g || 0)}g</span>
-        <span class="nutrition-item"><strong>Carbs:</strong> ${Math.round(nutrition.carbs_g || 0)}g</span>
-        <span class="nutrition-item"><strong>Sodium:</strong> ${Math.round(nutrition.sodium_mg || 0)}mg</span>
+        <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber(nutrition.calories || 0)}</span>
+        <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber(nutrition.protein_g || 0, 'g')}</span>
+        <span class="nutrition-item"><strong>Carbs:</strong> ${formatNutritionNumber(nutrition.carbs_g || 0, 'g')}</span>
+        <span class="nutrition-item"><strong>Sodium:</strong> ${formatNutritionNumber(nutrition.sodium_mg || 0, 'mg')}</span>
     </div>`;
     
     // Image handling (same as explore-recipes)
@@ -1265,16 +1275,16 @@ async function openRecipeModal(recipeId) {
                 <h3>Nutrition Summary</h3>
                 <div class="nutrition-grid">
                     <div class="nutrition-item">
-                        <strong>Calories:</strong> ${Math.round(nutrition.calories || 0)}
+                        <strong>Calories:</strong> ${formatNutritionNumber(nutrition.calories || 0)}
                     </div>
                     <div class="nutrition-item">
-                        <strong>Protein:</strong> ${Math.round(nutrition.protein_g || 0)}g
+                        <strong>Protein:</strong> ${formatNutritionNumber(nutrition.protein_g || 0, 'g')}
                     </div>
                     <div class="nutrition-item">
-                        <strong>Carbs:</strong> ${Math.round(nutrition.carbs_g || 0)}g
+                        <strong>Carbs:</strong> ${formatNutritionNumber(nutrition.carbs_g || 0, 'g')}
                     </div>
                     <div class="nutrition-item">
-                        <strong>Sodium:</strong> ${Math.round(nutrition.sodium_mg || 0)}mg
+                        <strong>Sodium:</strong> ${formatNutritionNumber(nutrition.sodium_mg || 0, 'mg')}
                     </div>
                 </div>
             `;
