@@ -20,12 +20,31 @@ const NUTRITION_REQUEST_DELAY = 100; // 100ms delay between requests
 
 // Format nutrition numbers to show 1-2 decimal places, avoiding zeros
 function formatNutritionNumber(value, unit = '') {
-    const num = Number(value) || 0;
+    // Apply nutrition value validation before formatting (using script.js function)
+    let adjustedValue = value;
+
+    // Determine nutrient type from unit for validation
+    let nutrientType = 'Unknown';
+    if (unit === 'mg' && (value > 1000)) nutrientType = 'Sodium'; // High mg values likely sodium
+    else if (unit === 'kcal' || unit === '') nutrientType = 'Calories';
+    else if (unit === 'g' && value > 50) nutrientType = 'Protein';
+
+    // Apply sanity checks if we detected a nutrient type (if adjustNutritionValue exists)
+    if (nutrientType !== 'Unknown' && typeof adjustNutritionValue === 'function') {
+        adjustedValue = adjustNutritionValue(value, nutrientType);
+    }
+
+    const num = Number(adjustedValue) || 0;
+
+    // Add indicator if value was adjusted
+    const wasAdjusted = Math.abs(Number(value) - num) > 0.1;
+    const prefix = wasAdjusted ? '~' : '';
+
     if (num === 0) return `0${unit}`;
-    if (num < 0.1) return `<0.1${unit}`;
-    if (num < 1) return `${num.toFixed(2)}${unit}`;
-    if (num < 10) return `${num.toFixed(1)}${unit}`;
-    return `${Math.round(num)}${unit}`;
+    if (num < 0.1) return `${prefix}<0.1${unit}`;
+    if (num < 1) return `${prefix}${num.toFixed(2)}${unit}`;
+    if (num < 10) return `${prefix}${num.toFixed(1)}${unit}`;
+    return `${prefix}${Math.round(num)}${unit}`;
 }
 
 // Simple estimated nutrition based on common ingredients (fallback)
@@ -834,29 +853,42 @@ async function fetchRandomRecipe(mealType) {
                 
                 if (data.items && data.items.length > 0) {
                     console.log(`Got ${data.items.length} recipes for ${mealType}`);
-                    
+
                     // Filter recipes based on user preferences
                     let filteredRecipes = filterRecipesByPreferences(data.items);
                     console.log(`After filtering: ${filteredRecipes.length} recipes for ${mealType}`);
-                    
+
                     // If filtering results in no recipes, use original list
                     if (filteredRecipes.length === 0) {
                         console.log(`Using original ${data.items.length} recipes for ${mealType} (no filter matches)`);
                         filteredRecipes = data.items;
                     }
-                    
+
                     // Filter by meal type if we used fallback strategy
                     if (i === 3 && mealType !== 'any') {
-                        filteredRecipes = filteredRecipes.filter(recipe => 
+                        filteredRecipes = filteredRecipes.filter(recipe =>
                             recipe.habits && recipe.habits.includes(mealType)
                         );
                     }
-                    
+
                     if (filteredRecipes.length > 0) {
-                        // Return random recipe from filtered results
-                        const randomIndex = Math.floor(Math.random() * filteredRecipes.length);
-                        const selectedRecipe = filteredRecipes[randomIndex];
-                        console.log(`Selected recipe for ${mealType}:`, selectedRecipe.title);
+                        // Sort recipes by nutrition data quality (best first)
+                        const sortedRecipes = sortRecipesByNutritionQuality(filteredRecipes);
+                        console.log(`Sorted ${sortedRecipes.length} recipes by nutrition quality for ${mealType}`);
+
+                        // Prefer recipes from the top 50% (better nutrition data quality)
+                        // But still include some randomness to avoid always picking the same recipe
+                        const topHalfCount = Math.max(1, Math.ceil(sortedRecipes.length * 0.5));
+                        const topRecipes = sortedRecipes.slice(0, topHalfCount);
+
+                        const randomIndex = Math.floor(Math.random() * topRecipes.length);
+                        const selectedRecipe = topRecipes[randomIndex];
+
+                        console.log(`Selected recipe for ${mealType}: ${selectedRecipe.title} (quality score: ${selectedRecipe.nutritionQuality.score})`);
+                        if (selectedRecipe.nutritionQuality.issues.length > 0) {
+                            console.log(`Note: Recipe has potential nutrition issues:`, selectedRecipe.nutritionQuality.issues);
+                        }
+
                         return selectedRecipe;
                     }
                 }
@@ -896,8 +928,13 @@ async function fetchRandomRecipe(mealType) {
                 if (suitableRecipes.length > 0) {
                     const filtered = filterRecipesByPreferences(suitableRecipes);
                     if (filtered.length > 0) {
-                        const selected = filtered[Math.floor(Math.random() * filtered.length)];
-                        console.log(`Fallback success: Selected ${selected.title} for ${mealType}`);
+                        // Apply nutrition quality sorting for fallback recipes too
+                        const sortedRecipes = sortRecipesByNutritionQuality(filtered);
+                        const topHalfCount = Math.max(1, Math.ceil(sortedRecipes.length * 0.5));
+                        const topRecipes = sortedRecipes.slice(0, topHalfCount);
+
+                        const selected = topRecipes[Math.floor(Math.random() * topRecipes.length)];
+                        console.log(`Fallback success: Selected ${selected.title} for ${mealType} (quality score: ${selected.nutritionQuality.score})`);
                         return selected;
                     }
                 }
@@ -917,6 +954,79 @@ async function fetchRandomRecipe(mealType) {
 
 
 // Filter recipes based on user preferences
+// Evaluate nutrition data quality and flag problematic recipes
+function evaluateNutritionDataQuality(recipe) {
+    if (!recipe || !recipe.ingredients) {
+        return { score: 0, issues: ['No ingredients data'] };
+    }
+
+    const issues = [];
+    let score = 100; // Start with perfect score
+
+    // Check if ingredients are available for nutrition calculation
+    const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    if (ingredients.length === 0) {
+        issues.push('No ingredients list');
+        score -= 50;
+    }
+
+    // Check for problematic ingredient patterns that often cause high sodium/calories
+    const problematicPatterns = [
+        'soy sauce', 'tamari', 'miso', 'fish sauce', 'worcestershire',
+        'prepared sauce', 'bouillon', 'instant', 'canned soup'
+    ];
+
+    const ingredientText = ingredients.join(' ').toLowerCase();
+    let problematicCount = 0;
+
+    problematicPatterns.forEach(pattern => {
+        if (ingredientText.includes(pattern)) {
+            problematicCount++;
+        }
+    });
+
+    if (problematicCount > 2) {
+        issues.push('High sodium risk ingredients');
+        score -= 30;
+    }
+
+    // Check for very long ingredient lists (often cause calculation errors)
+    if (ingredients.length > 15) {
+        issues.push('Complex recipe (many ingredients)');
+        score -= 10;
+    }
+
+    // Check for unclear ingredient descriptions
+    const unclearCount = ingredients.filter(ing => {
+        const text = typeof ing === 'string' ? ing : (ing.text || '');
+        return text.length > 50 || text.includes('or') || text.includes('optional');
+    }).length;
+
+    if (unclearCount > ingredients.length * 0.3) {
+        issues.push('Unclear ingredient descriptions');
+        score -= 20;
+    }
+
+    return { score: Math.max(0, score), issues };
+}
+
+// Sort recipes by nutrition data quality (higher score = better quality)
+function sortRecipesByNutritionQuality(recipes) {
+    return recipes.map(recipe => ({
+        ...recipe,
+        nutritionQuality: evaluateNutritionDataQuality(recipe)
+    })).sort((a, b) => {
+        // Primary sort: nutrition quality score (higher is better)
+        if (b.nutritionQuality.score !== a.nutritionQuality.score) {
+            return b.nutritionQuality.score - a.nutritionQuality.score;
+        }
+        // Secondary sort: fewer ingredients (simpler recipes are more reliable)
+        const aIngredients = Array.isArray(a.ingredients) ? a.ingredients.length : 0;
+        const bIngredients = Array.isArray(b.ingredients) ? b.ingredients.length : 0;
+        return aIngredients - bIngredients;
+    });
+}
+
 function filterRecipesByPreferences(recipes) {
     return recipes.filter(recipe => {
         // Check allergies
@@ -927,17 +1037,17 @@ function filterRecipesByPreferences(recipes) {
                 }
             }
         }
-        
+
         // Check diet types
         if (userPreferences.diet_types && userPreferences.diet_types.length > 0) {
-            const hasMatchingDiet = userPreferences.diet_types.some(diet => 
+            const hasMatchingDiet = userPreferences.diet_types.some(diet =>
                 recipe.habits && recipe.habits.includes(diet)
             );
             if (!hasMatchingDiet) {
                 return false;
             }
         }
-        
+
         return true;
     });
 }
@@ -1145,11 +1255,25 @@ function ensureRecipeModal() {
         <div class="modal-backdrop"></div>
         <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
             <button class="modal-close" aria-label="Close">&times;</button>
+
+            <!-- Recipe Image -->
             <div id="recipe-modal-image" style="text-align: center; margin-bottom: 1rem;">
                 <img id="recipe-modal-img" alt="Recipe Image" style="max-width: 100%; height: auto; border-radius: 8px; max-height: 200px;">
             </div>
+
+            <!-- Recipe Title -->
             <h2 id="recipe-modal-title"></h2>
             <p id="recipe-brief" class="recipe-brief"></p>
+
+            <!-- Nutrition Summary (Top Section) -->
+            <div class="nutrition-top-section" style="margin-bottom: 1.5rem;">
+                <h3>Nutrition Information</h3>
+                <div id="nutrition-summary" class="nutrition-summary">
+                    <!-- nutrition cards inserted by JS -->
+                </div>
+            </div>
+
+            <!-- Ingredients and Instructions (Two Columns) -->
             <div class="modal-cols">
                 <div class="modal-col">
                     <h3>Ingredients</h3>
@@ -1159,9 +1283,6 @@ function ensureRecipeModal() {
                     <h3>Instructions</h3>
                     <ol id="recipe-directions"></ol>
                 </div>
-            </div>
-            <div id="nutrition-summary" class="nutrition-summary">
-                <h3>Nutrition Summary</h3>
             </div>
         </div>
     </div>`;
@@ -1272,7 +1393,6 @@ async function openRecipeModal(recipeId) {
         if (sumEl && recipe.nutrition) {
             const nutrition = recipe.nutrition;
             sumEl.innerHTML = `
-                <h3>Nutrition Summary</h3>
                 <div class="nutrition-grid">
                     <div class="nutrition-item">
                         <strong>Calories:</strong> ${formatNutritionNumber(nutrition.calories || 0)}

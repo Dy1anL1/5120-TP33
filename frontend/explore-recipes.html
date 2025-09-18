@@ -185,27 +185,35 @@
                 
                 <h2 id="recipe-modal-title" class="recipe-title"></h2>
 
+                <!-- Nutrition Summary (Top Section) -->
+                <div class="nutrition-top-section" style="margin-bottom: 1.5rem;">
+                    <h3>Nutrition Information</h3>
+                    <div id="nutrition-summary" class="nutri-grid">
+                        <!-- nutrition cards inserted by JS -->
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="modal-buttons" style="margin-bottom: 1.5rem; text-align: center; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
+                    <button id="add-to-dashboard" class="btn btn-primary">
+                        Add to Nutrition Dashboard
+                    </button>
+                    <button id="view-dashboard" class="btn btn-secondary">
+                        <i class="fas fa-chart-line"></i>
+                        View Dashboard
+                    </button>
+                </div>
+
+                <!-- Ingredients and Instructions (Two Columns) -->
                 <div class="modal-cols">
                     <div class="modal-col">
                         <h3>Ingredients</h3>
                         <ul id="recipe-ingredients" class="ingredients-list"></ul>
-
-                        <h3>Instructions</h3>
-                        <ol id="recipe-directions" class="directions-list"></ol>
                     </div>
 
                     <div class="modal-col">
-                        <h3>Nutrition (est. per 100g each ingredient)</h3>
-                        <div id="nutrition-summary" class="nutri-grid">
-                            <!-- nutrition cards inserted by JS -->
-                        </div>
-                        <button id="add-to-dashboard" class="btn btn-primary" style="margin-top:1rem;">
-                            Add to Nutrition Dashboard
-                        </button>
-                        <button id="view-dashboard" class="btn btn-secondary" style="margin-top:0.5rem;">
-                            <i class="fas fa-chart-line"></i>
-                            View Dashboard
-                        </button>
+                        <h3>Instructions</h3>
+                        <ol id="recipe-directions" class="directions-list"></ol>
                     </div>
                 </div>
             </div>
