@@ -40,11 +40,11 @@ function formatNutritionNumber(value, unit = '') {
     const wasAdjusted = Math.abs(Number(value) - num) > 0.1;
     const prefix = wasAdjusted ? '~' : '';
 
-    if (num === 0) return `0${unit}`;
+    if (num === 0) return `0.0${unit}`;
     if (num < 0.1) return `${prefix}<0.1${unit}`;
     if (num < 1) return `${prefix}${num.toFixed(2)}${unit}`;
     if (num < 10) return `${prefix}${num.toFixed(1)}${unit}`;
-    return `${prefix}${Math.round(num)}${unit}`;
+    return `${prefix}${num.toFixed(1)}${unit}`;
 }
 
 // Simple estimated nutrition based on common ingredients (fallback)
@@ -65,18 +65,18 @@ function estimateNutrition(ingredients, servings = 1) {
         'beef': { cal: 250, prot: 26, carb: 0, fat: 15 },
         'fish': { cal: 140, prot: 25, carb: 0, fat: 3 },
         'egg': { cal: 70, prot: 6, carb: 1, fat: 5 },
-        
+
         // Carbs
         'rice': { cal: 130, prot: 2.7, carb: 28, fat: 0.3 },
         'pasta': { cal: 131, prot: 5, carb: 25, fat: 1.1 },
         'bread': { cal: 265, prot: 9, carb: 49, fat: 3.2 },
         'potato': { cal: 77, prot: 2, carb: 17, fat: 0.1 },
-        
+
         // Vegetables
         'tomato': { cal: 18, prot: 0.9, carb: 3.9, fat: 0.2 },
         'onion': { cal: 40, prot: 1.1, carb: 9.3, fat: 0.1 },
         'carrot': { cal: 41, prot: 0.9, carb: 9.6, fat: 0.2 },
-        
+
         // Default
         'default': { cal: 50, prot: 2, carb: 8, fat: 1 }
     };
@@ -84,7 +84,7 @@ function estimateNutrition(ingredients, servings = 1) {
     ingredients.forEach(ingredient => {
         const ing = (typeof ingredient === 'string' ? ingredient : ingredient.text || '').toLowerCase();
         let matched = false;
-        
+
         for (const [key, values] of Object.entries(estimates)) {
             if (ing.includes(key)) {
                 totalCalories += values.cal;
@@ -95,7 +95,7 @@ function estimateNutrition(ingredients, servings = 1) {
                 break;
             }
         }
-        
+
         if (!matched) {
             const def = estimates.default;
             totalCalories += def.cal;
@@ -155,7 +155,7 @@ async function calculateNutrition(ingredients, servings = 1) {
         }
 
         const data = await response.json();
-        
+
         if (!data.summary_100g_sum) {
             console.warn('No nutrition summary found in API response - using estimation');
             const estimated = estimateNutrition(ingredients, servings);
@@ -166,8 +166,13 @@ async function calculateNutrition(ingredients, servings = 1) {
         const sum = data.summary_100g_sum;
         const nutrition = {
             calories: Math.round((sum.calories || sum.energy_kcal || sum.energy || 0) / servings),
+            protein_g: Math.round((sum.protein_g || sum.protein || 0) / servings),
+            carbs_g: Math.round((sum.carbohydrates || sum.carbohydrate_g || sum.carbohydrate || sum.carbs_g || sum.carbs || 0) / servings),
+            fat_g: Math.round((sum.total_fat || sum.fat_g || sum.fat || 0) / servings),
+            sodium_mg: Math.round((sum.sodium_mg || sum.sodium || 0) / servings),
+            // Keep backward compatibility
             protein: Math.round((sum.protein_g || sum.protein || 0) / servings),
-            carbs: Math.round((sum.carbohydrate_g || sum.carbohydrate || sum.carbs || 0) / servings),
+            carbs: Math.round((sum.carbohydrates || sum.carbohydrate_g || sum.carbohydrate || sum.carbs_g || sum.carbs || 0) / servings),
             fat: Math.round((sum.total_fat || sum.fat_g || sum.fat || 0) / servings)
         };
 
@@ -176,7 +181,7 @@ async function calculateNutrition(ingredients, servings = 1) {
         return nutrition;
     } catch (error) {
         console.warn('Error calculating nutrition:', error.message, '- using estimation');
-        
+
         // Use estimation as fallback when API fails
         const estimated = estimateNutrition(ingredients, servings);
         nutritionCache.set(cacheKey, estimated);
@@ -349,7 +354,7 @@ const questionnaireSteps = [
 ];
 
 // Initialize the application
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async function () {
     console.log('Weekly Meal Plan initialized');
     await loadUserPreferences();
     renderCurrentStep();
@@ -364,7 +369,7 @@ async function loadUserPreferences() {
         const saved = localStorage.getItem(PREFERENCES_KEY);
         if (saved) {
             userPreferences = JSON.parse(saved);
-            
+
             // Check if we have a saved plan and preferences are complete
             const savedPlan = localStorage.getItem(STORAGE_KEY);
             if (savedPlan && isPreferencesComplete()) {
@@ -376,7 +381,7 @@ async function loadUserPreferences() {
     } catch (error) {
         console.error('Error loading preferences:', error);
     }
-    
+
     // Show questionnaire by default
     showQuestionnaire();
 }
@@ -393,7 +398,7 @@ function saveUserPreferences() {
 // Check if all required preferences are complete
 function isPreferencesComplete() {
     const requiredFields = ['age', 'gender', 'activity_level', 'meal_preferences', 'cooking_difficulty', 'calorie_target'];
-    return requiredFields.every(field => userPreferences[field] && 
+    return requiredFields.every(field => userPreferences[field] &&
         (Array.isArray(userPreferences[field]) ? userPreferences[field].length > 0 : true));
 }
 
@@ -409,7 +414,7 @@ async function showWeeklyPlan() {
     document.getElementById('questionnaire-container').style.display = 'none';
     document.getElementById('weekly-plan-display').classList.add('active');
     document.getElementById('loading-spinner').classList.add('hidden');
-    
+
     if (weeklyPlan) {
         await renderWeeklyPlan();
     }
@@ -419,9 +424,9 @@ async function showWeeklyPlan() {
 function renderCurrentStep() {
     const stepData = questionnaireSteps.find(s => s.step === currentStep);
     if (!stepData) return;
-    
+
     updateStepIndicator();
-    
+
     const content = document.getElementById('questionnaire-content');
     content.innerHTML = `
         <div class="questionnaire-header">
@@ -429,10 +434,10 @@ function renderCurrentStep() {
         </div>
         ${stepData.questions.map(question => renderQuestion(question)).join('')}
     `;
-    
+
     // Add event listeners
     addEventListeners();
-    
+
     // Update button states
     updateButtonStates();
 }
@@ -440,7 +445,7 @@ function renderCurrentStep() {
 // Render a single question
 function renderQuestion(question) {
     const value = userPreferences[question.id];
-    
+
     switch (question.type) {
         case 'text':
         case 'number':
@@ -459,7 +464,7 @@ function renderQuestion(question) {
                     <div id="${question.id}-error" class="validation-message error-message" style="display:none;"></div>
                 </div>
             `;
-            
+
         case 'select':
             return `
                 <div class="question-group">
@@ -467,15 +472,15 @@ function renderQuestion(question) {
                         ${question.label} ${question.required ? '<span class="required">*</span>' : ''}
                     </label>
                     <select id="${question.id}" class="form-input" ${question.required ? 'required' : ''}>
-                        ${question.options.map(opt => 
-                            `<option value="${opt.value}" ${value === opt.value ? 'selected' : ''}>${opt.text}</option>`
-                        ).join('')}
+                        ${question.options.map(opt =>
+                `<option value="${opt.value}" ${value === opt.value ? 'selected' : ''}>${opt.text}</option>`
+            ).join('')}
                     </select>
                     <div class="input-hint">${getQuestionHint(question)}</div>
                     <div id="${question.id}-error" class="validation-message error-message" style="display:none;"></div>
                 </div>
             `;
-            
+
         case 'checkbox':
             const selectedValues = Array.isArray(value) ? value : [];
             return `
@@ -499,7 +504,7 @@ function renderQuestion(question) {
                     <div id="${question.id}-error" class="validation-message error-message" style="display:none;"></div>
                 </div>
             `;
-            
+
         default:
             return '';
     }
@@ -525,7 +530,7 @@ function addEventListeners() {
         input.addEventListener('change', handleInputChange);
         input.addEventListener('blur', validateField);
     });
-    
+
     // Checkbox options
     document.querySelectorAll('.checkbox-option').forEach(option => {
         option.addEventListener('click', handleCheckboxClick);
@@ -535,13 +540,13 @@ function addEventListeners() {
 // Handle input changes
 function handleInputChange(event) {
     const { id, value, type } = event.target;
-    
+
     if (type === 'number') {
         userPreferences[id] = value ? parseInt(value) : null;
     } else {
         userPreferences[id] = value;
     }
-    
+
     saveUserPreferences();
     validateField(event);
 }
@@ -552,16 +557,16 @@ function handleCheckboxClick(event) {
     const questionId = option.dataset.questionId;
     const value = option.dataset.value;
     const checkbox = option.querySelector('input[type="checkbox"]');
-    
+
     // Toggle checkbox
     checkbox.checked = !checkbox.checked;
     option.classList.toggle('selected', checkbox.checked);
-    
+
     // Update preferences
     if (!userPreferences[questionId]) {
         userPreferences[questionId] = [];
     }
-    
+
     if (checkbox.checked) {
         if (!userPreferences[questionId].includes(value)) {
             userPreferences[questionId].push(value);
@@ -569,7 +574,7 @@ function handleCheckboxClick(event) {
     } else {
         userPreferences[questionId] = userPreferences[questionId].filter(v => v !== value);
     }
-    
+
     saveUserPreferences();
     validateField({ target: { id: questionId } });
 }
@@ -579,14 +584,14 @@ function validateField(event) {
     const questionId = event.target.id;
     const question = findQuestionById(questionId);
     if (!question) return;
-    
+
     const value = userPreferences[questionId];
     const errorElement = document.getElementById(`${questionId}-error`);
     const inputElement = document.getElementById(questionId);
-    
+
     let isValid = true;
     let errorMessage = '';
-    
+
     // Required field validation
     if (question.required) {
         if (question.type === 'checkbox') {
@@ -606,7 +611,7 @@ function validateField(event) {
             }
         }
     }
-    
+
     // Specific validation rules
     if (isValid && value && question.validation) {
         if (question.validation.min && value < question.validation.min) {
@@ -618,7 +623,7 @@ function validateField(event) {
             errorMessage = question.validation.message;
         }
     }
-    
+
     // Update UI
     if (errorElement) {
         if (isValid) {
@@ -636,7 +641,7 @@ function validateField(event) {
             }
         }
     }
-    
+
     return isValid;
 }
 
@@ -653,16 +658,16 @@ function findQuestionById(id) {
 function validateCurrentStep() {
     const stepData = questionnaireSteps.find(s => s.step === currentStep);
     if (!stepData) return false;
-    
+
     let isValid = true;
-    
+
     for (const question of stepData.questions) {
         const fieldValid = validateField({ target: { id: question.id } });
         if (!fieldValid) {
             isValid = false;
         }
     }
-    
+
     return isValid;
 }
 
@@ -671,7 +676,7 @@ function updateStepIndicator() {
     document.querySelectorAll('.step').forEach(step => {
         const stepNum = parseInt(step.dataset.step);
         step.classList.remove('active', 'completed');
-        
+
         if (stepNum === currentStep) {
             step.classList.add('active');
         } else if (stepNum < currentStep) {
@@ -684,10 +689,10 @@ function updateStepIndicator() {
 function updateButtonStates() {
     const backBtn = document.getElementById('btn-back');
     const nextBtn = document.getElementById('btn-next');
-    
+
     // Back button
     backBtn.disabled = currentStep === 1;
-    
+
     // Next button
     if (currentStep === questionnaireSteps.length) {
         nextBtn.innerHTML = '<i class="fas fa-check"></i> Generate Meal Plan';
@@ -709,7 +714,7 @@ function goToNextStep() {
     if (!validateCurrentStep()) {
         return;
     }
-    
+
     if (currentStep < questionnaireSteps.length) {
         currentStep++;
         renderCurrentStep();
@@ -724,9 +729,9 @@ async function generateMealPlan() {
     try {
         document.getElementById('loading-spinner').classList.remove('hidden');
         document.getElementById('questionnaire-container').style.display = 'none';
-        
+
         console.log('Generating meal plan with preferences:', userPreferences);
-        
+
         // Generate plan for each day (Full week)
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']; // Full week
         const mealPlan = {};
@@ -734,7 +739,7 @@ async function generateMealPlan() {
         for (const day of days) {
             mealPlan[day] = await generateDayMeals(day);
         }
-        
+
         // Convert plan object to days array for compatibility with rendering functions
         const daysArray = Object.keys(mealPlan).map(dayName => ({
             name: dayName,
@@ -748,12 +753,12 @@ async function generateMealPlan() {
             generatedDate: new Date().toISOString(),
             weekStarting: getWeekStartDate()
         };
-        
+
         // Save to localStorage
         localStorage.setItem(STORAGE_KEY, JSON.stringify(weeklyPlan));
-        
+
         await showWeeklyPlan();
-        
+
     } catch (error) {
         console.error('Error generating meal plan:', error);
         alert('Sorry, there was an error generating your meal plan. Please try again.');
@@ -766,7 +771,7 @@ async function generateMealPlan() {
 async function generateDayMeals(day) {
     const meals = {};
     const selectedMealTypes = userPreferences.meal_preferences || ['breakfast', 'lunch', 'dinner'];
-    
+
     for (const mealType of selectedMealTypes) {
         try {
             const recipe = await fetchRandomRecipe(mealType);
@@ -779,7 +784,7 @@ async function generateDayMeals(day) {
             console.error(`Error fetching ${mealType} for ${day}:`, error);
         }
     }
-    
+
     return meals;
 }
 
@@ -794,32 +799,32 @@ async function fetchRandomRecipe(mealType) {
                     category: mealType,
                     limit: '30'
                 });
-                
+
                 if (userPreferences.diet_types && userPreferences.diet_types.length > 0) {
                     params.append('diet_type', userPreferences.diet_types[0]);
                 }
-                
+
                 if (userPreferences.allergies && userPreferences.allergies.length > 0) {
                     params.append('allergy_filter', userPreferences.allergies[0]);
                 }
-                
+
                 return params;
             },
-            
+
             // Strategy 2: Just category and diet type
             () => {
                 let params = new URLSearchParams({
                     category: mealType,
                     limit: '30'
                 });
-                
+
                 if (userPreferences.diet_types && userPreferences.diet_types.length > 0) {
                     params.append('diet_type', userPreferences.diet_types[0]);
                 }
-                
+
                 return params;
             },
-            
+
             // Strategy 3: Just category
             () => {
                 return new URLSearchParams({
@@ -827,7 +832,7 @@ async function fetchRandomRecipe(mealType) {
                     limit: '30'
                 });
             },
-            
+
             // Strategy 4: No category filter (fallback)
             () => {
                 return new URLSearchParams({
@@ -835,22 +840,22 @@ async function fetchRandomRecipe(mealType) {
                 });
             }
         ];
-        
+
         for (let i = 0; i < searchStrategies.length; i++) {
             try {
                 const params = searchStrategies[i]();
                 const url = `${API_URL}?${params.toString()}`;
                 console.log(`Fetching recipes (strategy ${i + 1}):`, url);
-                
+
                 const response = await fetch(url);
                 if (!response.ok) {
                     console.warn(`Strategy ${i + 1} failed with status:`, response.status);
                     continue;
                 }
-                
+
                 const data = await response.json();
                 console.log(`Strategy ${i + 1} response:`, data);
-                
+
                 if (data.items && data.items.length > 0) {
                     console.log(`Got ${data.items.length} recipes for ${mealType}`);
 
@@ -897,7 +902,7 @@ async function fetchRandomRecipe(mealType) {
                 continue;
             }
         }
-        
+
         // Fallback strategy: try to find recipes from broader search
         console.log(`Fallback: Trying broader search for ${mealType}`);
         try {
@@ -918,8 +923,8 @@ async function fetchRandomRecipe(mealType) {
                     // For other meal types, try to match categories or general suitability
                     if (recipe.categories) {
                         return recipe.categories.includes(mealType) ||
-                               recipe.categories.includes('lunch') ||
-                               recipe.categories.includes('dinner');
+                            recipe.categories.includes('lunch') ||
+                            recipe.categories.includes('dinner');
                     }
 
                     return false;
@@ -945,7 +950,7 @@ async function fetchRandomRecipe(mealType) {
 
         console.warn(`No recipes found for ${mealType} after all strategies including fallback`);
         return null;
-        
+
     } catch (error) {
         console.error('Error fetching recipe:', error);
         return null;
@@ -1067,19 +1072,19 @@ async function renderWeeklyPlan() {
         renderPlanLoading();
         return;
     }
-    
+
     // Update plan header info
     const userInfo = `${userPreferences.gender || 'User'}, ${userPreferences.age} years old`;
     document.getElementById('plan-user-info').textContent = userInfo;
-    
+
     // Update date range
     const weekStart = new Date(weeklyPlan.weekStarting);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
-    
+
     const dateRange = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
     document.getElementById('plan-date-range').textContent = dateRange;
-    
+
     // Render weekly days
     await renderWeeklyDays();
 }
@@ -1100,20 +1105,20 @@ async function renderWeeklyDays() {
     const container = document.getElementById('weekly-days-container');
     // Get the actual days from the plan
     const days = Object.keys(weeklyPlan.plan || {}); // Use actual generated days
-    
+
     const weekStart = new Date(weeklyPlan.weekStarting);
-    
+
     // Generate day sections with async meal cards
     const dayPromises = days.map(async (day, index) => {
         const currentDate = new Date(weekStart);
         currentDate.setDate(weekStart.getDate() + index);
-        
+
         const dayMeals = weeklyPlan.plan[day] || {};
         const dayDate = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        
+
         let mealsHTML = '';
         if (Object.keys(dayMeals).length > 0) {
-            const mealPromises = Object.entries(dayMeals).map(([mealType, recipe]) => 
+            const mealPromises = Object.entries(dayMeals).map(([mealType, recipe]) =>
                 renderLargeRecipeCard(mealType, recipe)
             );
             const mealCards = await Promise.all(mealPromises);
@@ -1121,7 +1126,7 @@ async function renderWeeklyDays() {
         } else {
             mealsHTML = '<div class="empty-meal-slot"><i class="fas fa-utensils"></i><h4>No meals planned</h4><p>Generate a meal plan to see recipes here</p></div>';
         }
-        
+
         return `
             <div class="day-section">
                 <div class="day-section-header">
@@ -1137,7 +1142,7 @@ async function renderWeeklyDays() {
             </div>
         `;
     });
-    
+
     const dayHTML = await Promise.all(dayPromises);
     container.innerHTML = dayHTML.join('');
 
@@ -1156,7 +1161,7 @@ async function renderLargeRecipeCard(mealType, recipe) {
             </div>
         `;
     }
-    
+
     // Use recipe's existing nutrition data
     const nutrition = recipe.nutrition || {};
     const nutritionInfo = `<div class="recipe-nutrition-info">
@@ -1165,12 +1170,12 @@ async function renderLargeRecipeCard(mealType, recipe) {
         <span class="nutrition-item"><strong>Carbs:</strong> ${formatNutritionNumber(nutrition.carbs_g || 0, 'g')}</span>
         <span class="nutrition-item"><strong>Sodium:</strong> ${formatNutritionNumber(nutrition.sodium_mg || 0, 'mg')}</span>
     </div>`;
-    
+
     // Image handling (same as explore-recipes)
-    const imageHtml = recipe.has_image && recipe.image_display ? 
-        `<div class="recipe-image"><img src="${recipe.image_display}" alt="${recipe.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` : 
+    const imageHtml = recipe.has_image && recipe.image_display ?
+        `<div class="recipe-image"><img src="${recipe.image_display}" alt="${recipe.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` :
         `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
-    
+
     return `
         <div class="recipe-card" onclick="openRecipeModal('${recipe.recipe_id}')" style="cursor: pointer;">
             ${imageHtml}
@@ -1198,7 +1203,7 @@ async function renderMealCard(mealType, recipe) {
             </div>
         `;
     }
-    
+
     // Use recipe's existing nutrition data
     const nutrition = recipe.nutrition || {};
     const nutritionInfo = `<div class="recipe-nutrition-info">
@@ -1207,12 +1212,12 @@ async function renderMealCard(mealType, recipe) {
         <span class="nutrition-item"><strong>Carbs:</strong> ${formatNutritionNumber(nutrition.carbs_g || 0, 'g')}</span>
         <span class="nutrition-item"><strong>Sodium:</strong> ${formatNutritionNumber(nutrition.sodium_mg || 0, 'mg')}</span>
     </div>`;
-    
+
     // Image handling (same as explore-recipes)
-    const imageHtml = recipe.has_image && recipe.image_display ? 
-        `<div class="recipe-image"><img src="${recipe.image_display}" alt="${recipe.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` : 
+    const imageHtml = recipe.has_image && recipe.image_display ?
+        `<div class="recipe-image"><img src="${recipe.image_display}" alt="${recipe.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` :
         `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
-    
+
     return `
         <div class="recipe-card" onclick="openRecipeModal('${recipe.recipe_id}')" style="cursor: pointer;">
             ${imageHtml}
@@ -1248,7 +1253,7 @@ function updatePreferences() {
 function ensureRecipeModal() {
     let m = document.getElementById('recipe-modal');
     if (m) return m;
-    
+
     // Create modal if it doesn't exist
     const modalHTML = `
     <div id="recipe-modal" class="modal" aria-hidden="true" style="display:none">
@@ -1256,13 +1261,13 @@ function ensureRecipeModal() {
         <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
             <button class="modal-close" aria-label="Close">&times;</button>
 
-            <!-- Recipe Image -->
-            <div id="recipe-modal-image" style="text-align: center; margin-bottom: 1rem;">
-                <img id="recipe-modal-img" alt="Recipe Image" style="max-width: 100%; height: auto; border-radius: 8px; max-height: 200px;">
-            </div>
-
             <!-- Recipe Title -->
             <h2 id="recipe-modal-title"></h2>
+
+            <!-- Recipe Image -->
+            <div id="recipe-modal-image" style="text-align: center; margin-bottom: 1rem;">
+                <img id="recipe-modal-img" alt="Recipe Image" style="max-width: 100%; height: auto; border-radius: 8px; max-height: 300px;">
+            </div>
             <p id="recipe-brief" class="recipe-brief"></p>
 
             <!-- Nutrition Summary (Top Section) -->
@@ -1286,30 +1291,30 @@ function ensureRecipeModal() {
             </div>
         </div>
     </div>`;
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     m = document.getElementById('recipe-modal');
-    
+
     // Add close functionality
     const closeBtn = m.querySelector('.modal-close');
     const backdrop = m.querySelector('.modal-backdrop');
-    
+
     function closeModal() {
         m.setAttribute('aria-hidden', 'true');
         m.style.display = 'none';
         document.body.style.overflow = '';
     }
-    
+
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
     if (backdrop) backdrop.addEventListener('click', closeModal);
-    
+
     // ESC key to close
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && m.style.display === 'block') {
             closeModal();
         }
     });
-    
+
     return m;
 }
 
@@ -1328,9 +1333,9 @@ async function openRecipeModal(recipeId) {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const recipe = await response.json();
-        
+
         const m = ensureRecipeModal();
         const titleEl = m.querySelector('#recipe-modal-title');
         const ingEl = m.querySelector('#recipe-ingredients');
@@ -1340,7 +1345,7 @@ async function openRecipeModal(recipeId) {
         const imgEl = m.querySelector('#recipe-modal-img');
 
         if (titleEl) titleEl.textContent = recipe.title || '';
-        
+
         // Handle recipe image in modal
         if (recipe.has_image && recipe.image_display && imgContainerEl && imgEl) {
             imgEl.src = recipe.image_display;
@@ -1369,13 +1374,13 @@ async function openRecipeModal(recipeId) {
         if (dirEl) {
             dirEl.innerHTML = '';
             let instructions = recipe.directions || recipe.instructions || [];
-            
+
             // Handle different instruction formats
             if (typeof instructions === 'object' && !Array.isArray(instructions)) {
                 // Convert object to array
                 instructions = Object.values(instructions);
             }
-            
+
             if (Array.isArray(instructions) && instructions.length > 0) {
                 instructions.forEach(instruction => {
                     const li = document.createElement('li');
@@ -1411,7 +1416,7 @@ async function openRecipeModal(recipeId) {
         }
 
         openModal();
-        
+
     } catch (error) {
         console.error('Error opening recipe modal:', error);
         alert('Sorry, there was an error loading the recipe details.');

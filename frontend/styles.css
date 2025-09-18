@@ -1413,6 +1413,16 @@ h6 { font-size: 1.4rem; }
     background-color: rgba(0, 0, 0, 0.1);
 }
 
+/* Meal-planning recipe modal font size adjustments */
+#recipe-modal-title {
+    font-size: 1.8rem !important;
+}
+
+.nutrition-top-section h3,
+.modal-col h3 {
+    font-size: 1.5rem !important;
+}
+
 .modal-cols {
     display: grid;
     grid-template-columns: 1.2fr 0.8fr;
@@ -2274,6 +2284,13 @@ html {
     border-radius: 6px;
     margin-bottom: 0.5rem;
     border: 1px solid rgba(76, 175, 80, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.nutrition-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 1);
 }
 
 .recipe-actions {
