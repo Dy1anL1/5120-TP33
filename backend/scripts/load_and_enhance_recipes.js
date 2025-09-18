@@ -23,6 +23,19 @@ const INGREDIENT_QUOTAS = {
   dairy_egg: { total: 100, egg: 60, dairy: 40 }
 };
 
+// Category quota targets
+const CATEGORY_QUOTAS = {
+  dinner: 300,        // Main dishes - largest portion
+  lunch: 200,         // Lunch items
+  breakfast: 150,     // Breakfast items
+  snack: 100,         // Snacks - increased for better coverage
+  soup: 80,           // Light soups (excluding main meal soups)
+  salad: 70,          // Salads
+  dessert: 60,        // Desserts
+  beverage: 40,       // Beverages
+  uncategorized: 0    // No uncategorized recipes
+};
+
 const client = new DynamoDBClient({ region: REGION });
 const ddb = DynamoDBDocumentClient.from(client);
 
@@ -166,7 +179,14 @@ async function fetchNutrition(ingredients) {
 // --- Classification Configuration ---
 const SOUP_NEGATIVES = [
   'fried rice', 'risotto', 'pilaf', 'stir-fry',
-  'paella', 'biryani', 'casserole', 'baked pasta', 'noodle stir-fry'
+  'paella', 'biryani', 'casserole', 'baked pasta', 'noodle stir-fry',
+  // Main meal soups that should be categorized as dinner/lunch, not soup
+  'pho', 'ramen', 'noodle soup', 'congee', 'pasta soup', 'beef stew',
+  'chicken stew', 'meat soup', 'hearty soup', 'thick soup',
+  // Additional main meal soups
+  'udon', 'soba', 'laksa', 'tonkotsu', 'miso soup with noodles',
+  'wonton soup', 'hot pot', 'shabu shabu', 'korean soup',
+  'dumpling soup', 'rice noodle soup', 'beef noodle soup'
 ];
 
 const BEVERAGE_KEYWORDS = {
@@ -213,8 +233,8 @@ function isSoup(title, ingredients) {
     }
   }
 
-  // Positive soup indicators
-  if (anyWord(titleLower, ['soup', 'chowder', 'pho', 'ramen', 'bisque', 'gazpacho', 'congee'])) {
+  // Positive soup indicators (light soups only, not main meals)
+  if (anyWord(titleLower, ['soup', 'chowder', 'bisque', 'gazpacho', 'minestrone'])) {
     return { result: true, reason: 'title_keyword' };
   }
 
@@ -272,10 +292,29 @@ function classifyRecipe(title, ingredients) {
     return { primary: 'breakfast', all: ['breakfast'], secondary: [], debug };
   }
 
-  // Priority 5: Snack (precise phrases only)
+  // Priority 5: Snack (expanded for better coverage)
   if (anyWord(combined, [
+    // Original snacks
     'chips', 'dip', 'trail mix', 'jerky', 'energy ball', 'energy bites',
-    'granola bar', 'protein bar', 'popcorn', 'crackers'
+    'granola bar', 'protein bar', 'popcorn', 'crackers',
+    // Dairy-based snacks
+    'cheese and crackers', 'yogurt parfait', 'cottage cheese',
+    // Vegetable snacks
+    'veggie sticks', 'carrot sticks', 'celery sticks', 'cucumber slices', 'hummus',
+    // Finger foods
+    'finger food', 'appetizer', 'canapé', 'pinwheel', 'roll-up',
+    // Nuts and seeds (safe - not breakfast/dessert)
+    'mixed nuts', 'roasted nuts', 'seeds', 'sunflower seeds', 'pumpkin seeds',
+    // Fruit-based snacks (safe - not dessert)
+    'dried fruit', 'fruit leather', 'fruit roll', 'apple slices', 'banana chips',
+    // Asian snacks (safe - unique category)
+    'rice cake', 'rice cracker', 'wasabi peas', 'seaweed snack',
+    // Healthy snacks (safe - not other categories)
+    'kale chips', 'veggie chips', 'protein bites', 'chia pudding',
+    // Party snacks (safe - appetizer style)
+    'cheese ball', 'deviled eggs', 'stuffed mushrooms',
+    // General snack terms
+    'snack', 'bite-sized', 'small portion', 'quick bite', 'bite'
   ])) {
     debug.rules.push('snack_keyword');
     return { primary: 'snack', all: ['snack'], secondary: [], debug };
@@ -449,9 +488,35 @@ function generateHabitTags(analysis, allergenAnalysis, nutrition, title = '') {
     habits.add('soy_free');
   }
 
-  // Soft food check - based on preparation methods and ingredients
-  if (anyWord(ingredientText, INGREDIENT_KEYWORDS.soft_food_keywords) ||
-    anyWord(title.toLowerCase(), INGREDIENT_KEYWORDS.soft_food_keywords)) {
+  // Soft food check - more precise detection for elderly users
+  const softFoodIndicators = [
+    // Definitely soft foods
+    'soup', 'puree', 'mashed', 'pudding', 'smoothie', 'porridge', 'custard', 'mousse',
+    'yogurt', 'oatmeal', 'congee', 'broth', 'blended',
+    // Soft preparation methods
+    'steamed', 'poached', 'slow cooked', 'tender'
+  ];
+
+  const hardFoodBlockers = [
+    // Foods that are definitely not soft
+    'wrap', 'burger', 'sandwich', 'pizza', 'taco', 'chips', 'crackers',
+    'nuts', 'raw vegetables', 'steak', 'fried', 'crispy', 'crunchy',
+    // Additional hard foods
+    'toast', 'bagel', 'biscuit', 'pretzel', 'granola', 'cereal',
+    'apple', 'carrot', 'celery', 'broccoli', 'cauliflower',
+    'grilled', 'roasted', 'baked bread', 'crusty', 'firm'
+  ];
+
+  const titleLower = title.toLowerCase();
+  const combinedText = `${titleLower} ${ingredientText}`;
+
+  // Block if contains hard food indicators
+  const hasHardFood = anyWord(combinedText, hardFoodBlockers);
+
+  // Check for soft food indicators
+  const hasSoftFood = anyWord(combinedText, softFoodIndicators);
+
+  if (hasSoftFood && !hasHardFood) {
     habits.add('soft_food');
   }
 
@@ -526,33 +591,73 @@ class QuotaManager {
   }
 }
 
+// --- Category Quota Manager ---
+class CategoryQuotaManager {
+  constructor() {
+    this.quotas = JSON.parse(JSON.stringify(CATEGORY_QUOTAS));
+  }
+
+  canAccept(category) {
+    return this.quotas[category] > 0;
+  }
+
+  consume(category) {
+    if (this.canAccept(category)) {
+      this.quotas[category]--;
+      return true;
+    }
+    return false;
+  }
+
+  getStats() {
+    return this.quotas;
+  }
+
+  getRemainingTotal() {
+    return Object.values(this.quotas).reduce((sum, count) => sum + count, 0);
+  }
+}
+
+// --- Logging Setup ---
+const logFile = path.join(__dirname, "load_output.log");
+const logStream = fs.createWriteStream(logFile, { flags: 'w' });
+
+function log(message) {
+  console.log(message);
+  logStream.write(message + '\n');
+}
+
 // --- Main Processing ---
 async function main() {
-  console.log("🥗 Loading and Enhancing Recipe Database");
-  console.log("========================================\n");
+  const startTime = new Date();
+  log("🥗 Loading and Enhancing Recipe Database");
+  log(`⏰ Started at: ${startTime.toISOString()}`);
+  log("═══════════════════════════════════════════\n");
 
-  console.log("📖 Reading recipes_with_images.json...");
+  log("📖 Reading recipes_with_images.json...");
   const rawData = fs.readFileSync(path.join(__dirname, "recipes_with_images.json"), 'utf8');
   const allRecipes = JSON.parse(rawData);
 
-  console.log(`📊 Found ${allRecipes.length.toLocaleString()} total recipes`);
-  console.log(`🎯 Target: ${TARGET_RECIPES} recipes with enhanced processing\n`);
+  log(`📊 Found ${allRecipes.length.toLocaleString()} total recipes`);
+  log(`🎯 Target: ${TARGET_RECIPES} recipes with enhanced processing\n`);
 
   const quotaManager = new QuotaManager();
+  const categoryQuotaManager = new CategoryQuotaManager();
   const finalItems = [];
   const skippedItems = [];
   const categoryStats = {};
   const tagStats = {};
   let processed = 0;
 
-  console.log("🔄 Processing recipes with full enhancement...\n");
+  log("🔄 Processing recipes with full enhancement...\n");
 
   for (const recipe of allRecipes) {
-    if (finalItems.length >= TARGET_RECIPES) break;
+    // Stop when all category quotas are exhausted
+    if (categoryQuotaManager.getRemainingTotal() === 0) break;
 
     processed++;
     if (processed % 500 === 0) {
-      console.log(`   Processed ${processed}/${allRecipes.length} recipes, selected ${finalItems.length}...`);
+      log(`   Processed ${processed}/${allRecipes.length} recipes, selected ${finalItems.length}...`);
     }
 
     // Basic validation
@@ -589,11 +694,43 @@ async function main() {
       // Small delay to avoid API rate limits
       await new Promise(resolve => setTimeout(resolve, 200));
     } catch (error) {
-      console.warn(`Nutrition fetch failed for "${recipe.title}": ${error.message}`);
+      const warnMsg = `⚠️ Nutrition fetch failed for "${recipe.title}": ${error.message}`;
+      console.warn(warnMsg);
+      logStream.write(warnMsg + '\n');
     }
 
     // Generate habit tags
     const habits = generateHabitTags(analysis, allergenAnalysis, nutrition, recipe.title);
+
+    // Check quotas - both ingredient and category must have space
+    const primaryCategory = classificationResult.primary;
+    const ingredientType = analysis.primaryType;
+    const ingredientSubtype = analysis.primarySubtype;
+
+    // Skip if either quota is exhausted
+    if (!categoryQuotaManager.canAccept(primaryCategory)) {
+      skippedItems.push({
+        title: recipe.title,
+        reason: [`category_quota_exhausted: ${primaryCategory}`],
+        debug: classificationResult.debug
+      });
+      continue;
+    }
+
+    if (ingredientType && ingredientSubtype && !quotaManager.canAccept(ingredientType, ingredientSubtype)) {
+      skippedItems.push({
+        title: recipe.title,
+        reason: [`ingredient_quota_exhausted: ${ingredientType}/${ingredientSubtype}`],
+        debug: classificationResult.debug
+      });
+      continue;
+    }
+
+    // Consume quotas
+    categoryQuotaManager.consume(primaryCategory);
+    if (ingredientType && ingredientSubtype) {
+      quotaManager.consume(ingredientType, ingredientSubtype);
+    }
 
     // Create final recipe object
     const finalRecipe = {
@@ -644,38 +781,53 @@ async function main() {
   }
 
   // Statistics
-  console.log("\n📈 PROCESSING COMPLETE!");
-  console.log("═══════════════════════════════════");
-  console.log(`✅ Selected ${finalItems.length} recipes from ${processed} processed`);
-  console.log(`⏭️ Skipped ${skippedItems.length} uncategorized recipes`);
+  log("\n📈 PROCESSING COMPLETE!");
+  log("═══════════════════════════════════");
+  log(`✅ Selected ${finalItems.length} recipes from ${processed} processed`);
+  log(`⏭️ Skipped ${skippedItems.length} recipes due to quota/validation issues`);
 
-  console.log("\n📊 CATEGORY DISTRIBUTION:");
+  log("\n📊 CATEGORY DISTRIBUTION:");
   Object.entries(categoryStats)
     .sort((a, b) => b[1] - a[1])
     .forEach(([category, count]) => {
       const percentage = ((count / finalItems.length) * 100).toFixed(1);
-      console.log(`  📋 ${category}: ${count} recipes (${percentage}%)`);
+      const quota = CATEGORY_QUOTAS[category] || 0;
+      const remaining = categoryQuotaManager.getStats()[category] || 0;
+      log(`  📋 ${category}: ${count} recipes (${percentage}%) [${quota - remaining}/${quota} quota used]`);
     });
 
-  console.log("\n🏷️ TOP HABIT TAGS:");
+  log("\n📈 INGREDIENT QUOTA USAGE:");
+  const ingredientStats = quotaManager.getStats();
+  Object.entries(ingredientStats).forEach(([type, data]) => {
+    const used = INGREDIENT_QUOTAS[type].total - data.total;
+    log(`  🥘 ${type}: ${used}/${INGREDIENT_QUOTAS[type].total} used (${data.total} remaining)`);
+    Object.entries(data).forEach(([subtype, count]) => {
+      if (subtype !== 'total' && INGREDIENT_QUOTAS[type][subtype]) {
+        const subtypeUsed = INGREDIENT_QUOTAS[type][subtype] - count;
+        log(`    └─ ${subtype}: ${subtypeUsed}/${INGREDIENT_QUOTAS[type][subtype]} used`);
+      }
+    });
+  });
+
+  log("\n🏷️ TOP HABIT TAGS:");
   Object.entries(tagStats)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 15)
     .forEach(([tag, count]) => {
       const percentage = ((count / finalItems.length) * 100).toFixed(1);
-      console.log(`  🏷️ ${tag}: ${count} recipes (${percentage}%)`);
+      log(`  🏷️ ${tag}: ${count} recipes (${percentage}%)`);
     });
 
   // Show sample skipped recipes for debugging
   if (skippedItems.length > 0) {
-    console.log("\n🚫 SAMPLE SKIPPED RECIPES (first 10):");
+    log("\n🚫 SAMPLE SKIPPED RECIPES (first 10):");
     skippedItems.slice(0, 10).forEach((item, index) => {
-      console.log(`  ${index + 1}. "${item.title}" - Reason: ${item.reason.join(', ')}`);
+      log(`  ${index + 1}. "${item.title}" - Reason: ${item.reason.join(', ')}`);
     });
   }
 
   // Upload to DynamoDB
-  console.log("\n🚀 Uploading to DynamoDB...");
+  log("\n🚀 Uploading to DynamoDB...");
   const batchSize = 25;
   let uploaded = 0;
 
@@ -695,22 +847,37 @@ async function main() {
       uploaded += batch.length;
 
       if (uploaded % 100 === 0 || uploaded === finalItems.length) {
-        console.log(`   📤 Uploaded ${uploaded}/${finalItems.length} recipes...`);
+        log(`   📤 Uploaded ${uploaded}/${finalItems.length} recipes...`);
       }
     } catch (error) {
-      console.error(`❌ Error uploading batch starting at ${i}:`, error.message);
+      const errorMsg = `❌ Error uploading batch starting at ${i}: ${error.message}`;
+      console.error(errorMsg);
+      logStream.write(errorMsg + '\n');
     }
   }
 
-  console.log("\n🎉 SUCCESS!");
-  console.log("================");
-  console.log(`✅ Successfully uploaded ${uploaded} enhanced recipes to DynamoDB`);
-  console.log(`📊 Database: ${TABLE}`);
-  console.log(`🔗 Enhanced with: allergen detection, nutrition analysis, and smart classification`);
+  const endTime = new Date();
+  const duration = Math.round((endTime - startTime) / 1000);
+
+  log("\n🎉 SUCCESS!");
+  log("================");
+  log(`✅ Successfully uploaded ${uploaded} enhanced recipes to DynamoDB`);
+  log(`📊 Database: ${TABLE}`);
+  log(`🔗 Enhanced with: allergen detection, nutrition analysis, and smart classification`);
+  log(`⏰ Completed at: ${endTime.toISOString()}`);
+  log(`⌛ Total duration: ${duration} seconds`);
+
+  // Close log file
+  logStream.end();
 }
 
 // Execute
 main().catch((err) => {
-  console.error("❌ Error:", err);
+  const errorMsg = `❌ Critical Error: ${err.message}`;
+  console.error(errorMsg);
+  if (logStream && !logStream.destroyed) {
+    logStream.write(errorMsg + '\n');
+    logStream.end();
+  }
   process.exit(1);
 });

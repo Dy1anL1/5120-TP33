@@ -3,12 +3,31 @@ const NUTRITION_API = "https://0brixnxwq3.execute-api.ap-southeast-2.amazonaws.c
 
 // Format nutrition numbers to show 1-2 decimal places, avoiding zeros
 function formatNutritionNumber(value, unit = '') {
-    const num = Number(value) || 0;
+    // Apply nutrition value validation before formatting
+    let adjustedValue = value;
+
+    // Determine nutrient type from unit for validation
+    let nutrientType = 'Unknown';
+    if (unit === 'mg' && (value > 1000)) nutrientType = 'Sodium'; // High mg values likely sodium
+    else if (unit === 'kcal' || unit === '') nutrientType = 'Calories';
+    else if (unit === 'g' && value > 50) nutrientType = 'Protein';
+
+    // Apply sanity checks if we detected a nutrient type
+    if (nutrientType !== 'Unknown') {
+        adjustedValue = adjustNutritionValue(value, nutrientType);
+    }
+
+    const num = Number(adjustedValue) || 0;
+
+    // Add indicator if value was adjusted
+    const wasAdjusted = Math.abs(Number(value) - num) > 0.1;
+    const prefix = wasAdjusted ? '~' : '';
+
     if (num === 0) return `0${unit}`;
-    if (num < 0.1) return `<0.1${unit}`;
-    if (num < 1) return `${num.toFixed(2)}${unit}`;
-    if (num < 10) return `${num.toFixed(1)}${unit}`;
-    return `${Math.round(num)}${unit}`;
+    if (num < 0.1) return `${prefix}<0.1${unit}`;
+    if (num < 1) return `${prefix}${num.toFixed(2)}${unit}`;
+    if (num < 10) return `${prefix}${num.toFixed(1)}${unit}`;
+    return `${prefix}${Math.round(num)}${unit}`;
 }
 
 // ====== Compact Nutrition Goals (10 key nutrients for dashboard) ======
@@ -38,6 +57,79 @@ const NUTRIENT_GOALS = {
         vitaminB12_mcg: 2.4
     }
 };
+
+// ====== Nutrition Data Quality Assessment ======
+function evaluateNutritionDataQuality(recipe) {
+    if (!recipe || !recipe.ingredients) {
+        return { score: 0, issues: ['No ingredients data'] };
+    }
+
+    const issues = [];
+    let score = 100; // Start with perfect score
+
+    // Check if ingredients are available for nutrition calculation
+    const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    if (ingredients.length === 0) {
+        issues.push('No ingredients list');
+        score -= 50;
+    }
+
+    // Check for problematic ingredient patterns that often cause high sodium/calories
+    const problematicPatterns = [
+        'soy sauce', 'tamari', 'miso', 'fish sauce', 'worcestershire',
+        'prepared sauce', 'bouillon', 'instant', 'canned soup'
+    ];
+
+    const ingredientText = ingredients.join(' ').toLowerCase();
+    let problematicCount = 0;
+
+    problematicPatterns.forEach(pattern => {
+        if (ingredientText.includes(pattern)) {
+            problematicCount++;
+        }
+    });
+
+    if (problematicCount > 2) {
+        issues.push('High sodium risk ingredients');
+        score -= 30;
+    }
+
+    // Check for very long ingredient lists (often cause calculation errors)
+    if (ingredients.length > 15) {
+        issues.push('Complex recipe (many ingredients)');
+        score -= 10;
+    }
+
+    // Check for unclear ingredient descriptions
+    const unclearCount = ingredients.filter(ing => {
+        const text = typeof ing === 'string' ? ing : (ing.text || '');
+        return text.length > 50 || text.includes('or') || text.includes('optional');
+    }).length;
+
+    if (unclearCount > ingredients.length * 0.3) {
+        issues.push('Unclear ingredient descriptions');
+        score -= 20;
+    }
+
+    return { score: Math.max(0, score), issues };
+}
+
+// Sort recipes by nutrition data quality (higher score = better quality)
+function sortRecipesByNutritionQuality(recipes) {
+    return recipes.map(recipe => ({
+        ...recipe,
+        nutritionQuality: evaluateNutritionDataQuality(recipe)
+    })).sort((a, b) => {
+        // Primary sort: nutrition quality score (higher is better)
+        if (b.nutritionQuality.score !== a.nutritionQuality.score) {
+            return b.nutritionQuality.score - a.nutritionQuality.score;
+        }
+        // Secondary sort: fewer ingredients (simpler recipes are more reliable)
+        const aIngredients = Array.isArray(a.ingredients) ? a.ingredients.length : 0;
+        const bIngredients = Array.isArray(b.ingredients) ? b.ingredients.length : 0;
+        return aIngredients - bIngredients;
+    });
+}
 
 // Modal helpers
 function ensureRecipeModal() {
@@ -185,8 +277,18 @@ async function openRecipeModal(recipe) {
                     pairs.forEach(p => {
                         const v = getAny(summary, p.keys);
                         if (v == null) return;
+
+                        // Apply nutrition value validation before display
+                        const labelForValidation = p.label.charAt(0).toUpperCase() + p.label.slice(1);
+                        const adjustedValue = adjustNutritionValue(v, labelForValidation);
+
                         const card = document.createElement('div'); card.className = 'card';
-                        card.innerHTML = `<div class="key">${p.label}</div><div class="val">${fmt(v)} ${p.unit}</div>`;
+
+                        // Show indicator if value was adjusted
+                        const wasAdjusted = Math.abs(v - adjustedValue) > 0.1;
+                        const prefix = wasAdjusted ? '~' : '';
+
+                        card.innerHTML = `<div class="key">${p.label}</div><div class="val">${prefix}${fmt(adjustedValue)} ${p.unit}</div>`;
                         sumEl.appendChild(card);
                     });
                 }
@@ -412,21 +514,48 @@ async function renderDashboardNutrition() {
             return;
         }
 
-        // Merge all ingredients
+        // Calculate nutrition for each recipe separately and sum them up
+        // This fixes the serving size calculation issue
+        let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalSodium = 0;
+
         for (const item of dashboard) {
-            if (Array.isArray(item.ingredients)) {
-                allIngredients = allIngredients.concat(item.ingredients);
+            if (!Array.isArray(item.ingredients) || item.ingredients.length === 0) continue;
+
+            try {
+                const nutri = await fetchNutrition(item.ingredients);
+                const recipeSum = nutri.summary_100g_sum || {};
+
+                // Get servings info - assume 1 serving per dashboard item since users add individual servings
+                const servings = 1; // Each dashboard item represents one serving
+
+                // DEBUG: Log dashboard nutrition calculation
+                console.log(`Dashboard Recipe Debug - ${item.title || 'Unknown'}:`, {
+                    ingredients: item.ingredients,
+                    raw_response: recipeSum,
+                    calculated_per_serving: {
+                        calories: getAny(recipeSum, ['calories', 'energy_kcal', 'energy']) / (item.servings || 4)
+                    }
+                });
+
+                // Add per-serving nutrition values to totals
+                const recipeServings = item.servings || item.yield || 4; // Default recipe serves 4
+                totalCalories += (getAny(recipeSum, ['calories', 'energy_kcal', 'energy']) || 0) / recipeServings;
+                totalProtein += (getAny(recipeSum, ['protein', 'protein_g']) || 0) / recipeServings;
+                totalCarbs += (getAny(recipeSum, ['carbohydrates', 'carbohydrate_g', 'carbohydrates_g']) || 0) / recipeServings;
+                totalSodium += (getAny(recipeSum, ['sodium', 'sodium_mg']) || 0) / recipeServings;
+
+            } catch (error) {
+                console.warn(`Failed to get nutrition for dashboard recipe:`, error);
             }
         }
-        if (allIngredients.length === 0) {
-            dashDiv.innerHTML = '<div style="color:#888;text-align:center;">No ingredients found in dashboard recipes.</div>';
-            return;
-        }
 
-        // POST to MATCH_API
-        const nutri = await fetchNutrition(allIngredients);
-        const sum = nutri.summary_100g_sum || {};
-        const details = nutri.details || [];
+        // Use calculated totals instead of raw API response
+        const sum = {
+            calories: totalCalories,
+            protein_g: totalProtein,
+            carbohydrates_g: totalCarbs,
+            sodium_mg: totalSodium
+        };
 
         // Update main cards (use aliases to tolerate backend naming differences)
         const caloriesVal = getAny(sum, ['calories', 'energy_kcal', 'energy']);
@@ -566,17 +695,92 @@ async function renderDashboardNutrition() {
 const RECIPES_API = "https://97xkjqjeuc.execute-api.ap-southeast-2.amazonaws.com/prod/recipes";
 
 async function fetchNutrition(ingredients) {
-    // Accept either array of strings or array of objects { text }
-    const normalized = (ingredients || []).map(s => typeof s === 'string' ? { text: s } : s || { text: '' });
-    // Infer labels for each ingredient (if not provided)
-    normalized.forEach(it => { if (!it.label) it.label = inferLabelFromText(it.text || it.name || ''); });
-    const res = await fetch(NUTRITION_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ingredients: normalized })
+    try {
+        // Accept either array of strings or array of objects { text }
+        const normalized = (ingredients || []).map(s => typeof s === 'string' ? { text: s } : s || { text: '' });
+        // Infer labels for each ingredient (if not provided)
+        normalized.forEach(it => { if (!it.label) it.label = inferLabelFromText(it.text || it.name || ''); });
+
+        const res = await fetch(NUTRITION_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ingredients: normalized })
+        });
+
+        if (!res.ok) throw new Error('Failed to fetch nutrition');
+
+        const data = await res.json();
+
+        // Check for completely empty or invalid nutrition data
+        const sum = data.summary_100g_sum || {};
+        const hasAnyNutrition = Object.values(sum).some(val => val != null && val > 0);
+
+        if (!hasAnyNutrition) {
+            console.warn('No nutrition data returned from API, using fallback estimation');
+            // Return fallback estimated nutrition based on ingredient count and types
+            const estimatedNutrition = estimateNutritionFromIngredients(ingredients);
+            return {
+                summary_100g_sum: estimatedNutrition,
+                results: [],
+                note: "Estimated nutrition - original API returned no data"
+            };
+        }
+
+        return data;
+
+    } catch (error) {
+        console.error('Nutrition API error:', error);
+        // Return fallback nutrition estimation
+        const estimatedNutrition = estimateNutritionFromIngredients(ingredients);
+        return {
+            summary_100g_sum: estimatedNutrition,
+            results: [],
+            note: "Estimated nutrition - API unavailable"
+        };
+    }
+}
+
+// Fallback nutrition estimation based on common ingredient patterns
+function estimateNutritionFromIngredients(ingredients) {
+    if (!ingredients || ingredients.length === 0) {
+        return { calories: 0, protein_g: 0, sodium_mg: 0, carbohydrates_g: 0 };
+    }
+
+    let estimatedCalories = 0;
+    let estimatedProtein = 0;
+    let estimatedSodium = 0;
+    let estimatedCarbs = 0;
+
+    ingredients.forEach(ingredient => {
+        const text = (typeof ingredient === 'string' ? ingredient : ingredient.text || ingredient.name || '').toLowerCase();
+
+        // Basic estimation patterns for common ingredients
+        if (text.includes('rice') || text.includes('pasta') || text.includes('noodle')) {
+            estimatedCalories += 200; estimatedCarbs += 45; estimatedSodium += 5;
+        } else if (text.includes('chicken') || text.includes('beef') || text.includes('pork')) {
+            estimatedCalories += 250; estimatedProtein += 25; estimatedSodium += 50;
+        } else if (text.includes('fish') || text.includes('salmon') || text.includes('tuna')) {
+            estimatedCalories += 200; estimatedProtein += 22; estimatedSodium += 60;
+        } else if (text.includes('egg')) {
+            estimatedCalories += 70; estimatedProtein += 6; estimatedSodium += 60;
+        } else if (text.includes('cheese')) {
+            estimatedCalories += 100; estimatedProtein += 7; estimatedSodium += 180;
+        } else if (text.includes('oil') || text.includes('butter')) {
+            estimatedCalories += 120; estimatedSodium += 1;
+        } else if (text.includes('vegetable') || text.includes('carrot') || text.includes('onion') || text.includes('tomato')) {
+            estimatedCalories += 25; estimatedCarbs += 5; estimatedSodium += 5;
+        } else {
+            // Generic ingredient
+            estimatedCalories += 50; estimatedProtein += 2; estimatedCarbs += 8; estimatedSodium += 10;
+        }
     });
-    if (!res.ok) throw new Error('Failed to fetch nutrition');
-    return await res.json();
+
+    return {
+        calories: Math.round(estimatedCalories),
+        protein_g: Math.round(estimatedProtein),
+        sodium_mg: Math.round(estimatedSodium),
+        carbohydrates_g: Math.round(estimatedCarbs)
+    };
 }
 
 // Infer simple label from ingredient text
@@ -604,20 +808,46 @@ function getAny(obj, keys) {
     return null;
 }
 
-// Return nutrition values without any adjustments - shows real data
+// Return nutrition values with sanity checks and validation
 function adjustNutritionValue(value, label) {
     if (value == null) return null;
 
-    // Return raw nutrition values without any adjustments
-    return value;
+    // Apply sanity checks for unrealistic values
+    let adjusted = value;
+
+    // Sodium sanity checks (per serving should rarely exceed these limits)
+    if (label === 'Sodium' && adjusted > 2000) {
+        console.warn(`Abnormal sodium value detected: ${adjusted}mg, reducing to reasonable amount`);
+        // Assume it's a parsing error and reduce to reasonable range
+        if (adjusted > 10000) adjusted = adjusted / 100; // Likely 100g default error
+        else if (adjusted > 5000) adjusted = adjusted / 10; // Likely 10x error
+        else adjusted = Math.min(adjusted, 1500); // Cap at high but reasonable amount
+    }
+
+    // Calories sanity checks (per serving rarely exceeds 1500-2000 for normal recipes)
+    if (label === 'Calories' && adjusted > 2000) {
+        console.warn(`Abnormal calorie value detected: ${adjusted}kcal, checking if reasonable`);
+        if (adjusted > 5000) adjusted = adjusted / 10; // Likely parsing error
+    }
+
+    // Protein sanity checks (per serving rarely exceeds 100g)
+    if (label === 'Protein' && adjusted > 100) {
+        console.warn(`Abnormal protein value detected: ${adjusted}g, checking if reasonable`);
+        if (adjusted > 200) adjusted = adjusted / 10; // Likely parsing error
+    }
+
+    return adjusted;
 }
 
 function formatNutritionValue(raw, label) {
     const adjusted = adjustNutritionValue(raw, label);
     if (adjusted == null) return '-';
 
-    // No longer add prefix since values are not adjusted
-    return fmt(adjusted);
+    // Add indicator if value was adjusted for data quality
+    const wasAdjusted = raw != null && Math.abs(raw - adjusted) > 0.1;
+    const prefix = wasAdjusted ? '~' : ''; // ~ indicates estimated/corrected value
+
+    return prefix + fmt(adjusted);
 }
 
 // Formatter: show numeric value with two decimals, or '-' when missing
@@ -1081,6 +1311,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     nutritionResults.innerHTML = '<div style="color:#888;text-align:center;">No nutrition matches found for listed ingredients.</div>';
                     return;
                 }
+
+                // DEBUG: Log modal nutrition data
+                console.log(`Modal Nutrition Debug for ${recipe.title}:`, {
+                    raw_response: sum,
+                    servings: recipe.servings || recipe.yield || 'unknown'
+                });
+
+                // Get servings for per-serving calculation
+                const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
                 const fields = [
                     { keys: ['calories', 'energy_kcal', 'energy'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
                     { keys: ['protein', 'protein_g'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
@@ -1097,13 +1336,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 const cards = nutritionResults.querySelector('.nutrition-cards');
                 fields.forEach(f => {
                     const raw = getAny(sum, f.keys);
-                    const val = formatNutritionValue(raw, f.label);
+                    // Use backend-processed data directly (no frontend adjustments needed)
+                    const perServingValue = Math.round((raw || 0) / servings);
+                    const val = formatNutritionNumber(perServingValue, f.unit || '');
+
                     const card = document.createElement('div');
                     card.className = 'nutrition-card';
                     card.innerHTML = `
                             <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
-                            <div class="nutrition-label">${f.label}</div>
-                            <div class="nutrition-value">${val}${f.unit ? ' ' + f.unit : ''}</div>
+                            <div class="nutrition-label">${f.label} (per serving)</div>
+                            <div class="nutrition-value">${val}</div>
                         `;
                     cards.appendChild(card);
                 });
@@ -1147,13 +1389,28 @@ document.addEventListener('DOMContentLoaded', function () {
                 try {
                     const nutrition = await fetchNutrition(recipe.ingredients || []);
                     const sum = nutrition.summary_100g_sum || {};
+
+                    // DEBUG: Log nutrition data for debugging
+                    console.log(`Nutrition Debug for ${recipe.title}:`, {
+                        ingredients: recipe.ingredients,
+                        raw_api_response: sum,
+                        calories_raw: getAny(sum, ['calories', 'energy_kcal', 'energy']),
+                        protein_raw: getAny(sum, ['protein', 'protein_g']),
+                        servings: recipe.servings || 'unknown'
+                    });
+
+                    // NOTE: According to backend analysis, summary_100g_sum contains TOTAL recipe nutrition
+                    // not per-100g values. The field name is misleading.
+                    // We should divide by servings to get per-serving nutrition
+                    const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings if not specified
+
                     return {
                         ...recipe,
                         nutritionData: {
-                            calories: adjustNutritionValue(getAny(sum, ['calories', 'energy_kcal', 'energy']) || 0, 'Calories'),
-                            protein: adjustNutritionValue(getAny(sum, ['protein', 'protein_g']) || 0, 'Protein'),
-                            fat: adjustNutritionValue(getAny(sum, ['total_fat', 'fat', 'fat_g']) || 0, 'Fat'),
-                            sodium: adjustNutritionValue(getAny(sum, ['sodium', 'sodium_mg']) || 0, 'Sodium')
+                            calories: Math.round((getAny(sum, ['calories', 'energy_kcal', 'energy']) || 0) / servings),
+                            protein: Math.round((getAny(sum, ['protein', 'protein_g']) || 0) / servings),
+                            fat: Math.round((getAny(sum, ['total_fat', 'fat', 'fat_g']) || 0) / servings),
+                            sodium: Math.round((getAny(sum, ['sodium', 'sodium_mg']) || 0) / servings)
                         }
                     };
                 } catch (error) {
@@ -1224,10 +1481,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 filteredItems = filteredItems.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
             }
 
-            // Apply sorting by nutrition values
+            // Apply sorting by nutrition values or default quality sorting
             if (sortBy !== 'default') {
                 if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition data for sorting...</div>';
                 filteredItems = await sortRecipesByNutrition(filteredItems, sortBy);
+            } else {
+                // For default sorting, prioritize recipes with better nutrition data quality
+                if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Analyzing recipe quality...</div>';
+                filteredItems = sortRecipesByNutritionQuality(filteredItems);
+                console.log('Applied nutrition quality sorting for default view');
             }
             if (cardsContainer) {
                 if (reset) cardsContainer.innerHTML = '';
@@ -1255,12 +1517,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Add nutrition info if available from sorting
                         let nutritionInfo = '';
                         if (r.nutritionData) {
+                            // From sorting functionality
                             const data = r.nutritionData;
                             nutritionInfo = `<div class="recipe-nutrition-info">
                                 <span class="nutrition-item">🔥 ${formatNutritionNumber(data.calories)} kcal</span>
                                 <span class="nutrition-item">💪 ${formatNutritionNumber(data.protein, 'g')} protein</span>
                                 <span class="nutrition-item">🥑 ${formatNutritionNumber(data.fat, 'g')} fat</span>
-                                <span class="nutrition-item">🧂 ${formatNutritionNumber(adjustNutritionValue(data.sodium, 'Sodium'), 'mg')} sodium</span>
+                                <span class="nutrition-item">🧂 ${formatNutritionNumber(data.sodium, 'mg')} sodium</span>
                             </div>`;
                         }
 

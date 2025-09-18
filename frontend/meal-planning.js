@@ -148,19 +148,23 @@ async function calculateNutrition(ingredients, servings = 1) {
 
         if (!response.ok) {
             console.warn('Nutrition API request failed:', response.status);
-            // Use estimation for any API failure (503, 500, etc.)
-            const estimated = estimateNutrition(ingredients, servings);
-            nutritionCache.set(cacheKey, estimated);
-            return estimated;
+            // Only use estimation for complete API unavailability (network errors, 500+ status)
+            if (response.status >= 500) {
+                const estimated = estimateNutrition(ingredients, servings);
+                nutritionCache.set(cacheKey, estimated);
+                return estimated;
+            }
+            // For other failures (400, 404, etc), return zero values instead of wrong estimates
+            return { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0, protein: 0, carbs: 0, fat: 0 };
         }
 
         const data = await response.json();
 
-        if (!data.summary_100g_sum) {
-            console.warn('No nutrition summary found in API response - using estimation');
-            const estimated = estimateNutrition(ingredients, servings);
-            nutritionCache.set(cacheKey, estimated);
-            return estimated;
+        if (!data.summary_100g_sum || Object.keys(data.summary_100g_sum).length === 0) {
+            console.warn('No nutrition data found in API response');
+            // If backend didn't provide any data, it means ingredients couldn't be matched
+            // Return zero values instead of making up data
+            return { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0, protein: 0, carbs: 0, fat: 0 };
         }
 
         const sum = data.summary_100g_sum;
@@ -180,12 +184,18 @@ async function calculateNutrition(ingredients, servings = 1) {
         nutritionCache.set(cacheKey, nutrition);
         return nutrition;
     } catch (error) {
-        console.warn('Error calculating nutrition:', error.message, '- using estimation');
+        console.warn('Error calculating nutrition:', error.message);
 
-        // Use estimation as fallback when API fails
-        const estimated = estimateNutrition(ingredients, servings);
-        nutritionCache.set(cacheKey, estimated);
-        return estimated;
+        // Only use estimation for network errors, not for data parsing errors
+        if (error.name === 'TypeError' || error.message.includes('fetch')) {
+            console.warn('Network error - using estimation as last resort');
+            const estimated = estimateNutrition(ingredients, servings);
+            nutritionCache.set(cacheKey, estimated);
+            return estimated;
+        }
+
+        // For other errors (parsing, etc), return zero values
+        return { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0, protein: 0, carbs: 0, fat: 0 };
     }
 }
 
