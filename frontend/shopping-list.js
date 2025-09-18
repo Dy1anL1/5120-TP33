@@ -116,9 +116,15 @@ function setupEventListeners() {
     
     // Clear completed items
     document.getElementById('clear-completed-btn').addEventListener('click', clearCompletedItems);
-    
+
+    // Clear all items
+    document.getElementById('clear-all-btn').addEventListener('click', clearAllItems);
+
+    // Select/deselect all items
+    document.getElementById('select-all-btn').addEventListener('click', toggleSelectAll);
+
     // Print list
-    document.getElementById('print-list-btn').addEventListener('click', printShoppingList);
+    // document.getElementById('print-list-btn').addEventListener('click', printShoppingList);
     
     // Source selector change
     document.getElementById('list-source').addEventListener('change', function(e) {
@@ -375,12 +381,12 @@ function removeItem(itemId) {
 // Clear completed items
 function clearCompletedItems() {
     const completedCount = shoppingList.items.filter(item => item.completed).length;
-    
+
     if (completedCount === 0) {
         showNotification('No completed items to clear', 'info');
         return;
     }
-    
+
     if (confirm(`Remove ${completedCount} completed item${completedCount > 1 ? 's' : ''}?`)) {
         shoppingList.items = shoppingList.items.filter(item => !item.completed);
         saveShoppingList();
@@ -389,17 +395,118 @@ function clearCompletedItems() {
     }
 }
 
+// Clear all items
+function clearAllItems() {
+    const totalCount = shoppingList.items.length;
+
+    if (totalCount === 0) {
+        showNotification('Shopping list is already empty', 'info');
+        return;
+    }
+
+    if (confirm(`Are you sure you want to remove all ${totalCount} item${totalCount > 1 ? 's' : ''} from your shopping list?`)) {
+        shoppingList.items = [];
+        saveShoppingList();
+        renderShoppingList();
+        showNotification('All items cleared from shopping list', 'success');
+    }
+}
+
+// Toggle select/deselect all items
+function toggleSelectAll() {
+    if (shoppingList.items.length === 0) {
+        showNotification('No items to select', 'info');
+        return;
+    }
+
+    const allCompleted = shoppingList.items.every(item => item.completed);
+    const newCompletedState = !allCompleted;
+
+    shoppingList.items.forEach(item => {
+        item.completed = newCompletedState;
+    });
+
+    saveShoppingList();
+    renderShoppingList();
+
+    const action = newCompletedState ? 'selected' : 'deselected';
+    showNotification(`All items ${action}`, 'success');
+}
+
+// Clear all items in a specific category
+function clearCategoryItems(category) {
+    const categoryItems = shoppingList.items.filter(item => item.category === category);
+    const itemCount = categoryItems.length;
+
+    if (itemCount === 0) {
+        showNotification(`No items in ${category} category`, 'info');
+        return;
+    }
+
+    if (confirm(`Remove all ${itemCount} item${itemCount > 1 ? 's' : ''} from ${category} category?`)) {
+        shoppingList.items = shoppingList.items.filter(item => item.category !== category);
+        saveShoppingList();
+        renderShoppingList();
+        showNotification(`${itemCount} ${category} item${itemCount > 1 ? 's' : ''} removed`, 'success');
+    }
+}
+
+// Select/deselect all items in a category
+function toggleCategorySelection(category) {
+    const categoryItems = shoppingList.items.filter(item => item.category === category);
+
+    if (categoryItems.length === 0) {
+        showNotification(`No items in ${category} category`, 'info');
+        return;
+    }
+
+    const allCategoryCompleted = categoryItems.every(item => item.completed);
+    const newCompletedState = !allCategoryCompleted;
+
+    shoppingList.items.forEach(item => {
+        if (item.category === category) {
+            item.completed = newCompletedState;
+        }
+    });
+
+    saveShoppingList();
+    renderShoppingList();
+
+    const action = newCompletedState ? 'selected' : 'deselected';
+    showNotification(`All ${category} items ${action}`, 'success');
+}
+
 // Render shopping list
 function renderShoppingList() {
     updateSummaryStats();
-    
+
     if (shoppingList.items.length === 0) {
         showEmptyState();
+        updateSelectAllButton(false);
         return;
     }
-    
+
     hideEmptyState();
     renderCategorizedItems();
+    updateSelectAllButton();
+}
+
+// Update the Select All button text based on current state
+function updateSelectAllButton(hasItems = true) {
+    const button = document.getElementById('select-all-btn');
+    if (!button) return;
+
+    if (!hasItems || shoppingList.items.length === 0) {
+        button.innerHTML = '<i class="fas fa-check-square"></i> Select All';
+        return;
+    }
+
+    const allCompleted = shoppingList.items.every(item => item.completed);
+    if (allCompleted) {
+        button.innerHTML = '<i class="fas fa-square"></i> Deselect All';
+    } else {
+        button.innerHTML = '<i class="fas fa-check-square"></i> Select All';
+    }
 }
 
 // Update summary statistics
@@ -459,8 +566,18 @@ function renderCategorizedItems() {
         return `
             <div class="category-section">
                 <div class="category-header">
-                    <h3 class="category-title">${categoryInfo.name}</h3>
-                    <span class="category-count">${items.length}</span>
+                    <div class="category-info">
+                        <h3 class="category-title">${categoryInfo.name}</h3>
+                        <span class="category-count">${items.length}</span>
+                    </div>
+                    <div class="category-actions">
+                        <button class="btn-small btn-outline" onclick="toggleCategorySelection('${categoryKey}')" title="Select/Deselect all ${categoryInfo.name} items">
+                            <i class="fas fa-check-square"></i>
+                        </button>
+                        <button class="btn-small btn-danger" onclick="clearCategoryItems('${categoryKey}')" title="Remove all ${categoryInfo.name} items">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="category-items">
                     ${items.map(item => renderShoppingItem(item)).join('')}
