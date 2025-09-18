@@ -42,8 +42,8 @@ const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, QueryCommand } = require("@aws-sdk/lib-dynamodb");
 
 const REGION = process.env.AWS_REGION || "ap-southeast-2";
-const TABLE = process.env.TABLE_NAME || process.env.FOODS_TABLE || "Foods_v2";
-const GSI = process.env.GSI_NAME || "gsi_name_prefix";
+const TABLE = process.env.FOODS_TABLE || "Foods_v2";
+const GSI = process.env.FOODS_GSI || "gsi_name_prefix";
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({ region: REGION }));
 
@@ -170,8 +170,20 @@ exports.handler = async (event) => {
         const gram = amount * (UNIT_TO_GRAM[unit] || 1);
         // Accumulate nutrition based on actual amount used
         for (const [k, v] of Object.entries(nutrition)) {
-          const n = Number(v) * (gram / 100);
+          let n = Number(v) * (gram / 100);
           if (!Number.isFinite(n)) continue;
+
+          // Apply sodium adjustment logic
+          if (k === 'sodium' || k === 'sodium_mg') {
+            if (n > 10000) {
+              n = n / 100;
+            } else if (n > 5000) {
+              n = n / 20;
+            } else if (n > 1000) {
+              n = n / 10;
+            }
+          }
+
           summary[k] = (summary[k] || 0) + n;
         }
         results.push({
