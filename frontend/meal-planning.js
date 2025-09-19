@@ -734,6 +734,18 @@ function goToNextStep() {
     }
 }
 
+// Update progress display
+function updateProgress(step, total, currentTask) {
+    const percentage = Math.round((step / total) * 100);
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const progressPercentage = document.getElementById('progress-percentage');
+
+    if (progressFill) progressFill.style.width = `${percentage}%`;
+    if (progressText) progressText.textContent = currentTask;
+    if (progressPercentage) progressPercentage.textContent = `${percentage}%`;
+}
+
 // Generate weekly meal plan
 async function generateMealPlan() {
     try {
@@ -742,13 +754,26 @@ async function generateMealPlan() {
 
         console.log('Generating meal plan with preferences:', userPreferences);
 
+        // Initialize progress
+        updateProgress(0, 100, 'Initializing meal plan generation...');
+        await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UX
+
         // Generate plan for each day (Full week)
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']; // Full week
         const mealPlan = {};
+        const selectedMealTypes = userPreferences.meal_preferences || ['breakfast', 'lunch', 'dinner'];
+        const totalSteps = days.length * selectedMealTypes.length + 2; // +2 for init and finalize
+        let currentStep = 1;
 
         for (const day of days) {
-            mealPlan[day] = await generateDayMeals(day);
+            updateProgress(currentStep, totalSteps, `Generating meals for ${day}...`);
+            mealPlan[day] = await generateDayMealsWithProgress(day, selectedMealTypes, currentStep, totalSteps);
+            currentStep += selectedMealTypes.length;
         }
+
+        // Finalizing
+        updateProgress(totalSteps - 1, totalSteps, 'Finalizing your meal plan...');
+        await new Promise(resolve => setTimeout(resolve, 300));
 
         // Convert plan object to days array for compatibility with rendering functions
         const daysArray = Object.keys(mealPlan).map(dayName => ({
@@ -766,6 +791,10 @@ async function generateMealPlan() {
 
         // Save to localStorage
         localStorage.setItem(STORAGE_KEY, JSON.stringify(weeklyPlan));
+
+        // Complete progress
+        updateProgress(totalSteps, totalSteps, 'Meal plan ready!');
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         await showWeeklyPlan();
 
@@ -798,15 +827,59 @@ async function generateDayMeals(day) {
     return meals;
 }
 
+// Generate meals for a specific day with progress tracking
+async function generateDayMealsWithProgress(day, selectedMealTypes, baseStep, totalSteps) {
+    const meals = {};
+
+    for (let i = 0; i < selectedMealTypes.length; i++) {
+        const mealType = selectedMealTypes[i];
+        const currentStep = baseStep + i;
+
+        // Update progress for this specific meal
+        updateProgress(currentStep, totalSteps, `Generating ${mealType} for ${day}...`);
+
+        try {
+            const recipe = await fetchRandomRecipe(mealType);
+            if (recipe) {
+                meals[mealType] = recipe;
+            } else {
+                console.warn(`No recipe found for ${mealType} on ${day} - API may be returning errors`);
+            }
+        } catch (error) {
+            console.error(`Error fetching ${mealType} for ${day}:`, error);
+        }
+
+        // Small delay to make progress visible
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    return meals;
+}
+
+// Map meal types to appropriate database categories
+function getMealCategoryOptions(mealType) {
+    const categoryMapping = {
+        'breakfast': ['breakfast'],
+        'lunch': ['lunch', 'dinner', 'salad', 'soup'],  // Include variety for lunch
+        'dinner': ['dinner', 'lunch'],  // Primary dinner, fallback to lunch
+        'snack': ['snack', 'dessert'],
+        'dessert': ['dessert']
+    };
+
+    return categoryMapping[mealType] || ['dinner'];
+}
+
 // Fetch a random recipe based on preferences
 async function fetchRandomRecipe(mealType) {
     try {
+        const categoryOptions = getMealCategoryOptions(mealType);
+
         // Try different search strategies if the first one fails
         const searchStrategies = [
-            // Strategy 1: Full preferences
+            // Strategy 1: Primary category with full preferences
             () => {
                 let params = new URLSearchParams({
-                    category: mealType,
+                    category: categoryOptions[0],
                     limit: '30'
                 });
 
@@ -821,10 +894,10 @@ async function fetchRandomRecipe(mealType) {
                 return params;
             },
 
-            // Strategy 2: Just category and diet type
+            // Strategy 2: Primary category with diet type only
             () => {
                 let params = new URLSearchParams({
-                    category: mealType,
+                    category: categoryOptions[0],
                     limit: '30'
                 });
 
@@ -835,15 +908,23 @@ async function fetchRandomRecipe(mealType) {
                 return params;
             },
 
-            // Strategy 3: Just category
+            // Strategy 3: Primary category only
             () => {
                 return new URLSearchParams({
-                    category: mealType,
+                    category: categoryOptions[0],
                     limit: '30'
                 });
             },
 
-            // Strategy 4: No category filter (fallback)
+            // Strategy 4: Try secondary categories
+            ...categoryOptions.slice(1).map(category => () => {
+                return new URLSearchParams({
+                    category: category,
+                    limit: '30'
+                });
+            }),
+
+            // Strategy 5: Targeted search without category (but filter results)
             () => {
                 return new URLSearchParams({
                     limit: '50'
@@ -879,11 +960,17 @@ async function fetchRandomRecipe(mealType) {
                         filteredRecipes = data.items;
                     }
 
-                    // Filter by meal type if we used fallback strategy
-                    if (i === 3 && mealType !== 'any') {
-                        filteredRecipes = filteredRecipes.filter(recipe =>
-                            recipe.habits && recipe.habits.includes(mealType)
-                        );
+                    // Apply meal type filtering for all strategies
+                    if (mealType !== 'any') {
+                        console.log(`Before meal type filtering: ${filteredRecipes.length} recipes for ${mealType}`);
+                        console.log(`Sample recipe categories:`, filteredRecipes.slice(0, 3).map(r => ({ name: r.name, categories: r.categories })));
+
+                        filteredRecipes = filterRecipesByMealType(filteredRecipes, mealType, categoryOptions);
+
+                        console.log(`After meal type filtering: ${filteredRecipes.length} recipes for ${mealType}`);
+                        if (filteredRecipes.length > 0) {
+                            console.log(`Selected recipe categories:`, filteredRecipes.slice(0, 3).map(r => ({ name: r.name, categories: r.categories })));
+                        }
                     }
 
                     if (filteredRecipes.length > 0) {
@@ -1039,6 +1126,56 @@ function sortRecipesByNutritionQuality(recipes) {
         const aIngredients = Array.isArray(a.ingredients) ? a.ingredients.length : 0;
         const bIngredients = Array.isArray(b.ingredients) ? b.ingredients.length : 0;
         return aIngredients - bIngredients;
+    });
+}
+
+// Filter recipes by meal type to ensure appropriate categorization
+function filterRecipesByMealType(recipes, mealType, categoryOptions) {
+    return recipes.filter(recipe => {
+        // Check if recipe has categories
+        if (!recipe.categories || !Array.isArray(recipe.categories)) {
+            return false;
+        }
+
+        // For breakfast - must be breakfast category
+        if (mealType === 'breakfast') {
+            return recipe.categories.includes('breakfast');
+        }
+
+        // For lunch - allow lunch, dinner, salad, soup, but exclude dessert/snack/beverage
+        if (mealType === 'lunch') {
+            const appropriateCategories = ['lunch', 'dinner', 'salad', 'soup'];
+            const excludeCategories = ['dessert', 'snack', 'beverage'];
+
+            const hasAppropriate = recipe.categories.some(cat => appropriateCategories.includes(cat));
+            const hasExcluded = recipe.categories.some(cat => excludeCategories.includes(cat));
+
+            return hasAppropriate && !hasExcluded;
+        }
+
+        // For dinner - allow dinner, lunch, but exclude dessert/snack/beverage/breakfast
+        if (mealType === 'dinner') {
+            const appropriateCategories = ['dinner', 'lunch'];
+            const excludeCategories = ['dessert', 'snack', 'beverage', 'breakfast'];
+
+            const hasAppropriate = recipe.categories.some(cat => appropriateCategories.includes(cat));
+            const hasExcluded = recipe.categories.some(cat => excludeCategories.includes(cat));
+
+            return hasAppropriate && !hasExcluded;
+        }
+
+        // For snack - allow snack, dessert
+        if (mealType === 'snack') {
+            return recipe.categories.includes('snack') || recipe.categories.includes('dessert');
+        }
+
+        // For dessert - must be dessert
+        if (mealType === 'dessert') {
+            return recipe.categories.includes('dessert');
+        }
+
+        // Default: check if any of the category options match
+        return recipe.categories.some(cat => categoryOptions.includes(cat));
     });
 }
 

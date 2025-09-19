@@ -16,27 +16,27 @@ let shoppingList = {
 const CATEGORIES = {
     produce: {
         name: '🥕 Produce',
-        keywords: ['tomato', 'onion', 'carrot', 'lettuce', 'spinach', 'pepper', 'cucumber', 'potato', 'apple', 'banana', 'lemon', 'lime', 'garlic', 'ginger', 'herbs', 'cilantro', 'parsley', 'basil', 'celery', 'broccoli', 'cauliflower', 'zucchini', 'mushroom', 'avocado']
-    },
-    dairy: {
-        name: '🥛 Dairy & Eggs',
-        keywords: ['milk', 'cheese', 'butter', 'cream', 'yogurt', 'egg', 'sour cream', 'cottage cheese', 'mozzarella', 'cheddar', 'parmesan', 'feta', 'ricotta']
+        keywords: ['tomato', 'onion', 'carrot', 'lettuce', 'spinach', 'pepper', 'cucumber', 'potato', 'apple', 'banana', 'lemon', 'lime', 'garlic', 'ginger', 'herbs', 'cilantro', 'parsley', 'basil', 'celery', 'broccoli', 'cauliflower', 'zucchini', 'mushroom', 'avocado', 'scallion', 'leek', 'kale', 'cabbage', 'corn', 'beans', 'peas']
     },
     meat: {
         name: '🥩 Meat & Seafood',
-        keywords: ['chicken', 'beef', 'pork', 'fish', 'salmon', 'tuna', 'shrimp', 'turkey', 'bacon', 'ham', 'ground beef', 'steak', 'cod', 'tilapia']
+        keywords: ['chicken', 'beef', 'pork', 'fish', 'salmon', 'tuna', 'shrimp', 'turkey', 'bacon', 'ham', 'ground beef', 'steak', 'cod', 'tilapia', 'crab', 'lobster', 'scallop', 'lamb', 'duck', 'sausage']
+    },
+    dairy: {
+        name: '🥛 Dairy & Eggs',
+        keywords: ['milk', 'cheese', 'butter', 'cream', 'yogurt', 'egg', 'sour cream', 'cottage cheese', 'mozzarella', 'cheddar', 'parmesan', 'feta', 'ricotta', 'heavy cream', 'whipped cream']
     },
     pantry: {
         name: '🥫 Pantry Items',
-        keywords: ['rice', 'pasta', 'flour', 'sugar', 'salt', 'pepper', 'oil', 'vinegar', 'sauce', 'spice', 'honey', 'syrup', 'bean', 'lentil', 'oat', 'quinoa', 'stock', 'broth', 'canned', 'dried']
+        keywords: ['rice', 'pasta', 'flour', 'sugar', 'salt', 'pepper', 'oil', 'vinegar', 'sauce', 'spice', 'honey', 'syrup', 'bean', 'lentil', 'oat', 'quinoa', 'stock', 'broth', 'canned', 'dried', 'soy sauce', 'sesame oil', 'coconut milk']
+    },
+    bakery: {
+        name: '🍞 Bakery',
+        keywords: ['bread', 'roll', 'bagel', 'muffin', 'croissant', 'pastry', 'cake', 'cookie', 'baguette', 'tortilla', 'pita']
     },
     frozen: {
         name: '🧊 Frozen Foods',
         keywords: ['frozen', 'ice cream', 'frozen vegetable', 'frozen fruit', 'frozen meal']
-    },
-    bakery: {
-        name: '🍞 Bakery',
-        keywords: ['bread', 'roll', 'bagel', 'muffin', 'croissant', 'pastry', 'cake', 'cookie']
     },
     other: {
         name: '📦 Other',
@@ -45,7 +45,7 @@ const CATEGORIES = {
 };
 
 // Initialize the application
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log('Shopping List initialized');
     loadShoppingList();
     setupEventListeners();
@@ -61,7 +61,7 @@ function setupMealPlanSync() {
     }, 5000);
 
     // Listen for storage events (when meal plan is updated in another tab)
-    window.addEventListener('storage', function(e) {
+    window.addEventListener('storage', function (e) {
         if (e.key === MEAL_PLAN_KEY) {
             setTimeout(() => {
                 autoUpdateFromMealPlan();
@@ -105,15 +105,15 @@ async function autoUpdateFromMealPlan() {
 function setupEventListeners() {
     // Generate list button
     document.getElementById('generate-btn').addEventListener('click', generateShoppingList);
-    
+
     // Add custom item
     document.getElementById('add-item-btn').addEventListener('click', addCustomItem);
-    document.getElementById('custom-item-input').addEventListener('keypress', function(e) {
+    document.getElementById('custom-item-input').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             addCustomItem();
         }
     });
-    
+
     // Clear completed items
     document.getElementById('clear-completed-btn').addEventListener('click', clearCompletedItems);
 
@@ -125,9 +125,9 @@ function setupEventListeners() {
 
     // Print list
     // document.getElementById('print-list-btn').addEventListener('click', printShoppingList);
-    
+
     // Source selector change
-    document.getElementById('list-source').addEventListener('change', function(e) {
+    document.getElementById('list-source').addEventListener('change', function (e) {
         shoppingList.source = e.target.value;
         saveShoppingList();
     });
@@ -140,7 +140,7 @@ function loadShoppingList() {
         if (saved) {
             shoppingList = { ...shoppingList, ...JSON.parse(saved) };
         }
-        
+
         // Set source selector
         document.getElementById('list-source').value = shoppingList.source;
     } catch (error) {
@@ -161,19 +161,19 @@ function saveShoppingList() {
 async function generateShoppingList() {
     const source = document.getElementById('list-source').value;
     const generateBtn = document.getElementById('generate-btn');
-    
+
     // Show loading state
     generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
     generateBtn.disabled = true;
-    
+
     try {
         let newItems = [];
-        
+
         if (source === 'meal-plan' || source === 'both') {
             const mealPlanItems = await generateFromMealPlan();
             newItems = newItems.concat(mealPlanItems);
         }
-        
+
         if (source === 'custom' || source === 'both') {
             // Keep existing custom items if generating from both sources
             const existingCustomItems = shoppingList.items.filter(item => item.source === 'custom');
@@ -183,18 +183,18 @@ async function generateShoppingList() {
                 newItems = existingCustomItems;
             }
         }
-        
+
         // Remove duplicates and update list
         shoppingList.items = removeDuplicateItems(newItems);
         shoppingList.lastGenerated = new Date().toISOString();
         shoppingList.source = source;
-        
+
         saveShoppingList();
         renderShoppingList();
-        
+
         // Show success message
         showNotification('Shopping list generated successfully!', 'success');
-        
+
     } catch (error) {
         console.error('Error generating shopping list:', error);
         showNotification('Error generating shopping list. Please try again.', 'error');
@@ -212,10 +212,10 @@ async function generateFromMealPlan() {
         if (!mealPlan) {
             throw new Error('No meal plan found. Please create a meal plan first.');
         }
-        
+
         const weeklyPlan = JSON.parse(mealPlan);
         const items = [];
-        
+
         // Extract ingredients from each day's meals
         Object.values(weeklyPlan.plan).forEach(dayMeals => {
             Object.values(dayMeals).forEach(recipe => {
@@ -237,19 +237,19 @@ async function generateFromMealPlan() {
                 }
             });
         });
-        
+
         return items;
-        
+
     } catch (error) {
         console.error('Error generating from meal plan:', error);
         throw error;
     }
 }
 
-// Clean and normalize ingredient names
+// Clean and normalize ingredient names with smart simplification
 function cleanIngredientName(ingredient) {
     if (!ingredient || typeof ingredient !== 'string') return null;
-    
+
     // Remove quantities and measurements
     let cleaned = ingredient
         .replace(/^\d+(\.\d+)?\s*(cup|cups|tablespoon|tablespoons|teaspoon|teaspoons|tbsp|tsp|lb|lbs|oz|ounce|ounces|pound|pounds|gram|grams|kg|kilogram|liter|ml|pint|quart|gallon)s?\s*/gi, '')
@@ -257,47 +257,179 @@ function cleanIngredientName(ingredient) {
         .replace(/\s*\([^)]*\)/g, '') // Remove parenthetical notes
         .replace(/,.*$/g, '') // Remove everything after comma
         .trim();
-    
+
+    // Smart simplification
+    cleaned = simplifyIngredientName(cleaned);
+
     // Capitalize first letter
     cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase();
-    
+
     return cleaned || null;
+}
+
+// Smart ingredient name simplification
+function simplifyIngredientName(name) {
+    const simplificationRules = [
+        // Oil simplifications
+        { pattern: /olive oil.*extra.*virgin|extra.*virgin.*olive oil/i, replacement: 'olive oil' },
+        { pattern: /vegetable oil|canola oil|cooking oil/i, replacement: 'cooking oil' },
+
+        // Meat simplifications
+        { pattern: /ground beef.*lean|lean ground beef/i, replacement: 'ground beef' },
+        { pattern: /chicken breast.*boneless|boneless.*chicken breast/i, replacement: 'chicken breast' },
+        { pattern: /salmon fillet|salmon filet/i, replacement: 'salmon' },
+
+        // Dairy simplifications
+        { pattern: /heavy cream|heavy whipping cream/i, replacement: 'heavy cream' },
+        { pattern: /unsalted butter|salted butter/i, replacement: 'butter' },
+
+        // Produce simplifications
+        { pattern: /yellow onion|white onion|sweet onion/i, replacement: 'onion' },
+        { pattern: /roma tomato|vine tomato|fresh tomato/i, replacement: 'tomato' },
+        { pattern: /fresh garlic|garlic clove/i, replacement: 'garlic' },
+
+        // Pantry simplifications
+        { pattern: /long grain rice|short grain rice|white rice/i, replacement: 'rice' },
+        { pattern: /all-purpose flour|plain flour/i, replacement: 'flour' },
+        { pattern: /kosher salt|sea salt|table salt/i, replacement: 'salt' },
+        { pattern: /black pepper|ground black pepper/i, replacement: 'black pepper' }
+    ];
+
+    for (const rule of simplificationRules) {
+        if (rule.pattern.test(name)) {
+            return name.replace(rule.pattern, rule.replacement);
+        }
+    }
+
+    return name;
 }
 
 // Categorize ingredient into shopping categories
 function categorizeIngredient(ingredient) {
     const lowerIngredient = ingredient.toLowerCase();
-    
+
     for (const [categoryKey, category] of Object.entries(CATEGORIES)) {
         if (category.keywords.some(keyword => lowerIngredient.includes(keyword))) {
             return categoryKey;
         }
     }
-    
+
     return 'other';
 }
 
-// Remove duplicate items and items marked as "have at home"
-function removeDuplicateItems(items) {
-    const seen = new Set();
-    const haveAtHomeItems = getHaveAtHomeItems();
+// Simplify ingredient names for better merging
+function simplifyIngredientName(name) {
+    const simplificationRules = [
+        // Oil varieties
+        { pattern: /olive oil.*extra.*virgin|extra.*virgin.*olive oil/i, replacement: 'olive oil' },
+        { pattern: /vegetable oil|canola oil|sunflower oil/i, replacement: 'cooking oil' },
 
-    return items.filter(item => {
-        const key = item.name.toLowerCase().trim();
+        // Meat varieties
+        { pattern: /ground beef.*lean|lean ground beef/i, replacement: 'ground beef' },
+        { pattern: /chicken breast.*boneless|boneless chicken breast/i, replacement: 'chicken breast' },
+        { pattern: /pork shoulder|pork butt/i, replacement: 'pork shoulder' },
 
-        // Skip if already seen (duplicate)
-        if (seen.has(key)) {
-            return false;
-        }
+        // Rice varieties
+        { pattern: /basmati rice|jasmine rice|long grain rice/i, replacement: 'rice' },
+        { pattern: /brown rice|wild rice/i, replacement: 'rice' },
 
-        // Skip if marked as "have at home"
-        if (haveAtHomeItems.has(key)) {
-            return false;
-        }
+        // Onion varieties
+        { pattern: /yellow onion|white onion|sweet onion/i, replacement: 'onion' },
+        { pattern: /red onion/i, replacement: 'red onion' },
+        { pattern: /green onion|scallion|spring onion/i, replacement: 'green onion' },
 
-        seen.add(key);
-        return true;
+        // Tomato varieties
+        { pattern: /roma tomato|cherry tomato|grape tomato/i, replacement: 'tomato' },
+        { pattern: /canned tomato|crushed tomato|diced tomato/i, replacement: 'canned tomato' },
+
+        // Salt varieties
+        { pattern: /sea salt|kosher salt|table salt/i, replacement: 'salt' },
+
+        // Pepper varieties
+        { pattern: /black pepper|white pepper|ground pepper/i, replacement: 'pepper' },
+
+        // Garlic forms
+        { pattern: /garlic clove|fresh garlic|minced garlic/i, replacement: 'garlic' },
+
+        // Flour types
+        { pattern: /all[- ]?purpose flour|plain flour/i, replacement: 'flour' },
+        { pattern: /bread flour|cake flour/i, replacement: 'flour' },
+
+        // Milk types
+        { pattern: /whole milk|2% milk|skim milk|low[- ]?fat milk/i, replacement: 'milk' },
+
+        // Butter types
+        { pattern: /unsalted butter|salted butter/i, replacement: 'butter' },
+
+        // Remove quantity and measurement words
+        { pattern: /\b(\d+(\.\d+)?)\s*(cups?|tbsp|tsp|oz|lb|kg|g|ml|l|tablespoons?|teaspoons?|ounces?|pounds?|grams?|kilograms?|milliliters?|liters?)\b/gi, replacement: '' },
+
+        // Remove common descriptors
+        { pattern: /\b(fresh|dried|frozen|canned|chopped|diced|sliced|minced|crushed|ground|whole|large|small|medium)\b/gi, replacement: '' },
+
+        // Remove brands and specific varieties in parentheses
+        { pattern: /\([^)]+\)/g, replacement: '' },
+
+        // Clean up extra spaces
+        { pattern: /\s+/g, replacement: ' ' }
+    ];
+
+    let simplified = name;
+    simplificationRules.forEach(rule => {
+        simplified = simplified.replace(rule.pattern, rule.replacement);
     });
+
+    return simplified.trim();
+}
+
+// Remove duplicate items with smart merging and items marked as "have at home"
+function removeDuplicateItems(items) {
+    const haveAtHomeItems = getHaveAtHomeItems();
+    const mergedItems = {};
+
+    items.forEach(item => {
+        const simplifiedName = simplifyIngredientName(item.name);
+        const normalizedName = simplifiedName.toLowerCase().trim();
+
+        // Skip if already marked as "have at home"
+        if (haveAtHomeItems.has(normalizedName)) {
+            return;
+        }
+
+        if (mergedItems[normalizedName]) {
+            // Merge with existing item
+            const existing = mergedItems[normalizedName];
+
+            // Combine recipe sources
+            if (item.recipe && existing.recipe && item.recipe !== existing.recipe) {
+                existing.recipeCount = (existing.recipeCount || 1) + 1;
+                existing.recipes = existing.recipes || [existing.recipe];
+                if (!existing.recipes.includes(item.recipe)) {
+                    existing.recipes.push(item.recipe);
+                }
+            } else if (item.recipe && !existing.recipe) {
+                existing.recipe = item.recipe;
+                existing.recipeCount = (existing.recipeCount || 0) + 1;
+            } else if (item.recipe) {
+                existing.recipeCount = (existing.recipeCount || 1) + 1;
+            }
+
+            // Keep the cleaner name (shorter is usually better)
+            if (simplifiedName.length < existing.name.length) {
+                existing.name = simplifiedName;
+            }
+        } else {
+            // New item
+            mergedItems[normalizedName] = {
+                ...item,
+                name: simplifiedName,
+                recipeCount: item.recipe ? 1 : 0,
+                recipes: item.recipe ? [item.recipe] : []
+            };
+        }
+    });
+
+    return Object.values(mergedItems);
 }
 
 // Get items marked as "have at home"
@@ -315,13 +447,13 @@ function getHaveAtHomeItems() {
 function addCustomItem() {
     const input = document.getElementById('custom-item-input');
     const categorySelect = document.getElementById('custom-category');
-    
+
     const itemName = input.value.trim();
     if (!itemName) {
         showNotification('Please enter an item name', 'error');
         return;
     }
-    
+
     const newItem = {
         id: generateItemId(),
         name: itemName,
@@ -330,15 +462,15 @@ function addCustomItem() {
         source: 'custom',
         addedDate: new Date().toISOString()
     };
-    
+
     shoppingList.items.push(newItem);
     saveShoppingList();
     renderShoppingList();
-    
+
     // Clear input
     input.value = '';
     input.focus();
-    
+
     showNotification('Item added successfully!', 'success');
 }
 
@@ -554,15 +686,15 @@ function renderCategorizedItems() {
             itemsByCategory[item.category].push(item);
         }
     });
-    
-    // Sort categories by priority
-    const categoryOrder = ['produce', 'dairy', 'meat', 'bakery', 'frozen', 'pantry', 'other'];
+
+    // Sort categories by priority (optimized for supermarket route)
+    const categoryOrder = ['produce', 'meat', 'dairy', 'pantry', 'bakery', 'frozen', 'other'];
     const sortedCategories = categoryOrder.filter(cat => itemsByCategory[cat]);
-    
+
     categoriesContainer.innerHTML = sortedCategories.map(categoryKey => {
         const items = itemsByCategory[categoryKey];
         const categoryInfo = CATEGORIES[categoryKey];
-        
+
         return `
             <div class="category-section">
                 <div class="category-header">
@@ -585,24 +717,39 @@ function renderCategorizedItems() {
             </div>
         `;
     }).join('');
-    
+
     // Add event listeners to items
     addItemEventListeners();
 }
 
-// Render individual shopping item
+// Render individual shopping item with enhanced display
 function renderShoppingItem(item) {
+    // Generate frequency stars
+    const stars = '⭐'.repeat(Math.min(item.recipeCount || 0, 3));
+
+    // Generate source info
+    let sourceInfo = '';
+    if (item.source === 'meal-plan') {
+        if (item.recipeCount > 1) {
+            sourceInfo = `<div class="item-source">Used in ${item.recipeCount} recipes ${stars}</div>`;
+        } else if (item.recipe) {
+            sourceInfo = `<div class="item-source">From: ${item.recipe}</div>`;
+        }
+    } else {
+        sourceInfo = `<div class="item-source">Custom item</div>`;
+    }
+
     return `
         <div class="shopping-item ${item.completed ? 'completed' : ''}" data-item-id="${item.id}">
             <div class="item-checkbox ${item.completed ? 'checked' : ''}" onclick="toggleItemCompletion('${item.id}')">
                 ${item.completed ? '<i class="fas fa-check"></i>' : ''}
             </div>
             <div class="item-details">
-                <div class="item-name">${item.name}</div>
-                ${item.source === 'meal-plan' && item.recipe ?
-                    `<div class="item-source">From: ${item.recipe}</div>` :
-                    `<div class="item-source">Custom item</div>`
-                }
+                <div class="item-name">
+                    ${item.name}
+                    ${stars ? `<span class="frequency-indicator">${stars}</span>` : ''}
+                </div>
+                ${sourceInfo}
             </div>
             <div class="item-actions">
                 <button class="item-action-btn have-at-home-btn" onclick="markAsHaveAtHome('${item.id}')" title="Mark as have at home">
@@ -620,9 +767,9 @@ function renderShoppingItem(item) {
 function addItemEventListeners() {
     document.querySelectorAll('.shopping-item').forEach(item => {
         const itemId = item.dataset.itemId;
-        
+
         // Click on item (not checkbox) to toggle completion
-        item.addEventListener('click', function(e) {
+        item.addEventListener('click', function (e) {
             if (!e.target.closest('.item-checkbox') && !e.target.closest('.item-actions')) {
                 toggleItemCompletion(itemId);
             }
@@ -634,7 +781,7 @@ function addItemEventListeners() {
 function printShoppingList() {
     const printWindow = window.open('', '_blank');
     const currentDate = new Date().toLocaleDateString();
-    
+
     const printContent = `
         <!DOCTYPE html>
         <html>
@@ -657,7 +804,7 @@ function printShoppingList() {
         </body>
         </html>
     `;
-    
+
     printWindow.document.write(printContent);
     printWindow.document.close();
     printWindow.print();
@@ -668,7 +815,7 @@ function generatePrintContent() {
     if (shoppingList.items.length === 0) {
         return '<p>No items in shopping list.</p>';
     }
-    
+
     // Group items by category
     const itemsByCategory = {};
     shoppingList.items.forEach(item => {
@@ -677,20 +824,20 @@ function generatePrintContent() {
         }
         itemsByCategory[item.category].push(item);
     });
-    
+
     const categoryOrder = ['produce', 'dairy', 'meat', 'bakery', 'frozen', 'pantry', 'other'];
     const sortedCategories = categoryOrder.filter(cat => itemsByCategory[cat]);
-    
+
     return sortedCategories.map(categoryKey => {
         const items = itemsByCategory[categoryKey];
         const categoryInfo = CATEGORIES[categoryKey];
-        
+
         return `
             <div class="category">
                 <h3 class="category-title">${categoryInfo.name}</h3>
-                ${items.map(item => 
-                    `<div class="item ${item.completed ? 'completed' : ''}">☐ ${item.name}</div>`
-                ).join('')}
+                ${items.map(item =>
+            `<div class="item ${item.completed ? 'completed' : ''}">☐ ${item.name}</div>`
+        ).join('')}
             </div>
         `;
     }).join('');
@@ -705,7 +852,7 @@ function showNotification(message, type = 'info') {
         <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
         <span>${message}</span>
     `;
-    
+
     // Add styles
     notification.style.cssText = `
         position: fixed;
@@ -724,14 +871,14 @@ function showNotification(message, type = 'info') {
         transform: translateX(100%);
         transition: transform 0.3s ease;
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     // Animate in
     setTimeout(() => {
         notification.style.transform = 'translateX(0)';
     }, 100);
-    
+
     // Remove after 3 seconds
     setTimeout(() => {
         notification.style.transform = 'translateX(100%)';

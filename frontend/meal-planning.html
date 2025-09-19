@@ -76,10 +76,21 @@
             </div>
         </section>
 
-        <!-- Loading Spinner -->
+        <!-- Loading Spinner with Progress -->
         <div id="loading-spinner" class="loading-spinner hidden">
             <div class="spinner"></div>
-            <p>Creating your personalized weekly meal plan...</p>
+            <div class="loading-content">
+                <p id="loading-text">Creating your personalized weekly meal plan...</p>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <div class="progress-details">
+                        <span id="progress-text">Preparing...</span>
+                        <span id="progress-percentage">0%</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- User Preferences Questionnaire -->
