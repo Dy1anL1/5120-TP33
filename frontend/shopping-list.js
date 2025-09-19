@@ -317,6 +317,194 @@ function categorizeIngredient(ingredient) {
     return 'other';
 }
 
+// Parse quantity and unit from ingredient text
+function parseQuantityFromIngredient(ingredientText) {
+    const quantityPatterns = [
+        // Numeric patterns with units
+        { pattern: /(\d+(?:\.\d+)?(?:\s*\/\s*\d+)?)\s*(cups?|tbsp|tablespoons?|tsp|teaspoons?|oz|ounces?|lb|lbs|pounds?|kg|kilograms?|g|grams?|ml|milliliters?|l|liters?)/gi, type: 'measured' },
+
+        // Count patterns
+        { pattern: /(\d+(?:\.\d+)?(?:\s*\/\s*\d+)?)\s*(large|medium|small|whole|cloves?|pieces?|slices?)/gi, type: 'count' },
+
+        // Simple numbers
+        { pattern: /^(\d+(?:\.\d+)?(?:\s*\/\s*\d+)?)\s+/g, type: 'number' }
+    ];
+
+    for (const { pattern, type } of quantityPatterns) {
+        const match = pattern.exec(ingredientText);
+        if (match) {
+            let quantity = match[1];
+            const unit = match[2] || '';
+
+            // Convert fractions to decimals
+            if (quantity.includes('/')) {
+                const [num, den] = quantity.split('/').map(s => parseFloat(s.trim()));
+                quantity = (num / den).toFixed(2);
+            } else {
+                quantity = parseFloat(quantity).toFixed(2);
+            }
+
+            return {
+                quantity: parseFloat(quantity),
+                unit: unit.toLowerCase(),
+                type: type,
+                originalText: match[0]
+            };
+        }
+    }
+
+    return null;
+}
+
+// Aggregate quantities for the same ingredient across recipes
+function aggregateQuantities(quantities) {
+    if (!quantities || quantities.length === 0) return null;
+
+    // Group by unit type
+    const unitGroups = {};
+    quantities.forEach(q => {
+        const unitKey = q.unit || 'count';
+        if (!unitGroups[unitKey]) {
+            unitGroups[unitKey] = [];
+        }
+        unitGroups[unitKey].push(q.quantity);
+    });
+
+    // Find the most common unit and sum quantities
+    const bestUnit = Object.keys(unitGroups).reduce((a, b) =>
+        unitGroups[a].length > unitGroups[b].length ? a : b
+    );
+
+    const totalQuantity = unitGroups[bestUnit].reduce((sum, q) => sum + q, 0);
+
+    return {
+        total: Math.round(totalQuantity * 100) / 100, // Round to 2 decimal places
+        unit: bestUnit,
+        count: unitGroups[bestUnit].length
+    };
+}
+
+// Estimate shopping weight/package suggestions
+function getShoppingSuggestion(itemName, aggregated, recipeCount) {
+    const name = itemName.toLowerCase();
+
+    // If we have weight units, convert and use them
+    if (aggregated && ['lb', 'lbs', 'pounds', 'pound', 'kg', 'g', 'grams', 'oz', 'ounces'].includes(aggregated.unit)) {
+        let weight = aggregated.total;
+        let unit = aggregated.unit;
+
+        // Convert imperial to metric
+        if (['lb', 'lbs', 'pounds', 'pound'].includes(unit)) {
+            weight = Math.round(weight * 453.592); // Convert pounds to grams
+            unit = 'g';
+        } else if (['oz', 'ounces'].includes(unit)) {
+            weight = Math.round(weight * 28.3495); // Convert ounces to grams
+            unit = 'g';
+        }
+
+        // Convert to more practical shopping units
+        if (unit === 'g' && weight > 500) {
+            weight = Math.round(weight / 1000 * 10) / 10;
+            unit = 'kg';
+        }
+
+        return `${weight}${unit}`;
+    }
+
+    // Meat and protein estimates
+    if (name.includes('chicken breast') || name.includes('chicken')) {
+        return recipeCount > 2 ? '700g-1kg' : '500g';
+    }
+    if (name.includes('ground beef') || name.includes('beef')) {
+        return recipeCount > 2 ? '1kg' : '500g';
+    }
+    if (name.includes('pork') || name.includes('ham')) {
+        return recipeCount > 2 ? '700g-1kg' : '500g';
+    }
+    if (name.includes('salmon') || name.includes('fish') || name.includes('tuna')) {
+        return recipeCount > 2 ? '700g' : '500g';
+    }
+
+    // Vegetables
+    if (name.includes('onion')) {
+        return recipeCount > 3 ? '2-3 medium' : '1-2 medium';
+    }
+    if (name.includes('tomato')) {
+        return recipeCount > 2 ? '700g' : '500g';
+    }
+    if (name.includes('potato')) {
+        return recipeCount > 2 ? '1.5kg' : '1kg';
+    }
+    if (name.includes('carrot')) {
+        return recipeCount > 2 ? '1kg' : '500g';
+    }
+    if (name.includes('spinach') || name.includes('lettuce') || name.includes('kale')) {
+        return recipeCount > 2 ? '2 bags' : '1 bag';
+    }
+    if (name.includes('broccoli') || name.includes('cauliflower')) {
+        return recipeCount > 2 ? '2 heads' : '1 head';
+    }
+
+    // Pantry staples
+    if (name.includes('rice')) {
+        return recipeCount > 2 ? '1kg bag' : '500g bag';
+    }
+    if (name.includes('pasta')) {
+        return recipeCount > 2 ? '1kg' : '500g box';
+    }
+    if (name.includes('flour')) {
+        return recipeCount > 2 ? '2kg bag' : '1kg bag';
+    }
+    if (name.includes('sugar')) {
+        return '1kg bag';
+    }
+    if (name.includes('olive oil') || name.includes('cooking oil')) {
+        return '500ml bottle';
+    }
+
+    // Dairy
+    if (name.includes('milk')) {
+        return recipeCount > 2 ? '2L' : '1L';
+    }
+    if (name.includes('cheese')) {
+        return recipeCount > 2 ? '500g' : '250g';
+    }
+    if (name.includes('butter')) {
+        return '500g pack';
+    }
+    if (name.includes('eggs')) {
+        return recipeCount > 3 ? '18 count' : '12 count';
+    }
+    if (name.includes('yogurt')) {
+        return recipeCount > 2 ? 'large container' : 'medium container';
+    }
+
+    // Herbs and spices
+    if (name.includes('garlic')) {
+        return '1 bulb';
+    }
+    if (name.includes('ginger')) {
+        return '1 piece';
+    }
+    if (name.includes('basil') || name.includes('parsley') || name.includes('cilantro')) {
+        return '1 bunch';
+    }
+
+    // Beans and legumes
+    if (name.includes('beans') || name.includes('lentils') || name.includes('chickpea')) {
+        return recipeCount > 2 ? '2 cans' : '1 can';
+    }
+
+    // Default suggestion based on recipe count
+    if (recipeCount > 3) {
+        return 'large package';
+    } else if (recipeCount > 1) {
+        return 'medium package';
+    } else {
+        return 'small package';
+    }
+}
+
 // Simplify ingredient names for better merging
 function simplifyIngredientName(name) {
     const simplificationRules = [
@@ -388,6 +576,9 @@ function removeDuplicateItems(items) {
     const mergedItems = {};
 
     items.forEach(item => {
+        // Parse quantity from original ingredient text (before simplification)
+        const quantityInfo = parseQuantityFromIngredient(item.name);
+
         const simplifiedName = simplifyIngredientName(item.name);
         const normalizedName = simplifiedName.toLowerCase().trim();
 
@@ -414,6 +605,12 @@ function removeDuplicateItems(items) {
                 existing.recipeCount = (existing.recipeCount || 1) + 1;
             }
 
+            // Combine quantity information
+            if (quantityInfo) {
+                existing.quantities = existing.quantities || [];
+                existing.quantities.push(quantityInfo);
+            }
+
             // Keep the cleaner name (shorter is usually better)
             if (simplifiedName.length < existing.name.length) {
                 existing.name = simplifiedName;
@@ -424,7 +621,8 @@ function removeDuplicateItems(items) {
                 ...item,
                 name: simplifiedName,
                 recipeCount: item.recipe ? 1 : 0,
-                recipes: item.recipe ? [item.recipe] : []
+                recipes: item.recipe ? [item.recipe] : [],
+                quantities: quantityInfo ? [quantityInfo] : []
             };
         }
     });
@@ -727,6 +925,47 @@ function renderShoppingItem(item) {
     // Generate frequency stars
     const stars = '⭐'.repeat(Math.min(item.recipeCount || 0, 3));
 
+    // Generate quantity info with shopping suggestions
+    let quantityInfo = '';
+    const recipeCount = item.recipeCount || 1;
+
+    if (item.quantities && item.quantities.length > 0) {
+        const aggregated = aggregateQuantities(item.quantities);
+        if (aggregated) {
+            let displayUnit = aggregated.unit;
+            // Simplify unit names for display
+            const unitMapping = {
+                'tbsp': 'tbsp', 'tablespoons': 'tbsp', 'tablespoon': 'tbsp',
+                'tsp': 'tsp', 'teaspoons': 'tsp', 'teaspoon': 'tsp',
+                'cups': 'cups', 'cup': 'cups',
+                'oz': 'oz', 'ounces': 'oz', 'ounce': 'oz',
+                'lb': 'lbs', 'lbs': 'lbs', 'pounds': 'lbs', 'pound': 'lbs',
+                'g': 'g', 'grams': 'g', 'gram': 'g',
+                'kg': 'kg', 'kilograms': 'kg', 'kilogram': 'kg',
+                'ml': 'ml', 'milliliters': 'ml',
+                'l': 'L', 'liters': 'L', 'liter': 'L',
+                'large': 'large', 'medium': 'medium', 'small': 'small',
+                'cloves': 'cloves', 'clove': 'cloves',
+                'pieces': 'pieces', 'piece': 'pieces'
+            };
+            displayUnit = unitMapping[displayUnit] || displayUnit;
+
+            // Get shopping suggestion
+            const shoppingSuggestion = getShoppingSuggestion(item.name, aggregated, recipeCount);
+
+            quantityInfo = `<div class="item-quantity">
+                <div class="recipe-amount">Recipe total: ~${aggregated.total} ${displayUnit}</div>
+                <div class="shopping-suggestion">Suggest buying: ${shoppingSuggestion}</div>
+            </div>`;
+        }
+    } else {
+        // No specific quantities found, provide general shopping suggestion
+        const shoppingSuggestion = getShoppingSuggestion(item.name, null, recipeCount);
+        quantityInfo = `<div class="item-quantity">
+            <div class="shopping-suggestion">Suggest buying: ${shoppingSuggestion}</div>
+        </div>`;
+    }
+
     // Generate source info
     let sourceInfo = '';
     if (item.source === 'meal-plan') {
@@ -749,6 +988,7 @@ function renderShoppingItem(item) {
                     ${item.name}
                     ${stars ? `<span class="frequency-indicator">${stars}</span>` : ''}
                 </div>
+                ${quantityInfo}
                 ${sourceInfo}
             </div>
             <div class="item-actions">
