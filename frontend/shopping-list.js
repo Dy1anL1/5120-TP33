@@ -4,6 +4,7 @@
 // Configuration
 const SHOPPING_LIST_KEY = 'shoppingList';
 const MEAL_PLAN_KEY = 'weeklyMealPlan';
+const MEAL_PLAN_INGREDIENTS_KEY = 'mealPlanIngredients';
 
 // Global state
 let shoppingList = {
@@ -49,9 +50,61 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log('Shopping List initialized');
     loadShoppingList();
     setupEventListeners();
+    checkForMealPlanIngredients(); // Check for ingredients from meal planning
     renderShoppingList();
     setupMealPlanSync();
 });
+
+// Check for ingredients from meal planning page
+function checkForMealPlanIngredients() {
+    try {
+        const mealPlanIngredients = localStorage.getItem(MEAL_PLAN_INGREDIENTS_KEY);
+        if (mealPlanIngredients) {
+            const ingredients = JSON.parse(mealPlanIngredients);
+            console.log('Found meal plan ingredients from meal planning page:', ingredients.length, 'ingredients');
+
+            // Auto-generate shopping list from these ingredients
+            autoGenerateFromMealPlanIngredients(ingredients);
+
+            // Clear the ingredients to prevent re-loading on page refresh
+            localStorage.removeItem(MEAL_PLAN_INGREDIENTS_KEY);
+
+            showNotification('Shopping list automatically generated from your meal plan!', 'success');
+        }
+    } catch (error) {
+        console.error('Error checking for meal plan ingredients:', error);
+    }
+}
+
+// Auto-generate shopping list from meal plan ingredients
+function autoGenerateFromMealPlanIngredients(ingredients) {
+    const items = [];
+
+    ingredients.forEach(ingredient => {
+        const cleanIngredient = cleanIngredientName(ingredient.name || ingredient);
+        if (cleanIngredient) {
+            items.push({
+                id: generateItemId(),
+                name: cleanIngredient,
+                category: categorizeIngredient(cleanIngredient),
+                completed: false,
+                source: 'meal-plan',
+                recipe: ingredient.recipe || 'Unknown Recipe',
+                addedDate: new Date().toISOString()
+            });
+        }
+    });
+
+    // Remove duplicates and update list
+    shoppingList.items = removeDuplicateItems(items);
+    shoppingList.lastGenerated = new Date().toISOString();
+    shoppingList.source = 'meal-plan';
+
+    // Set the source selector to meal-plan
+    document.getElementById('list-source').value = 'meal-plan';
+
+    saveShoppingList();
+}
 
 // Setup automatic meal plan synchronization
 function setupMealPlanSync() {
@@ -1091,25 +1144,6 @@ function showNotification(message, type = 'info') {
     notification.innerHTML = `
         <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
         <span>${message}</span>
-    `;
-
-    // Add styles
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 10000;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-weight: 500;
-        transform: translateX(100%);
-        transition: transform 0.3s ease;
     `;
 
     document.body.appendChild(notification);

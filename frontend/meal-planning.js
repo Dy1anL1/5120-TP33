@@ -759,7 +759,7 @@ async function generateMealPlan() {
         await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UX
 
         // Generate plan for each day (Full week)
-        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']; // Full week
+        const days = ['Monday', 'Tuesday']; // Full week
         const mealPlan = {};
         const selectedMealTypes = userPreferences.meal_preferences || ['breakfast', 'lunch', 'dinner'];
         const totalSteps = days.length * selectedMealTypes.length + 2; // +2 for init and finalize
@@ -860,10 +860,12 @@ async function generateDayMealsWithProgress(day, selectedMealTypes, baseStep, to
 function getMealCategoryOptions(mealType) {
     const categoryMapping = {
         'breakfast': ['breakfast'],
-        'lunch': ['lunch', 'dinner', 'salad', 'soup'],  // Include variety for lunch
+        'lunch': ['lunch', 'dinner', 'salad'],  // Lunch can include salads, but not soups
         'dinner': ['dinner', 'lunch'],  // Primary dinner, fallback to lunch
         'snack': ['snack', 'dessert'],
-        'dessert': ['dessert']
+        'dessert': ['dessert'],
+        'soup': ['soup'],  // Only search for actual soup category
+        'salad': ['salad'] // Only search for actual salad category
     };
 
     return categoryMapping[mealType] || ['dinner'];
@@ -954,10 +956,10 @@ async function fetchRandomRecipe(mealType) {
                     let filteredRecipes = filterRecipesByPreferences(data.items);
                     console.log(`After filtering: ${filteredRecipes.length} recipes for ${mealType}`);
 
-                    // If filtering results in no recipes, use original list
+                    // If filtering results in no recipes, continue to next strategy instead of ignoring preferences
                     if (filteredRecipes.length === 0) {
-                        console.log(`Using original ${data.items.length} recipes for ${mealType} (no filter matches)`);
-                        filteredRecipes = data.items;
+                        console.log(`No recipes match user preferences for ${mealType} with strategy ${i + 1}, trying next strategy...`);
+                        continue; // Try next search strategy instead of ignoring user preferences
                     }
 
                     // Apply meal type filtering for all strategies
@@ -1142,10 +1144,10 @@ function filterRecipesByMealType(recipes, mealType, categoryOptions) {
             return recipe.categories.includes('breakfast');
         }
 
-        // For lunch - allow lunch, dinner, salad, soup, but exclude dessert/snack/beverage
+        // For lunch - allow lunch, dinner, salad, but exclude dessert/snack/beverage/soup
         if (mealType === 'lunch') {
-            const appropriateCategories = ['lunch', 'dinner', 'salad', 'soup'];
-            const excludeCategories = ['dessert', 'snack', 'beverage'];
+            const appropriateCategories = ['lunch', 'dinner', 'salad'];
+            const excludeCategories = ['dessert', 'snack', 'beverage', 'soup'];
 
             const hasAppropriate = recipe.categories.some(cat => appropriateCategories.includes(cat));
             const hasExcluded = recipe.categories.some(cat => excludeCategories.includes(cat));
@@ -1174,6 +1176,16 @@ function filterRecipesByMealType(recipes, mealType, categoryOptions) {
             return recipe.categories.includes('dessert');
         }
 
+        // For soup - must be soup category only
+        if (mealType === 'soup') {
+            return recipe.categories.includes('soup') && !recipe.categories.includes('dinner') && !recipe.categories.includes('lunch');
+        }
+
+        // For salad - must be salad category only
+        if (mealType === 'salad') {
+            return recipe.categories.includes('salad');
+        }
+
         // Default: check if any of the category options match
         return recipe.categories.some(cat => categoryOptions.includes(cat));
     });
@@ -1181,21 +1193,228 @@ function filterRecipesByMealType(recipes, mealType, categoryOptions) {
 
 function filterRecipesByPreferences(recipes) {
     return recipes.filter(recipe => {
-        // Check allergies
-        if (userPreferences.allergies && userPreferences.allergies.length > 0) {
-            for (const allergy of userPreferences.allergies) {
-                if (recipe.habits && recipe.habits.includes(allergy.replace('_free', ''))) {
-                    return false;
+        // Ensure recipe has habits array
+        if (!recipe.habits || !Array.isArray(recipe.habits)) {
+            return false;
+        }
+
+        // Check diet types (HIGHEST PRIORITY - strict filtering)
+        if (userPreferences.diet_types && userPreferences.diet_types.length > 0) {
+            for (const diet of userPreferences.diet_types) {
+                if (diet === 'vegetarian') {
+                    // Strict vegetarian check: must have vegetarian tag AND not have meat/seafood
+                    if (!recipe.habits.includes('vegetarian')) {
+                        return false;
+                    }
+
+                    // Double-check: exclude any recipe with seafood or meat indicators
+                    if (recipe.habits.includes('contains_seafood')) {
+                        return false;
+                    }
+
+                    // Additional ingredient-level check for meat/seafood
+                    if (recipe.ingredients && Array.isArray(recipe.ingredients)) {
+                        const ingredientText = recipe.ingredients.join(' ').toLowerCase();
+                        const meatKeywords = ['chicken', 'beef', 'pork', 'lamb', 'fish', 'salmon', 'tuna', 'cod', 'halibut', 'bass', 'shrimp', 'crab', 'lobster', 'bacon', 'ham', 'sausage', 'turkey'];
+                        if (meatKeywords.some(meat => ingredientText.includes(meat))) {
+                            return false;
+                        }
+                    }
+                } else if (diet === 'vegan') {
+                    // Strict vegan check: must be vegan, no animal products
+                    if (!recipe.habits.includes('vegan')) {
+                        return false;
+                    }
+
+                    // Additional check to exclude any animal product indicators
+                    const animalProducts = ['contains_dairy', 'contains_eggs', 'contains_seafood'];
+                    if (animalProducts.some(product => recipe.habits.includes(product))) {
+                        return false;
+                    }
+                } else if (diet === 'low_sugar') {
+                    // Must have low_sugar tag and exclude high-sugar foods
+                    if (!recipe.habits.includes('low_sugar')) {
+                        return false;
+                    }
+                } else if (diet === 'low_sodium') {
+                    // Must have low_sodium tag
+                    if (!recipe.habits.includes('low_sodium')) {
+                        return false;
+                    }
+                } else if (diet === 'heart_healthy') {
+                    // Must have heart_healthy tag
+                    if (!recipe.habits.includes('heart_healthy')) {
+                        return false;
+                    }
+                } else if (diet === 'diabetic_friendly') {
+                    // Must have diabetic_friendly tag
+                    if (!recipe.habits.includes('diabetic_friendly')) {
+                        return false;
+                    }
+                } else if (diet === 'soft_food') {
+                    // Must have soft_food tag
+                    if (!recipe.habits.includes('soft_food')) {
+                        return false;
+                    }
+                } else {
+                    // For any other diet types, check if recipe has the tag
+                    if (!recipe.habits.includes(diet)) {
+                        return false;
+                    }
                 }
             }
         }
 
-        // Check diet types
-        if (userPreferences.diet_types && userPreferences.diet_types.length > 0) {
-            const hasMatchingDiet = userPreferences.diet_types.some(diet =>
-                recipe.habits && recipe.habits.includes(diet)
+        // Check allergies (STRICT filtering - user safety)
+        if (userPreferences.allergies && userPreferences.allergies.length > 0) {
+            for (const allergy of userPreferences.allergies) {
+                if (allergy === 'dairy_free') {
+                    // Must be dairy-free AND not contain dairy
+                    if (!recipe.habits.includes('dairy_free') || recipe.habits.includes('contains_dairy')) {
+                        return false;
+                    }
+                } else if (allergy === 'gluten_free') {
+                    // Must be gluten-free AND not contain gluten
+                    if (!recipe.habits.includes('gluten_free') || recipe.habits.includes('contains_gluten')) {
+                        return false;
+                    }
+                } else if (allergy === 'nut_free') {
+                    // Must be nut-free AND not contain nuts
+                    if (!recipe.habits.includes('nut_free') || recipe.habits.includes('contains_nuts')) {
+                        return false;
+                    }
+                } else if (allergy === 'shellfish_free') {
+                    // Must be shellfish-free AND not contain shellfish
+                    if (!recipe.habits.includes('shellfish_free') || recipe.habits.includes('contains_shellfish')) {
+                        return false;
+                    }
+                    // Additional ingredient check for shellfish
+                    if (recipe.ingredients && Array.isArray(recipe.ingredients)) {
+                        const ingredientText = recipe.ingredients.join(' ').toLowerCase();
+                        const shellfishKeywords = ['shrimp', 'crab', 'lobster', 'scallop', 'oyster', 'mussel', 'clam', 'crawfish', 'crayfish', 'prawn'];
+                        if (shellfishKeywords.some(shellfish => ingredientText.includes(shellfish))) {
+                            return false;
+                        }
+                    }
+                } else if (allergy === 'egg_free') {
+                    // Must be egg-free AND not contain eggs
+                    if (!recipe.habits.includes('egg_free') || recipe.habits.includes('contains_eggs')) {
+                        return false;
+                    }
+                } else if (allergy === 'soy_free') {
+                    // Must be soy-free AND not contain soy
+                    if (!recipe.habits.includes('soy_free') || recipe.habits.includes('contains_soy')) {
+                        return false;
+                    }
+                } else if (allergy === 'fish_free') {
+                    // Must be fish-free AND not contain fish/seafood
+                    if (!recipe.habits.includes('fish_free') || recipe.habits.includes('contains_seafood')) {
+                        return false;
+                    }
+                    // Additional ingredient check for fish
+                    if (recipe.ingredients && Array.isArray(recipe.ingredients)) {
+                        const ingredientText = recipe.ingredients.join(' ').toLowerCase();
+                        const fishKeywords = ['fish', 'salmon', 'tuna', 'cod', 'halibut', 'bass', 'tilapia', 'trout', 'mackerel', 'sardine', 'anchovy'];
+                        if (fishKeywords.some(fish => ingredientText.includes(fish))) {
+                            return false;
+                        }
+                    }
+                } else {
+                    // Generic allergy check - backwards compatibility
+                    const allergenTag = allergy.replace('_free', '');
+                    if (recipe.habits.includes(`contains_${allergenTag}`) || recipe.habits.includes(allergenTag)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // Check nutrition priorities (flexible matching - may not all be available)
+        if (userPreferences.nutrition_priorities && userPreferences.nutrition_priorities.length > 0) {
+            // For nutrition priorities, we use a more flexible approach since not all may have direct tags
+            let hasAnyNutritionMatch = false;
+
+            for (const nutrition of userPreferences.nutrition_priorities) {
+                if (nutrition === 'high_protein') {
+                    // Look for protein-rich indicators
+                    if (recipe.habits.includes('high_protein') ||
+                        (recipe.ingredients && Array.isArray(recipe.ingredients))) {
+                        const ingredientText = recipe.ingredients.join(' ').toLowerCase();
+                        const proteinSources = ['chicken', 'beef', 'pork', 'fish', 'salmon', 'tuna', 'eggs', 'tofu', 'beans', 'lentils', 'chickpea', 'quinoa'];
+                        if (proteinSources.some(protein => ingredientText.includes(protein))) {
+                            hasAnyNutritionMatch = true;
+                            break;
+                        }
+                    }
+                } else if (nutrition === 'low_fat') {
+                    // Look for low-fat indicators
+                    if (recipe.habits.includes('low_fat') || recipe.habits.includes('heart_healthy')) {
+                        hasAnyNutritionMatch = true;
+                        break;
+                    }
+                } else if (nutrition === 'high_fiber') {
+                    // Look for high-fiber indicators
+                    if (recipe.habits.includes('high_fiber') ||
+                        (recipe.ingredients && Array.isArray(recipe.ingredients))) {
+                        const ingredientText = recipe.ingredients.join(' ').toLowerCase();
+                        const fiberSources = ['beans', 'lentils', 'oats', 'quinoa', 'brown rice', 'vegetables', 'broccoli', 'spinach', 'apple', 'pear'];
+                        if (fiberSources.some(fiber => ingredientText.includes(fiber))) {
+                            hasAnyNutritionMatch = true;
+                            break;
+                        }
+                    }
+                } else if (nutrition === 'low_cholesterol') {
+                    // Look for low-cholesterol indicators (typically vegetarian/vegan foods)
+                    if (recipe.habits.includes('low_cholesterol') ||
+                        recipe.habits.includes('vegetarian') ||
+                        recipe.habits.includes('vegan')) {
+                        hasAnyNutritionMatch = true;
+                        break;
+                    }
+                } else if (nutrition === 'calcium_rich') {
+                    // Look for calcium-rich indicators
+                    if (recipe.habits.includes('calcium_rich') ||
+                        (recipe.ingredients && Array.isArray(recipe.ingredients))) {
+                        const ingredientText = recipe.ingredients.join(' ').toLowerCase();
+                        const calciumSources = ['milk', 'cheese', 'yogurt', 'kale', 'spinach', 'almonds', 'salmon', 'sardines'];
+                        if (calciumSources.some(calcium => ingredientText.includes(calcium))) {
+                            hasAnyNutritionMatch = true;
+                            break;
+                        }
+                    }
+                } else if (nutrition === 'vitamin_d') {
+                    // Look for vitamin D indicators
+                    if (recipe.habits.includes('vitamin_d') ||
+                        (recipe.ingredients && Array.isArray(recipe.ingredients))) {
+                        const ingredientText = recipe.ingredients.join(' ').toLowerCase();
+                        const vitaminDSources = ['salmon', 'tuna', 'mackerel', 'eggs', 'mushrooms'];
+                        if (vitaminDSources.some(vitD => ingredientText.includes(vitD))) {
+                            hasAnyNutritionMatch = true;
+                            break;
+                        }
+                    }
+                } else {
+                    // Direct tag matching for any other nutrition priorities
+                    if (recipe.habits.includes(nutrition)) {
+                        hasAnyNutritionMatch = true;
+                        break;
+                    }
+                }
+            }
+
+            // Only require at least one nutrition priority to match (flexible)
+            if (!hasAnyNutritionMatch) {
+                return false;
+            }
+        }
+
+        // Check health considerations (if available in database)
+        if (userPreferences.health_considerations && userPreferences.health_considerations.length > 0) {
+            // This is likely undefined in the current questionnaire, but included for future use
+            const hasMatchingHealth = userPreferences.health_considerations.some(health =>
+                recipe.habits.includes(health)
             );
-            if (!hasMatchingDiet) {
+            if (!hasMatchingHealth) {
                 return false;
             }
         }
@@ -1377,9 +1596,49 @@ async function renderMealCard(mealType, recipe) {
     `;
 }
 
-// Generate shopping list (placeholder)
+// Generate shopping list from current meal plan
 function generateShoppingList() {
-    alert('Shopping list feature will be implemented in the next update!');
+    if (!weeklyPlan || !weeklyPlan.plan) {
+        alert('Please generate a meal plan first before creating a shopping list.');
+        return;
+    }
+
+    try {
+        // Extract all ingredients from the meal plan
+        const allIngredients = [];
+        const days = Object.keys(weeklyPlan.plan);
+
+        days.forEach(day => {
+            const dayMeals = weeklyPlan.plan[day];
+            Object.values(dayMeals).forEach(recipe => {
+                if (recipe && recipe.ingredients && Array.isArray(recipe.ingredients)) {
+                    recipe.ingredients.forEach(ingredient => {
+                        allIngredients.push({
+                            name: ingredient,
+                            recipe: recipe.title,
+                            source: 'meal-plan'
+                        });
+                    });
+                }
+            });
+        });
+
+        if (allIngredients.length === 0) {
+            alert('No ingredients found in your meal plan.');
+            return;
+        }
+
+        // Store ingredients in localStorage for shopping-list.html to pick up
+        localStorage.setItem('mealPlanIngredients', JSON.stringify(allIngredients));
+        localStorage.setItem('shoppingListGenerated', 'true');
+
+        // Navigate to shopping list page
+        window.location.href = 'shopping-list.html';
+
+    } catch (error) {
+        console.error('Error generating shopping list:', error);
+        alert('Error generating shopping list. Please try again.');
+    }
 }
 
 // Regenerate meal plan

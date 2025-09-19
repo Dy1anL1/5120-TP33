@@ -12,27 +12,27 @@ const __dirname = path.dirname(__filename);
 
 const REGION = "ap-southeast-2";
 const TABLE = "Recipes_i2";
-const TARGET_RECIPES = 1000;
+const TARGET_RECIPES = 600;  // Reduced for testing
 
-// Ingredient quota targets
+// Ingredient quota targets (scaled down by 60%)
 const INGREDIENT_QUOTAS = {
-  meat: { total: 300, chicken: 120, pork: 100, beef: 70, lamb: 10 },
-  seafood: { total: 150, fish: 100, shellfish: 30, other: 20 },
-  vegetable: { total: 300, leafy: 80, root: 80, gourd: 60, mushroom: 40, other: 40 },
-  staple: { total: 200, rice: 80, pasta: 60, beans: 40, other: 20 },
-  dairy_egg: { total: 100, egg: 60, dairy: 40 }
+  meat: { total: 180, chicken: 70, pork: 60, beef: 40, lamb: 10 },
+  seafood: { total: 90, fish: 60, shellfish: 20, other: 10 },
+  vegetable: { total: 180, leafy: 50, root: 50, gourd: 35, mushroom: 25, other: 20 },
+  staple: { total: 120, rice: 50, pasta: 35, beans: 25, other: 10 },
+  dairy_egg: { total: 60, egg: 35, dairy: 25 }
 };
 
-// Category quota targets
+// Category quota targets (scaled down by 60%)
 const CATEGORY_QUOTAS = {
-  dinner: 300,        // Main dishes - largest portion
-  lunch: 200,         // Lunch items
-  breakfast: 150,     // Breakfast items
-  snack: 100,         // Snacks - increased for better coverage
-  soup: 80,           // Light soups (excluding main meal soups)
-  salad: 70,          // Salads
-  dessert: 60,        // Desserts
-  beverage: 40,       // Beverages
+  dinner: 180,        // Main dishes - largest portion
+  lunch: 120,         // Lunch items
+  breakfast: 90,      // Breakfast items
+  snack: 60,          // Snacks
+  soup: 50,           // Light soups (excluding main meal soups)
+  salad: 40,          // Salads
+  dessert: 35,        // Desserts
+  beverage: 25,       // Beverages
   uncategorized: 0    // No uncategorized recipes
 };
 
@@ -382,16 +382,82 @@ function classifyRecipe(title, ingredients) {
 function analyzeIngredients(ingredients) {
   const ingredientsText = (ingredients || []).join(' ').toLowerCase();
 
+  // Determine primary ingredient type and subtype for quota management
+  let primaryType = null;
+  let primarySubtype = null;
+
+  // Check meat types (highest priority for protein sources)
+  if (anyWord(ingredientsText, ['chicken', 'turkey'])) {
+    primaryType = 'meat';
+    primarySubtype = 'chicken';
+  } else if (anyWord(ingredientsText, ['pork', 'ham', 'bacon', 'sausage'])) {
+    primaryType = 'meat';
+    primarySubtype = 'pork';
+  } else if (anyWord(ingredientsText, ['beef', 'bison', 'steak'])) {
+    primaryType = 'meat';
+    primarySubtype = 'beef';
+  } else if (anyWord(ingredientsText, ['lamb', 'mutton'])) {
+    primaryType = 'meat';
+    primarySubtype = 'lamb';
+  }
+  // Check seafood
+  else if (anyWord(ingredientsText, ['salmon', 'tuna', 'cod', 'fish', 'tilapia', 'trout', 'halibut', 'bass'])) {
+    primaryType = 'seafood';
+    primarySubtype = 'fish';
+  } else if (anyWord(ingredientsText, ['shrimp', 'crab', 'lobster', 'scallop', 'oyster'])) {
+    primaryType = 'seafood';
+    primarySubtype = 'shellfish';
+  } else if (anyWord(ingredientsText, ['squid', 'octopus', 'calamari'])) {
+    primaryType = 'seafood';
+    primarySubtype = 'other';
+  }
+  // Check staples
+  else if (anyWord(ingredientsText, ['rice', 'risotto', 'pilaf'])) {
+    primaryType = 'staple';
+    primarySubtype = 'rice';
+  } else if (anyWord(ingredientsText, ['pasta', 'spaghetti', 'penne', 'noodle', 'orzo'])) {
+    primaryType = 'staple';
+    primarySubtype = 'pasta';
+  } else if (anyWord(ingredientsText, ['beans', 'lentils', 'chickpea', 'black beans'])) {
+    primaryType = 'staple';
+    primarySubtype = 'beans';
+  }
+  // Check dairy/eggs
+  else if (anyWord(ingredientsText, ['egg', 'eggs'])) {
+    primaryType = 'dairy_egg';
+    primarySubtype = 'egg';
+  } else if (anyWord(ingredientsText, ['milk', 'cheese', 'butter', 'cream', 'yogurt'])) {
+    primaryType = 'dairy_egg';
+    primarySubtype = 'dairy';
+  }
+  // Check vegetables
+  else if (anyWord(ingredientsText, ['spinach', 'lettuce', 'kale', 'arugula'])) {
+    primaryType = 'vegetable';
+    primarySubtype = 'leafy';
+  } else if (anyWord(ingredientsText, ['carrot', 'potato', 'sweet potato', 'beet'])) {
+    primaryType = 'vegetable';
+    primarySubtype = 'root';
+  } else if (anyWord(ingredientsText, ['zucchini', 'squash', 'cucumber', 'pumpkin'])) {
+    primaryType = 'vegetable';
+    primarySubtype = 'gourd';
+  } else if (anyWord(ingredientsText, ['mushroom', 'shiitake', 'portobello'])) {
+    primaryType = 'vegetable';
+    primarySubtype = 'mushroom';
+  } else if (anyWord(ingredientsText, ['tomato', 'onion', 'pepper', 'garlic', 'broccoli'])) {
+    primaryType = 'vegetable';
+    primarySubtype = 'other';
+  }
+
   return {
     hasMeat: anyWord(ingredientsText, [
-      'chicken', 'beef', 'pork', 'lamb', 'fish', 'seafood', 'bacon', 'ham', 'turkey'
+      'chicken', 'beef', 'pork', 'lamb', 'fish', 'seafood', 'bacon', 'ham', 'turkey', 'halibut', 'bass'
     ]),
     hasDairy: anyWord(ingredientsText, [
       'milk', 'cheese', 'butter', 'cream', 'yogurt', 'ghee', 'sour cream'
     ]),
     hasEggs: anyWord(ingredientsText, ['egg', 'eggs', 'mayonnaise']),
     hasGluten: anyWord(ingredientsText, [
-      'wheat', 'flour', 'bread', 'pasta', 'barley', 'rye', 'noodle'
+      'wheat', 'flour', 'bread', 'pasta', 'barley', 'rye', 'noodle', 'orzo'
     ]),
     hasNuts: anyWord(ingredientsText, [
       'peanut', 'almond', 'walnut', 'cashew', 'pecan', 'hazelnut'
@@ -399,7 +465,9 @@ function analyzeIngredients(ingredients) {
     hasSugar: anyWord(ingredientsText, [
       'sugar', 'syrup', 'honey', 'molasses', 'fructose'
     ]),
-    ingredientText: ingredientsText
+    ingredientText: ingredientsText,
+    primaryType: primaryType,
+    primarySubtype: primarySubtype
   };
 }
 
