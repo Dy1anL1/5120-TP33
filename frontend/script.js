@@ -1,5 +1,5 @@
 // ====== API Configuration ======
-const NUTRITION_API = "https://0brixnxwq3.execute-api.ap-southeast-2.amazonaws.com/prod/match";
+// Note: API endpoints are now defined in config.js
 
 // Format nutrition numbers to show 1-2 decimal places, avoiding zeros
 function formatNutritionNumber(value, unit = '') {
@@ -253,7 +253,7 @@ async function openRecipeModal(recipe) {
     try {
         const ingredients = (recipe.ingredients || []).map(String);
         if (ingredients.length) {
-            const res = await fetch(NUTRITION_API, {
+            const res = await fetch(API_CONFIG.NUTRITION_API, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ingredients })
@@ -692,7 +692,7 @@ async function renderDashboardNutrition() {
     }
 }
 
-const RECIPES_API = "https://97xkjqjeuc.execute-api.ap-southeast-2.amazonaws.com/prod/recipes";
+// Note: API_CONFIG.RECIPES_API is now defined in config.js as API_CONFIG.API_CONFIG.RECIPES_API
 
 async function fetchNutrition(ingredients) {
     try {
@@ -701,7 +701,7 @@ async function fetchNutrition(ingredients) {
         // Infer labels for each ingredient (if not provided)
         normalized.forEach(it => { if (!it.label) it.label = inferLabelFromText(it.text || it.name || ''); });
 
-        const res = await fetch(NUTRITION_API, {
+        const res = await fetch(API_CONFIG.NUTRITION_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ingredients: normalized })
@@ -872,7 +872,7 @@ async function renderNutritionDashboard() {
         const recipeId = getQueryParam('id');
         if (recipeId) {
             // Step 1: fetch recipe by id
-            const url = `${RECIPES_API}?recipe_id=${encodeURIComponent(recipeId)}`;
+            const url = `${API_CONFIG.RECIPES_API}?recipe_id=${encodeURIComponent(recipeId)}`;
             const res = await fetch(url);
             if (!res.ok) throw new Error('Recipe not found');
             const data = await res.json();
@@ -938,7 +938,7 @@ async function fetchRecipes({ keyword, category, habit, diet_type, allergy_filte
     if (allergy_filter && allergy_filter !== 'all') params.append('allergy_filter', allergy_filter);
     if (limit) params.append('limit', limit);
     if (nextToken) params.append('next_token', nextToken);
-    const url = `${RECIPES_API}?${params.toString()}`;
+    const url = `${API_CONFIG.RECIPES_API}?${params.toString()}`;
     // 8s timeout handling (backend sometimes slower) -> more tolerant
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
@@ -1206,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (!recipe || !Array.isArray(recipe.ingredients) || !Array.isArray(recipe.directions)) {
                 // Fetch details if missing
-                const res = await fetch(`${RECIPES_API}?recipe_id=${encodeURIComponent(id)}`);
+                const res = await fetch(`${API_CONFIG.RECIPES_API}?recipe_id=${encodeURIComponent(id)}`);
                 if (!res.ok) return alert('Failed to load recipe details');
                 const data = await res.json();
                 recipe = (data.items && data.items[0]) || {};

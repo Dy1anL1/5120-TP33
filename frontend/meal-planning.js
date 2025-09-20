@@ -2,9 +2,7 @@
 // Designed for users aged 55-65 with comprehensive preference questionnaire
 
 // Configuration
-const API_URL = 'https://97xkjqjeuc.execute-api.ap-southeast-2.amazonaws.com/prod/recipes';
-const STORAGE_KEY = 'weeklyMealPlan';
-const PREFERENCES_KEY = 'mealPlanPreferences';
+// Note: API endpoints and other configs are now defined in config.js
 
 // Global state
 let currentStep = 1;
@@ -139,7 +137,7 @@ async function calculateNutrition(ingredients, servings = 1) {
             label: 'fresh'
         }));
 
-        const response = await fetch(NUTRITION_API, {
+        const response = await fetch(API_CONFIG.NUTRITION_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ingredients: normalized }),
@@ -168,16 +166,19 @@ async function calculateNutrition(ingredients, servings = 1) {
         }
 
         const sum = data.summary_100g_sum;
+        // NOTE: Backend returns TOTAL recipe nutrition in summary_100g_sum
+        // Store the total values - do NOT divide by servings here
+        // Servings division should be done at display time
         const nutrition = {
-            calories: Math.round((sum.calories || sum.energy_kcal || sum.energy || 0) / servings),
-            protein_g: Math.round((sum.protein_g || sum.protein || 0) / servings),
-            carbs_g: Math.round((sum.carbohydrates || sum.carbohydrate_g || sum.carbohydrate || sum.carbs_g || sum.carbs || 0) / servings),
-            fat_g: Math.round((sum.total_fat || sum.fat_g || sum.fat || 0) / servings),
-            sodium_mg: Math.round((sum.sodium_mg || sum.sodium || 0) / servings),
+            calories: Math.round(sum.calories || sum.energy_kcal || sum.energy || 0),
+            protein_g: Math.round(sum.protein_g || sum.protein || 0),
+            carbs_g: Math.round(sum.carbohydrates || sum.carbohydrate_g || sum.carbohydrate || sum.carbs_g || sum.carbs || 0),
+            fat_g: Math.round(sum.total_fat || sum.fat_g || sum.fat || 0),
+            sodium_mg: Math.round(sum.sodium_mg || sum.sodium || 0),
             // Keep backward compatibility
-            protein: Math.round((sum.protein_g || sum.protein || 0) / servings),
-            carbs: Math.round((sum.carbohydrates || sum.carbohydrate_g || sum.carbohydrate || sum.carbs_g || sum.carbs || 0) / servings),
-            fat: Math.round((sum.total_fat || sum.fat_g || sum.fat || 0) / servings)
+            protein: Math.round(sum.protein_g || sum.protein || 0),
+            carbs: Math.round(sum.carbohydrates || sum.carbohydrate_g || sum.carbohydrate || sum.carbs_g || sum.carbs || 0),
+            fat: Math.round(sum.total_fat || sum.fat_g || sum.fat || 0)
         };
 
         // Cache the result
@@ -273,13 +274,13 @@ const questionnaireSteps = [
                 required: true,
                 options: [
                     { value: "breakfast", text: "Breakfast" },
+                    { value: "brunch", text: "Brunch" },
                     { value: "lunch", text: "Lunch" },
                     { value: "dinner", text: "Dinner" },
-                    { value: "brunch", text: "Brunch" },
                     { value: "snack", text: "Snack" },
-                    { value: "side", text: "Side Dish" },
                     { value: "starter", text: "Starter" },
-                    { value: "main", text: "Main Course" }
+                    { value: "main", text: "Main Course" },
+                    { value: "side", text: "Side Dish" }
                 ],
                 validation: {
                     minSelected: 2,
@@ -336,7 +337,7 @@ const questionnaireSteps = [
                     { value: "1500-1800", text: "1500-1800 calories (Women's standard needs)" },
                     { value: "1800-2200", text: "1800-2200 calories (Men's standard needs)" }
                 ]
-            },
+            }/*,
             {
                 id: "nutrition_priorities",
                 label: "Nutrition Priorities (Select all that apply)",
@@ -350,8 +351,7 @@ const questionnaireSteps = [
                     { value: "calcium_rich", text: "Calcium Rich" },
                     { value: "vitamin_d", text: "Vitamin D" }
                 ]
-            }
-            /*,
+            },
             {
                 id: "health_conditions",
                 label: "Health Considerations (Optional)",
@@ -382,12 +382,12 @@ document.addEventListener('DOMContentLoaded', async function () {
 // Load saved user preferences from localStorage
 async function loadUserPreferences() {
     try {
-        const saved = localStorage.getItem(PREFERENCES_KEY);
+        const saved = localStorage.getItem(API_CONFIG.STORAGE_KEYS.MEAL_PLAN_PREFERENCES);
         if (saved) {
             userPreferences = JSON.parse(saved);
 
             // Check if we have a saved plan and preferences are complete
-            const savedPlan = localStorage.getItem(STORAGE_KEY);
+            const savedPlan = localStorage.getItem(API_CONFIG.STORAGE_KEYS.WEEKLY_MEAL_PLAN);
             if (savedPlan && isPreferencesComplete()) {
                 weeklyPlan = JSON.parse(savedPlan);
                 await showWeeklyPlan();
@@ -405,7 +405,7 @@ async function loadUserPreferences() {
 // Save user preferences to localStorage
 function saveUserPreferences() {
     try {
-        localStorage.setItem(PREFERENCES_KEY, JSON.stringify(userPreferences));
+        localStorage.setItem(API_CONFIG.STORAGE_KEYS.MEAL_PLAN_PREFERENCES, JSON.stringify(userPreferences));
     } catch (error) {
         console.error('Error saving preferences:', error);
     }
@@ -533,8 +533,8 @@ function getQuestionHint(question) {
         meal_preferences: "Choose the types of meals you'd like in your weekly plan",
         diet_types: "Select any dietary preferences you follow",
         allergies: "Select any foods you need to avoid due to allergies",
-        nutrition_priorities: "Select nutrition goals that are important to you",
-        /*health_conditions: "Optional: Help us customize recommendations for your health needs"*/
+        /*nutrition_priorities: "Select nutrition goals that are important to you",
+        health_conditions: "Optional: Help us customize recommendations for your health needs"*/
     };
     return hints[question.id] || '';
 }
@@ -796,7 +796,7 @@ async function generateMealPlan() {
         };
 
         // Save to localStorage
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(weeklyPlan));
+        localStorage.setItem(API_CONFIG.STORAGE_KEYS.WEEKLY_MEAL_PLAN, JSON.stringify(weeklyPlan));
 
         // Complete progress
         updateProgress(totalSteps, totalSteps, 'Meal plan ready!');
@@ -821,6 +821,10 @@ async function generateDayMeals(day) {
         try {
             const recipe = await fetchRandomRecipe(mealType);
             if (recipe) {
+                // Calculate nutrition for this recipe
+                console.log(`Calculating nutrition for ${recipe.title}...`);
+                const nutrition = await calculateNutrition(recipe.ingredients || [], 1); // Get total recipe nutrition
+                recipe.nutrition = nutrition; // Add nutrition data to recipe
                 meals[mealType] = recipe;
             } else {
                 console.warn(`No recipe found for ${mealType} on ${day} - API may be returning errors`);
@@ -847,6 +851,10 @@ async function generateDayMealsWithProgress(day, selectedMealTypes, baseStep, to
         try {
             const recipe = await fetchRandomRecipe(mealType);
             if (recipe) {
+                // Calculate nutrition for this recipe
+                console.log(`Calculating nutrition for ${recipe.title} (${mealType} for ${day})...`);
+                const nutrition = await calculateNutrition(recipe.ingredients || [], 1); // Get total recipe nutrition
+                recipe.nutrition = nutrition; // Add nutrition data to recipe
                 meals[mealType] = recipe;
             } else {
                 console.warn(`No recipe found for ${mealType} on ${day} - API may be returning errors`);
@@ -943,7 +951,7 @@ async function fetchRandomRecipe(mealType) {
         for (let i = 0; i < searchStrategies.length; i++) {
             try {
                 const params = searchStrategies[i]();
-                const url = `${API_URL}?${params.toString()}`;
+                const url = `${API_CONFIG.RECIPES_API}?${params.toString()}`;
                 console.log(`Fetching recipes (strategy ${i + 1}):`, url);
 
                 const response = await fetch(url);
@@ -1011,7 +1019,7 @@ async function fetchRandomRecipe(mealType) {
         // Fallback strategy: try to find recipes from broader search
         console.log(`Fallback: Trying broader search for ${mealType}`);
         try {
-            const fallbackResponse = await fetch(`${API_URL}?limit=100`);
+            const fallbackResponse = await fetch(`${API_CONFIG.RECIPES_API}?limit=100`);
             if (fallbackResponse.ok) {
                 const fallbackData = await fallbackResponse.json();
                 const suitableRecipes = fallbackData.items.filter(recipe => {
@@ -1336,6 +1344,8 @@ function filterRecipesByPreferences(recipes) {
         }
 
         // Check nutrition priorities (flexible matching - may not all be available)
+        // Commented out since nutrition_priorities was removed from questionnaire
+        /*
         if (userPreferences.nutrition_priorities && userPreferences.nutrition_priorities.length > 0) {
             // For nutrition priorities, we use a more flexible approach since not all may have direct tags
             let hasAnyNutritionMatch = false;
@@ -1413,6 +1423,7 @@ function filterRecipesByPreferences(recipes) {
                 return false;
             }
         }
+        */
 
         // Check health considerations (if available in database)
         if (userPreferences.health_considerations && userPreferences.health_considerations.length > 0) {
@@ -1490,7 +1501,12 @@ async function renderWeeklyDays() {
 
         let mealsHTML = '';
         if (Object.keys(dayMeals).length > 0) {
-            const mealPromises = Object.entries(dayMeals).map(([mealType, recipe]) =>
+            // Sort meals by predefined order instead of object key order
+            const sortedMealEntries = API_CONFIG.MEAL_TYPE_ORDER
+                .filter(mealType => dayMeals.hasOwnProperty(mealType))
+                .map(mealType => [mealType, dayMeals[mealType]]);
+
+            const mealPromises = sortedMealEntries.map(([mealType, recipe]) =>
                 renderLargeRecipeCard(mealType, recipe)
             );
             const mealCards = await Promise.all(mealPromises);
@@ -1534,13 +1550,14 @@ async function renderLargeRecipeCard(mealType, recipe) {
         `;
     }
 
-    // Use recipe's existing nutrition data
+    // Use recipe's existing nutrition data and calculate per-serving values
     const nutrition = recipe.nutrition || {};
+    const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
     const nutritionInfo = `<div class="recipe-nutrition-info">
-        <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber(nutrition.calories || 0)}</span>
-        <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber(nutrition.protein_g || 0, 'g')}</span>
-        <span class="nutrition-item"><strong>Carbs:</strong> ${formatNutritionNumber(nutrition.carbs_g || 0, 'g')}</span>
-        <span class="nutrition-item"><strong>Sodium:</strong> ${formatNutritionNumber(nutrition.sodium_mg || 0, 'mg')}</span>
+        <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)}</span>
+        <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber((nutrition.protein_g || 0) / servings, 'g')}</span>
+        <span class="nutrition-item"><strong>Carbs:</strong> ${formatNutritionNumber((nutrition.carbs_g || 0) / servings, 'g')}</span>
+        <span class="nutrition-item"><strong>Sodium:</strong> ${formatNutritionNumber((nutrition.sodium_mg || 0) / servings, 'mg')}</span>
     </div>`;
 
     // Image handling (same as explore-recipes)
@@ -1576,13 +1593,14 @@ async function renderMealCard(mealType, recipe) {
         `;
     }
 
-    // Use recipe's existing nutrition data
+    // Use recipe's existing nutrition data and calculate per-serving values
     const nutrition = recipe.nutrition || {};
+    const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
     const nutritionInfo = `<div class="recipe-nutrition-info">
-        <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber(nutrition.calories || 0)}</span>
-        <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber(nutrition.protein_g || 0, 'g')}</span>
-        <span class="nutrition-item"><strong>Carbs:</strong> ${formatNutritionNumber(nutrition.carbs_g || 0, 'g')}</span>
-        <span class="nutrition-item"><strong>Sodium:</strong> ${formatNutritionNumber(nutrition.sodium_mg || 0, 'mg')}</span>
+        <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)}</span>
+        <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber((nutrition.protein_g || 0) / servings, 'g')}</span>
+        <span class="nutrition-item"><strong>Carbs:</strong> ${formatNutritionNumber((nutrition.carbs_g || 0) / servings, 'g')}</span>
+        <span class="nutrition-item"><strong>Sodium:</strong> ${formatNutritionNumber((nutrition.sodium_mg || 0) / servings, 'mg')}</span>
     </div>`;
 
     // Image handling (same as explore-recipes)
@@ -1741,7 +1759,7 @@ function openModal() {
 async function openRecipeModal(recipeId) {
     try {
         // Fetch recipe details
-        const response = await fetch(`${API_URL}?recipe_id=${recipeId}`);
+        const response = await fetch(`${API_CONFIG.RECIPES_API}?recipe_id=${recipeId}`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -1806,24 +1824,26 @@ async function openRecipeModal(recipeId) {
             }
         }
 
-        // Show nutrition info
+        // Show nutrition info (per serving)
         if (sumEl && recipe.nutrition) {
             const nutrition = recipe.nutrition;
+            const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
             sumEl.innerHTML = `
                 <div class="nutrition-grid">
                     <div class="nutrition-item">
-                        <strong>Calories:</strong> ${formatNutritionNumber(nutrition.calories || 0)}
+                        <strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)} <span class="serving-note">(per serving)</span>
                     </div>
                     <div class="nutrition-item">
-                        <strong>Protein:</strong> ${formatNutritionNumber(nutrition.protein_g || 0, 'g')}
+                        <strong>Protein:</strong> ${formatNutritionNumber((nutrition.protein_g || 0) / servings, 'g')} <span class="serving-note">(per serving)</span>
                     </div>
                     <div class="nutrition-item">
-                        <strong>Carbs:</strong> ${formatNutritionNumber(nutrition.carbs_g || 0, 'g')}
+                        <strong>Carbs:</strong> ${formatNutritionNumber((nutrition.carbs_g || 0) / servings, 'g')} <span class="serving-note">(per serving)</span>
                     </div>
                     <div class="nutrition-item">
-                        <strong>Sodium:</strong> ${formatNutritionNumber(nutrition.sodium_mg || 0, 'mg')}
+                        <strong>Sodium:</strong> ${formatNutritionNumber((nutrition.sodium_mg || 0) / servings, 'mg')} <span class="serving-note">(per serving)</span>
                     </div>
                 </div>
+                <div class="recipe-servings-info" style="margin-top: 0.5rem; font-size: 0.9em; color: #666;">Recipe serves ${servings} people</div>
             `;
         }
 
@@ -1881,15 +1901,17 @@ function generateWeeklySummary(weeklyPlan) {
     let totalSodium = 0;
     let totalMeals = 0;
 
-    // Calculate totals from all meals
+    // Calculate totals from all meals (convert to per-serving values)
     weeklyPlan.days.forEach(day => {
         ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
             const recipe = day.meals[mealType];
             if (recipe && recipe.nutrition) {
-                totalCalories += recipe.nutrition.calories || 0;
-                totalProtein += recipe.nutrition.protein_g || 0;
-                totalCarbs += recipe.nutrition.carbs_g || 0;
-                totalSodium += recipe.nutrition.sodium_mg || 0;
+                const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+                // Convert total recipe nutrition to per-serving values
+                totalCalories += (recipe.nutrition.calories || 0) / servings;
+                totalProtein += (recipe.nutrition.protein_g || 0) / servings;
+                totalCarbs += (recipe.nutrition.carbs_g || 0) / servings;
+                totalSodium += (recipe.nutrition.sodium_mg || 0) / servings;
                 totalMeals++;
             }
         });

@@ -1334,6 +1334,22 @@ h6 { font-size: 1.4rem; }
     background: rgba(76, 175, 80, 0.9);
 }
 
+.meal-type-badge.brunch {
+    background: rgba(255, 193, 7, 0.9);
+}
+
+.meal-type-badge.side {
+    background: rgba(96, 125, 139, 0.9);
+}
+
+.meal-type-badge.starter {
+    background: rgba(63, 81, 181, 0.9);
+}
+
+.meal-type-badge.main {
+    background: rgba(233, 30, 99, 0.9);
+}
+
 .recipe-card-content {
     padding: 1.5rem;
 }
