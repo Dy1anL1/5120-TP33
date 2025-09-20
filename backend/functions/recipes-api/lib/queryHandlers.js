@@ -182,11 +182,13 @@ async function handleGeneralScan(params) {
  */
 async function handleFacetsQuery() {
   try {
+    const { VALID_CATEGORIES, VALID_HABITS, VALID_ALLERGY_FILTERS } = require('../config/constants');
+
     const facets = {
-      categories: ['breakfast', 'lunch', 'dinner', 'dessert', 'soup', 'salad', 'snack', 'beverage'],
-      diet_types: ['vegetarian', 'vegan', 'low_sugar', 'low_sodium', 'heart_healthy', 'diabetic_friendly', 'soft_food'],
-      allergy_filters: ['dairy_free', 'gluten_free', 'nut_free', 'seafood_free', 'soy_free', 'fish_free', 'shellfish_free', 'egg_free'],
-      habits: ['vegetarian', 'vegan', 'dairy_free', 'egg_free', 'gluten_free', 'nut_free', 'seafood_free', 'soy_free', 'fish_free', 'shellfish_free', 'contains_meat', 'contains_dairy', 'contains_eggs', 'contains_gluten', 'contains_nuts', 'contains_seafood', 'contains_soy', 'low_sugar', 'low_sodium', 'diabetic_friendly', 'heart_healthy', 'soft_food']
+      categories: VALID_CATEGORIES.filter(cat => cat !== 'all'),
+      diet_types: VALID_HABITS.filter(habit => habit !== 'all'),
+      allergy_filters: VALID_ALLERGY_FILTERS.filter(filter => filter !== 'all'),
+      habits: [...VALID_HABITS.filter(habit => habit !== 'all'), ...VALID_ALLERGY_FILTERS.filter(filter => filter !== 'all')]
     };
 
     return createResponse(200, facets);

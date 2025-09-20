@@ -20,29 +20,20 @@ const CORS_HEADERS = {
   'Content-Type': 'application/json'
 };
 
-// Diet and allergy tag definitions
-const DIET_TAGS = {
-  MEAT: ["meat", "chicken", "beef", "pork", "bacon", "lamb", "ham", "turkey", "fish", "tuna", "salmon", "shrimp", "anchovy", "gelatin"],
-  DAIRY: ["milk", "cheese", "butter", "cream", "yogurt", "whey", "ghee"],
-  EGGS: ["egg", "eggs", "albumen", "mayonnaise"],
-  GLUTEN: ["wheat", "flour", "bread", "pasta", "noodle", "semolina", "barley", "rye", "cracker", "beer"],
-  NUTS: ["peanut", "almond", "walnut", "pecan", "cashew", "hazelnut", "pistachio", "macadamia"],
-  SUGAR: ["sugar", "syrup", "honey", "molasses", "fructose", "glucose", "corn syrup"],
-  SEAFOOD: ["fish", "salmon", "tuna", "cod", "bass", "tilapia", "shrimp", "crab", "lobster", "shellfish"],
-  SOY: ["soy", "soy sauce", "tofu", "tempeh", "miso", "edamame"]
-};
+// Valid filter options based on actual data in recipes_processed.json
+const VALID_CATEGORIES = [
+  'all', 'breakfast', 'lunch', 'dinner', 'brunch', 'snack', 'side', 'starter', 'main'
+];
 
-// Category keywords
-const CATEGORY_KEYWORDS = {
-  DESSERT: ["cake", "cookie", "brownie", "pie", "pudding", "mousse", "tart", "frosting"],
-  SOUP: ["soup", "broth", "chowder", "bisque"],
-  SALAD: ["salad"],
-  BEVERAGE: ["smoothie", "juice", "latte", "milkshake", "punch", "lemonade", "drink"],
-  BREAKFAST: ["pancake", "waffle", "oatmeal", "cereal", "muffin", "granola", "omelet", "breakfast", "toast", "bagel", "eggs", "brunch"],
-  SNACK: ["dip", "nacho", "popcorn", "bar"],
-  MAIN_DISH: ["casserole", "stew", "roast", "pasta", "rice", "noodle", "chicken", "beef", "pork", "fish"],
-  SOFT_FOOD: ["soup", "puree", "mashed", "smooth", "creamy", "soft", "yogurt", "pudding"]
-};
+// Diet and lifestyle habits (excluding allergy filters)
+const VALID_HABITS = [
+  'all', 'vegetarian', 'vegan', 'keto', 'pescatarian', 'kosher', 'raw', 'low_sugar', 'low_sodium', 'healthyish'
+];
+
+// Allergy-specific filters (both old uppercase and new lowercase formats)
+const VALID_ALLERGY_FILTERS = [
+  'all', 'dairy_free', 'gluten_free', 'nut_free', 'soy_free', 'egg_free', 'fish_free', 'shellfish_free'
+];
 
 module.exports = {
   REGION,
@@ -50,6 +41,7 @@ module.exports = {
   GSI_TITLE_PREFIX,
   LIMITS,
   CORS_HEADERS,
-  DIET_TAGS,
-  CATEGORY_KEYWORDS
+  VALID_CATEGORIES,
+  VALID_HABITS,
+  VALID_ALLERGY_FILTERS
 };

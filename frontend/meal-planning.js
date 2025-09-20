@@ -257,11 +257,13 @@ const questionnaireSteps = [
                 options: [
                     { value: "vegetarian", text: "Vegetarian" },
                     { value: "vegan", text: "Vegan" },
+                    { value: "keto", text: "Keto" },
+                    { value: "pescatarian", text: "Pescatarian" },
+                    { value: "kosher", text: "Kosher" },
+                    { value: "raw", text: "Raw Food" },
                     { value: "low_sugar", text: "Low-Sugar" },
                     { value: "low_sodium", text: "Low-Sodium" },
-                    { value: "heart_healthy", text: "Heart-Healthy" },
-                    { value: "diabetic_friendly", text: "Diabetic-Friendly" },
-                    { value: "soft_food", text: "Soft Food" }
+                    { value: "healthyish", text: "Healthy" }
                 ]
             },
             {
@@ -273,8 +275,11 @@ const questionnaireSteps = [
                     { value: "breakfast", text: "Breakfast" },
                     { value: "lunch", text: "Lunch" },
                     { value: "dinner", text: "Dinner" },
-                    { value: "soup", text: "Soup" },
-                    { value: "salad", text: "Salad" }
+                    { value: "brunch", text: "Brunch" },
+                    { value: "snack", text: "Snack" },
+                    { value: "side", text: "Side Dish" },
+                    { value: "starter", text: "Starter" },
+                    { value: "main", text: "Main Course" }
                 ],
                 validation: {
                     minSelected: 2,
@@ -345,7 +350,8 @@ const questionnaireSteps = [
                     { value: "calcium_rich", text: "Calcium Rich" },
                     { value: "vitamin_d", text: "Vitamin D" }
                 ]
-            },
+            }
+            /*,
             {
                 id: "health_conditions",
                 label: "Health Considerations (Optional)",
@@ -358,7 +364,7 @@ const questionnaireSteps = [
                     { value: "osteoporosis", text: "Osteoporosis" },
                     { value: "arthritis", text: "Arthritis" }
                 ]
-            }
+            }*/
         ]
     }
 ];
@@ -528,7 +534,7 @@ function getQuestionHint(question) {
         diet_types: "Select any dietary preferences you follow",
         allergies: "Select any foods you need to avoid due to allergies",
         nutrition_priorities: "Select nutrition goals that are important to you",
-        health_conditions: "Optional: Help us customize recommendations for your health needs"
+        /*health_conditions: "Optional: Help us customize recommendations for your health needs"*/
     };
     return hints[question.id] || '';
 }

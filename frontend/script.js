@@ -1508,7 +1508,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         card._recipe = r;
                         // Group tags into 3 types
                         const habits = r.habits || [];
-                        const dietTags = habits.filter(h => ['vegetarian', 'vegan', 'low_sugar', 'low_sodium', 'heart_healthy', 'diabetic_friendly', 'soft_food'].includes(h))
+                        const dietTags = habits.filter(h => ['vegetarian', 'vegan', 'keto', 'pescatarian', 'kosher', 'raw', 'low_sugar', 'low_sodium', 'healthyish'].includes(h))
                             .map(h => `<span class="tag diet-tag">${h}</span>`).join('');
                         const allergyTags = habits.filter(h => ['dairy_free', 'gluten_free', 'nut_free', 'shellfish_free', 'egg_free', 'soy_free', 'fish_free'].includes(h))
                             .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');
@@ -1596,7 +1596,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 card.setAttribute('data-id', r.recipe_id || r.id || '');
                                 card._recipe = r;
                                 const habits = r.habits || [];
-                                const dietTags = habits.filter(h => ['vegetarian', 'vegan', 'low_sugar', 'low_sodium', 'heart_healthy', 'diabetic_friendly', 'soft_food'].includes(h))
+                                const dietTags = habits.filter(h => ['vegetarian', 'vegan', 'keto', 'pescatarian', 'kosher', 'raw', 'low_sugar', 'low_sodium', 'healthyish'].includes(h))
                                     .map(h => `<span class="tag diet-tag">${h}</span>`).join('');
                                 const allergyTags = habits.filter(h => ['dairy_free', 'gluten_free', 'nut_free', 'shellfish_free', 'egg_free', 'soy_free', 'fish_free'].includes(h))
                                     .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');

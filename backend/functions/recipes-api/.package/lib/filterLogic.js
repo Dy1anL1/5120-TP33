@@ -113,24 +113,22 @@ function hasAnyFilter(params) {
  * Validate filter parameters
  */
 function validateFilters(params) {
+  const { VALID_CATEGORIES, VALID_HABITS, VALID_ALLERGY_FILTERS } = require('../config/constants');
   const errors = [];
 
   // Check for valid category values
-  const validCategories = ['all', 'breakfast', 'lunch', 'dinner', 'dessert', 'soup', 'salad', 'snack', 'beverage'];
-  if (params.category && !validCategories.includes(params.category)) {
-    errors.push(`Invalid category: ${params.category}`);
+  if (params.category && !VALID_CATEGORIES.includes(params.category)) {
+    errors.push(`Invalid category: ${params.category}. Valid options: ${VALID_CATEGORIES.join(', ')}`);
   }
 
-  // Check for valid diet types
-  const validDietTypes = ['all', 'vegetarian', 'vegan', 'low_sugar', 'low_sodium', 'heart_healthy', 'diabetic_friendly', 'soft_food'];
-  if (params.diet_type && !validDietTypes.includes(params.diet_type)) {
-    errors.push(`Invalid diet_type: ${params.diet_type}`);
+  // Check for valid diet types (habits)
+  if (params.diet_type && !VALID_HABITS.includes(params.diet_type)) {
+    errors.push(`Invalid diet_type: ${params.diet_type}. Valid options: ${VALID_HABITS.join(', ')}`);
   }
 
   // Check for valid allergy filters
-  const validAllergyFilters = ['all', 'dairy_free', 'gluten_free', 'nut_free', 'seafood_free', 'soy_free', 'fish_free', 'shellfish_free', 'egg_free'];
-  if (params.allergy_filter && !validAllergyFilters.includes(params.allergy_filter)) {
-    errors.push(`Invalid allergy_filter: ${params.allergy_filter}`);
+  if (params.allergy_filter && !VALID_ALLERGY_FILTERS.includes(params.allergy_filter)) {
+    errors.push(`Invalid allergy_filter: ${params.allergy_filter}. Valid options: ${VALID_ALLERGY_FILTERS.join(', ')}`);
   }
 
   return errors;
