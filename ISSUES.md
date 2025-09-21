@@ -1,8 +1,53 @@
 # Technical Issues & Improvements
 
+## ✅ COMPLETED (Recently Fixed)
+
+### Frontend: API Endpoint Inconsistencies
+
+- **Issue**: Different API endpoints defined in script.js and meal-planning.js
+- **Impact**: Configuration conflicts and maintenance issues
+- **Fix**: **COMPLETED** - Created unified config.js file
+- **Status**: Fixed with unified API_CONFIG system
+
+### Frontend: Modal Design Consistency
+
+- **Issue**: Weekly Meal Plan modal design inconsistent with Explore Healthy Recipes modal
+- **Impact**: Inconsistent user experience, smaller images and different nutrition summary layout
+- **Fix**: **COMPLETED** - Updated meal-planning modal to match explore-recipes design
+- **Status**: Both modals now have consistent image sizing and nutrition card layout
+
+### Backend: Duplicate Recipe Prevention
+
+- **Issue**: Same recipe appearing multiple times in search/filter results
+- **Impact**: Poor user experience and limited recipe variety
+- **Fix**: **COMPLETED** - Implemented duplicate prevention in both frontend and backend
+- **Status**: Added Set-based deduplication in all query handlers and frontend display logic
+
+### Backend: Lambda Timeout Issues
+
+- **Issue**: Functions timing out at 3 seconds causing 500 errors
+- **Impact**: Recipe searches and meal plan generation failing
+- **Fix**: **COMPLETED** - Fixed const variable assignment errors and improved query logic
+- **Status**: Resolved infinite loops and variable assignment errors in DynamoDB scan operations
+
+### Frontend: Nutrition Data Priority System
+
+- **Issue**: Recipes with poor or missing nutrition data being selected equally
+- **Impact**: Inconsistent nutrition information in meal plans
+- **Fix**: **COMPLETED** - Advanced nutrition quality scoring system already implemented
+- **Status**: System prioritizes recipes with better nutrition data quality (top 50% selection)
+
+### Frontend: Modal Container Overflow
+
+- **Issue**: Recipe nutrition info could overflow container boundaries
+- **Impact**: Poor user experience on smaller screens
+- **Fix**: **COMPLETED** - Improved responsive design and container sizing
+- **Status**: Added responsive breakpoints, word wrapping, and increased modal max-width to 1400px
+
 ## 🔴 HIGH PRIORITY (Fix Immediately)
 
 ### Backend: Nutrition Calculation Accuracy
+
 - **Issue**: Overly aggressive sodium adjustment logic may cause inaccurate nutrition values
   - Current: `if (n > 10000) n = n / 100` (divides by 100)
   - Current: `if (n > 5000) n = n / 20` (divides by 20)
@@ -13,31 +58,35 @@
 ## 🟡 MEDIUM PRIORITY (Important Improvements)
 
 ### Frontend: LocalStorage Error Handling
+
 - **Issue**: localStorage operations missing try-catch blocks
 - **Impact**: App crashes in privacy mode or when storage quota exceeded
 - **Fix**: Create safe localStorage wrapper functions
 - **Priority**: 🟡 Medium
 
 ### Backend: Performance Optimization
+
 - **Issue**: recipes-api uses table scan operations instead of GSI queries
 - **Impact**: Slow response times for large datasets
 - **Fix**: Implement GSI queries for title search optimization
 - **Priority**: 🟡 Medium
 
-
 ## 🟢 LOW PRIORITY (Nice to Have)
 
 ### Backend: Monitoring & Metrics
+
 - **Issue**: No performance monitoring or error tracking
 - **Fix**: Add CloudWatch metrics and error monitoring
 - **Priority**: 🟢 Low
 
 ### Frontend: State Management
+
 - **Issue**: Inconsistent state management across pages
 - **Fix**: Implement centralized state management system
 - **Priority**: 🟢 Low
 
 ### Backend: Caching Layer
+
 - **Issue**: No caching for frequent queries
 - **Fix**: Add Redis or DynamoDB DAX caching
 - **Priority**: 🟢 Low
@@ -47,6 +96,7 @@
 # Future Enhancements
 
 ## Pescatarian Diet Support
+
 - **Feature**: Re-enable Pescatarian diet option when sufficient recipes are available
 - **Current Status**: Temporarily disabled due to only 1 recipe in database
 - **Implementation**:
@@ -58,6 +108,7 @@
 - **Priority**: Low (content expansion needed first)
 
 ## Allergic Ingredient Filtering
+
 - **Feature**: Add functionality to filter out recipes containing ingredients that users are allergic to
 - **Implementation**:
   - Add user allergy preferences to user profile/settings
