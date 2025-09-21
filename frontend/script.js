@@ -929,7 +929,8 @@ if (window.location.pathname.includes('nutrition-dashboard')) {
     });
 }
 
-async function fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit = 10, nextToken = null }) {
+async function fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit = 10, nextToken = null }, retryCount = 0) {
+    const maxRetries = 2;
     const params = new URLSearchParams();
     if (keyword) params.append('title_prefix', keyword);
     if (category && category !== 'all') params.append('category', category);
@@ -939,19 +940,35 @@ async function fetchRecipes({ keyword, category, habit, diet_type, allergy_filte
     if (limit) params.append('limit', limit);
     if (nextToken) params.append('next_token', nextToken);
     const url = `${API_CONFIG.RECIPES_API}?${params.toString()}`;
-    // 8s timeout handling (backend sometimes slower) -> more tolerant
+    // Progressive timeout: longer timeout for retries
+    const timeoutMs = 15000 + (retryCount * 5000);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     let res;
     try {
         res = await fetch(url, { signal: controller.signal });
     } catch (e) {
-        if (e.name === 'AbortError') throw new Error('Search timeout, please try again.');
+        clearTimeout(timeout);
+        if (e.name === 'AbortError') {
+            if (retryCount < maxRetries) {
+                console.log(`Request timeout, retrying (${retryCount + 1}/${maxRetries + 1})...`);
+                await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Progressive delay
+                return fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit, nextToken }, retryCount + 1);
+            }
+            throw new Error('Search timeout after retries, please try again.');
+        }
         throw e;
     } finally {
         clearTimeout(timeout);
     }
     if (!res.ok) {
+        // Retry on 500 errors (server issues)
+        if (res.status >= 500 && retryCount < maxRetries) {
+            console.log(`Server error ${res.status}, retrying (${retryCount + 1}/${maxRetries + 1})...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Progressive delay
+            return fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit, nextToken }, retryCount + 1);
+        }
+
         const txt = await res.text().catch(() => res.statusText || '');
         const message = `Recipes API ${res.status} ${res.statusText} ${txt ? '- ' + txt.slice(0, 120) : ''}`;
         const err = new Error(message);
@@ -1469,12 +1486,17 @@ document.addEventListener('DOMContentLoaded', function () {
             let filteredItems = items;
 
             // Remove duplicates and already displayed recipes
+            const originalCount = filteredItems.length;
             filteredItems = filteredItems.filter(r => {
                 if (displayedRecipeIds.has(r.recipe_id)) {
                     return false; // Skip already displayed recipes
                 }
                 return true;
             });
+            const duplicatesFiltered = originalCount - filteredItems.length;
+            if (duplicatesFiltered > 0) {
+                console.log(`Filtered out ${duplicatesFiltered} duplicate recipes. Showing ${filteredItems.length} new recipes.`);
+            }
 
             // Strict category match: only show recipes whose categories exactly match the selected category
             if (category && category !== 'all') {
@@ -1532,15 +1554,21 @@ document.addEventListener('DOMContentLoaded', function () {
                             `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` :
                             `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
 
+                        // Get cooking time and difficulty info
+                        const cookingTime = r.cooking_time || r.cook_time || r.total_time || r.prep_time || null;
+                        const difficulty = r.difficulty || r.level || r.skill_level || null;
+
+                        const cookingTimeHtml = cookingTime ? `<span class="recipe-info-item"><i class="fas fa-clock"></i> Time: ${cookingTime}</span>` : '';
+                        const difficultyHtml = difficulty ? `<span class="recipe-info-item"><i class="fas fa-chart-bar"></i> Difficulty: ${difficulty}</span>` : '';
+
                         card.innerHTML = `
                             ${imageHtml}
                             <div class="recipe-content">
                                 <div class="recipe-title">${r.title || ''}</div>
                                 ${nutritionInfo}
-                                <div class="recipe-tags-row">
-                                    <div class="recipe-tags diet-tags-group">${dietTags}</div>
-                                    <div class="recipe-tags allergy-tags-group">${allergyTags}</div>
-                                    <div class="recipe-tags category-tags-group">${categoryTags}</div>
+                                <div class="recipe-info-row">
+                                    ${cookingTimeHtml}
+                                    ${difficultyHtml}
                                 </div>
                             </div>
                         `;
@@ -1606,14 +1634,20 @@ document.addEventListener('DOMContentLoaded', function () {
                                     `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` :
                                     `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
 
+                                // Get cooking time and difficulty info
+                                const cookingTime = r.cooking_time || r.cook_time || r.total_time || r.prep_time || null;
+                                const difficulty = r.difficulty || r.level || r.skill_level || null;
+
+                                const cookingTimeHtml = cookingTime ? `<span class="recipe-info-item"><i class="fas fa-clock"></i> Time: ${cookingTime}</span>` : '';
+                                const difficultyHtml = difficulty ? `<span class="recipe-info-item"><i class="fas fa-chart-bar"></i> Level: ${difficulty}</span>` : '';
+
                                 card.innerHTML = `
                                         ${imageHtml}
                                         <div class="recipe-content">
                                             <div class="recipe-title">${r.title || ''}</div>
-                                            <div class="recipe-tags-row">
-                                                <div class="recipe-tags diet-tags-group">${dietTags}</div>
-                                                <div class="recipe-tags allergy-tags-group">${allergyTags}</div>
-                                                <div class="recipe-tags category-tags-group">${categoryTags}</div>
+                                            <div class="recipe-info-row">
+                                                ${cookingTimeHtml}
+                                                ${difficultyHtml}
                                             </div>
                                         </div>
                                     `;

@@ -390,6 +390,22 @@ async function loadUserPreferences() {
             const savedPlan = localStorage.getItem(API_CONFIG.STORAGE_KEYS.WEEKLY_MEAL_PLAN);
             if (savedPlan && isPreferencesComplete()) {
                 weeklyPlan = JSON.parse(savedPlan);
+                console.log('Loaded meal plan from localStorage:', weeklyPlan);
+
+                // Check if nutrition data exists in loaded plan
+                if (weeklyPlan.plan) {
+                    Object.keys(weeklyPlan.plan).forEach(day => {
+                        if (weeklyPlan.plan[day] && typeof weeklyPlan.plan[day] === 'object') {
+                            Object.keys(weeklyPlan.plan[day]).forEach(mealType => {
+                                const recipe = weeklyPlan.plan[day][mealType];
+                                if (recipe && recipe.title) {
+                                    console.log(`${day} ${mealType} (${recipe.title}) - Has nutrition:`, !!recipe.nutrition);
+                                }
+                            });
+                        }
+                    });
+                }
+
                 await showWeeklyPlan();
                 return;
             }
@@ -765,15 +781,18 @@ async function generateMealPlan() {
         await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UX
 
         // Generate plan for each day (Full week)
-        const days = ['Monday', 'Tuesday']; // Full week
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']; // Full week
         const mealPlan = {};
         const selectedMealTypes = userPreferences.meal_preferences || ['breakfast', 'lunch', 'dinner'];
         const totalSteps = days.length * selectedMealTypes.length + 2; // +2 for init and finalize
         let currentStep = 1;
 
+        // Track selected recipes to avoid duplicates
+        const selectedRecipeIds = new Set();
+
         for (const day of days) {
             updateProgress(currentStep, totalSteps, `Generating meals for ${day}...`);
-            mealPlan[day] = await generateDayMealsWithProgress(day, selectedMealTypes, currentStep, totalSteps);
+            mealPlan[day] = await generateDayMealsWithProgress(day, selectedMealTypes, currentStep, totalSteps, selectedRecipeIds);
             currentStep += selectedMealTypes.length;
         }
 
@@ -813,14 +832,17 @@ async function generateMealPlan() {
 
 
 // Generate meals for a specific day
-async function generateDayMeals(day) {
+async function generateDayMeals(day, selectedRecipeIds = new Set()) {
     const meals = {};
     const selectedMealTypes = userPreferences.meal_preferences || ['breakfast', 'lunch', 'dinner'];
 
     for (const mealType of selectedMealTypes) {
         try {
-            const recipe = await fetchRandomRecipe(mealType);
+            const recipe = await fetchRandomRecipe(mealType, selectedRecipeIds);
             if (recipe) {
+                // Add this recipe to selected set to avoid duplicates
+                selectedRecipeIds.add(recipe.recipe_id);
+
                 // Calculate nutrition for this recipe
                 console.log(`Calculating nutrition for ${recipe.title}...`);
                 const nutrition = await calculateNutrition(recipe.ingredients || [], 1); // Get total recipe nutrition
@@ -838,7 +860,7 @@ async function generateDayMeals(day) {
 }
 
 // Generate meals for a specific day with progress tracking
-async function generateDayMealsWithProgress(day, selectedMealTypes, baseStep, totalSteps) {
+async function generateDayMealsWithProgress(day, selectedMealTypes, baseStep, totalSteps, selectedRecipeIds) {
     const meals = {};
 
     for (let i = 0; i < selectedMealTypes.length; i++) {
@@ -849,11 +871,16 @@ async function generateDayMealsWithProgress(day, selectedMealTypes, baseStep, to
         updateProgress(currentStep, totalSteps, `Generating ${mealType} for ${day}...`);
 
         try {
-            const recipe = await fetchRandomRecipe(mealType);
+            const recipe = await fetchRandomRecipe(mealType, selectedRecipeIds);
             if (recipe) {
+                // Add this recipe to selected set to avoid duplicates
+                selectedRecipeIds.add(recipe.recipe_id);
+                console.log(`Selected recipe for ${day} ${mealType}: ${recipe.title} (ID: ${recipe.recipe_id})`);
+
                 // Calculate nutrition for this recipe
                 console.log(`Calculating nutrition for ${recipe.title} (${mealType} for ${day})...`);
                 const nutrition = await calculateNutrition(recipe.ingredients || [], 1); // Get total recipe nutrition
+                console.log(`Nutrition calculated for ${recipe.title}:`, nutrition);
                 recipe.nutrition = nutrition; // Add nutrition data to recipe
                 meals[mealType] = recipe;
             } else {
@@ -886,7 +913,7 @@ function getMealCategoryOptions(mealType) {
 }
 
 // Fetch a random recipe based on preferences
-async function fetchRandomRecipe(mealType) {
+async function fetchRandomRecipe(mealType, selectedRecipeIds = new Set()) {
     try {
         const categoryOptions = getMealCategoryOptions(mealType);
 
@@ -990,9 +1017,19 @@ async function fetchRandomRecipe(mealType) {
                     }
 
                     if (filteredRecipes.length > 0) {
+                        // Filter out already selected recipes to avoid duplicates
+                        const uniqueRecipes = filteredRecipes.filter(recipe => !selectedRecipeIds.has(recipe.recipe_id));
+                        console.log(`After removing duplicates: ${uniqueRecipes.length} recipes (filtered out ${filteredRecipes.length - uniqueRecipes.length} duplicates)`);
+
+                        // If no unique recipes left, try next strategy
+                        if (uniqueRecipes.length === 0) {
+                            console.log(`No unique recipes available for ${mealType} with strategy ${i + 1}, trying next strategy...`);
+                            continue;
+                        }
+
                         // Sort recipes by nutrition data quality (best first)
-                        const sortedRecipes = sortRecipesByNutritionQuality(filteredRecipes);
-                        console.log(`Sorted ${sortedRecipes.length} recipes by nutrition quality for ${mealType}`);
+                        const sortedRecipes = sortRecipesByNutritionQuality(uniqueRecipes);
+                        console.log(`Sorted ${sortedRecipes.length} unique recipes by nutrition quality for ${mealType}`);
 
                         // Prefer recipes from the top 50% (better nutrition data quality)
                         // But still include some randomness to avoid always picking the same recipe
@@ -1002,7 +1039,7 @@ async function fetchRandomRecipe(mealType) {
                         const randomIndex = Math.floor(Math.random() * topRecipes.length);
                         const selectedRecipe = topRecipes[randomIndex];
 
-                        console.log(`Selected recipe for ${mealType}: ${selectedRecipe.title} (quality score: ${selectedRecipe.nutritionQuality.score})`);
+                        console.log(`Selected recipe for ${mealType}: ${selectedRecipe.title} (ID: ${selectedRecipe.recipe_id}, quality score: ${selectedRecipe.nutritionQuality.score})`);
                         if (selectedRecipe.nutritionQuality.issues.length > 0) {
                             console.log(`Note: Recipe has potential nutrition issues:`, selectedRecipe.nutritionQuality.issues);
                         }
@@ -1553,6 +1590,8 @@ async function renderLargeRecipeCard(mealType, recipe) {
     // Use recipe's existing nutrition data and calculate per-serving values
     const nutrition = recipe.nutrition || {};
     const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+
+
     const nutritionInfo = `<div class="recipe-nutrition-info">
         <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)}</span>
         <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber((nutrition.protein_g || 0) / servings, 'g')}</span>
@@ -1824,27 +1863,43 @@ async function openRecipeModal(recipeId) {
             }
         }
 
-        // Show nutrition info (per serving)
-        if (sumEl && recipe.nutrition) {
-            const nutrition = recipe.nutrition;
-            const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
-            sumEl.innerHTML = `
-                <div class="nutrition-grid">
-                    <div class="nutrition-item">
-                        <strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)} <span class="serving-note">(per serving)</span>
+        // Show nutrition info (per serving) - calculate if not available
+        if (sumEl) {
+            let nutrition = recipe.nutrition;
+
+            // If no nutrition data, calculate it from ingredients
+            if (!nutrition && recipe.ingredients) {
+                console.log('Calculating nutrition for modal:', recipe.title);
+                try {
+                    nutrition = await calculateNutrition(recipe.ingredients, 1);
+                } catch (error) {
+                    console.error('Error calculating nutrition for modal:', error);
+                    nutrition = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0 };
+                }
+            }
+
+            if (nutrition) {
+                const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+                sumEl.innerHTML = `
+                    <div class="nutrition-grid">
+                        <div class="nutrition-item">
+                            <strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)} <span class="serving-note">(per serving)</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <strong>Protein:</strong> ${formatNutritionNumber((nutrition.protein_g || 0) / servings, 'g')} <span class="serving-note">(per serving)</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <strong>Carbs:</strong> ${formatNutritionNumber((nutrition.carbs_g || 0) / servings, 'g')} <span class="serving-note">(per serving)</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <strong>Sodium:</strong> ${formatNutritionNumber((nutrition.sodium_mg || 0) / servings, 'mg')} <span class="serving-note">(per serving)</span>
+                        </div>
                     </div>
-                    <div class="nutrition-item">
-                        <strong>Protein:</strong> ${formatNutritionNumber((nutrition.protein_g || 0) / servings, 'g')} <span class="serving-note">(per serving)</span>
-                    </div>
-                    <div class="nutrition-item">
-                        <strong>Carbs:</strong> ${formatNutritionNumber((nutrition.carbs_g || 0) / servings, 'g')} <span class="serving-note">(per serving)</span>
-                    </div>
-                    <div class="nutrition-item">
-                        <strong>Sodium:</strong> ${formatNutritionNumber((nutrition.sodium_mg || 0) / servings, 'mg')} <span class="serving-note">(per serving)</span>
-                    </div>
-                </div>
-                <div class="recipe-servings-info" style="margin-top: 0.5rem; font-size: 0.9em; color: #666;">Recipe serves ${servings} people</div>
-            `;
+                    <div class="recipe-servings-info" style="margin-top: 0.5rem; font-size: 0.9em; color: #666;">Recipe serves ${servings} people</div>
+                `;
+            } else {
+                sumEl.innerHTML = '<p style="color: #666; font-style: italic;">Nutrition information not available</p>';
+            }
         }
 
         openModal();
