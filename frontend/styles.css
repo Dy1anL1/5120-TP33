@@ -80,7 +80,7 @@ h6 {
     margin: 2rem auto;
     max-width: 95%;
     width: 100%;
-    max-width: 1200px;
+    max-width: 1400px;
     padding: 2rem;
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
@@ -1641,11 +1641,33 @@ h6 {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
+    width: 100%;
+    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    .nutri-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
 }
 
 @media (max-width: 480px) {
     .nutri-grid {
         grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .nutri-grid .card {
+        padding: 0.5rem;
+    }
+
+    .nutri-grid .key {
+        font-size: 1rem;
+    }
+
+    .nutri-grid .val {
+        font-size: 1.05rem;
     }
 }
 
@@ -1654,17 +1676,23 @@ h6 {
     border: 1px solid #e6eee6;
     border-radius: 12px;
     padding: 0.75rem;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .nutri-grid .key {
     font-size: 1.05rem;
     color: #666;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .nutri-grid .val {
     font-size: 1.1rem;
     color: #2e7d32;
     font-weight: 600;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 /* Reset default styles */
@@ -2390,7 +2418,7 @@ html {
 
 /* Specific height for meal-planning page cards */
 .weekly-days-container .recipe-card {
-    height: 700px;
+    height: 720px;
 }
 
 .recipe-card:hover {
@@ -2455,7 +2483,7 @@ html {
 }
 
 .recipe-nutrition-info {
-    margin: 1rem 0;
+    margin: 0.3rem 0;
     padding: 1rem;
     background: rgba(76, 175, 80, 0.05);
     border-radius: 8px;
@@ -2517,7 +2545,7 @@ html {
 
 
 .recipe-content {
-    padding: 25px;
+    padding: 0px;
 }
 
 .recipe-title {
