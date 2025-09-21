@@ -51,11 +51,12 @@ async function handleTitleSearch(params) {
 
   try {
     const resultLimit = validateLimit(limit, LIMITS.DEFAULT_LIMIT, LIMITS.MAX_LIMIT);
-    const lastKey = parseNextToken(next_token);
+    let lastKey = parseNextToken(next_token);
 
     let items = [];
     let scanned = 0;
     let nextTokenResult = undefined;
+    const seenRecipeIds = new Set();
 
     // Use scan since GSI is not populated
     while (items.length < resultLimit && scanned < LIMITS.MAX_SCAN_ITEMS) {
@@ -71,10 +72,20 @@ async function handleTitleSearch(params) {
       // Apply all filters including title search
       const filteredItems = applyAllFilters(normalizedItems, params);
 
-      items = items.concat(filteredItems);
+      // Remove duplicates based on recipe_id
+      const uniqueItems = filteredItems.filter(item => {
+        if (seenRecipeIds.has(item.recipe_id)) {
+          return false;
+        }
+        seenRecipeIds.add(item.recipe_id);
+        return true;
+      });
+
+      items = items.concat(uniqueItems);
       scanned += (data.Items || []).length;
 
       if (!data.LastEvaluatedKey) break;
+      lastKey = data.LastEvaluatedKey;
       nextTokenResult = encodeNextToken(data.LastEvaluatedKey);
     }
 
@@ -103,11 +114,12 @@ async function handleFilteredQuery(params) {
   try {
     const { limit, next_token } = params;
     const resultLimit = validateLimit(limit, LIMITS.DEFAULT_LIMIT, LIMITS.MAX_LIMIT);
-    const lastKey = parseNextToken(next_token);
+    let lastKey = parseNextToken(next_token);
 
     let items = [];
     let scanned = 0;
     let nextTokenResult = undefined;
+    const seenRecipeIds = new Set();
 
     // Scan with filters
     while (items.length < resultLimit && scanned < LIMITS.MAX_SCAN_ITEMS) {
@@ -123,10 +135,20 @@ async function handleFilteredQuery(params) {
       // Apply all filters
       const filteredItems = applyAllFilters(normalizedItems, params);
 
-      items = items.concat(filteredItems);
+      // Remove duplicates based on recipe_id
+      const uniqueItems = filteredItems.filter(item => {
+        if (seenRecipeIds.has(item.recipe_id)) {
+          return false;
+        }
+        seenRecipeIds.add(item.recipe_id);
+        return true;
+      });
+
+      items = items.concat(uniqueItems);
       scanned += (data.Items || []).length;
 
       if (!data.LastEvaluatedKey) break;
+      lastKey = data.LastEvaluatedKey;
       nextTokenResult = encodeNextToken(data.LastEvaluatedKey);
     }
 
@@ -167,8 +189,18 @@ async function handleGeneralScan(params) {
     const data = await ddb.send(new ScanCommand(scanParams));
     const normalizedItems = normalizeRecipes(data.Items || []);
 
+    // Remove duplicates based on recipe_id
+    const seenRecipeIds = new Set();
+    const uniqueItems = normalizedItems.filter(item => {
+      if (seenRecipeIds.has(item.recipe_id)) {
+        return false;
+      }
+      seenRecipeIds.add(item.recipe_id);
+      return true;
+    });
+
     const nextToken = encodeNextToken(data.LastEvaluatedKey);
-    const response = createPaginatedResponse(normalizedItems, normalizedItems.length, nextToken);
+    const response = createPaginatedResponse(uniqueItems, uniqueItems.length, nextToken);
 
     return createResponse(200, response);
   } catch (error) {

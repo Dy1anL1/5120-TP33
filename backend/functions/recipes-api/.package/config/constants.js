@@ -27,7 +27,7 @@ const VALID_CATEGORIES = [
 
 // Diet and lifestyle habits (excluding allergy filters)
 const VALID_HABITS = [
-  'all', 'vegetarian', 'vegan', 'keto', 'pescatarian', 'kosher', 'raw', 'low_sugar', 'low_sodium', 'healthyish'
+  'all', 'vegetarian', 'vegan', 'keto', 'kosher', 'raw', 'low_sugar', 'low_sodium', 'healthyish'
 ];
 
 // Allergy-specific filters (both old uppercase and new lowercase formats)

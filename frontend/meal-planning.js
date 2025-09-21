@@ -259,7 +259,6 @@ const questionnaireSteps = [
                     { value: "vegetarian", text: "Vegetarian" },
                     { value: "vegan", text: "Vegan" },
                     { value: "keto", text: "Keto" },
-                    { value: "pescatarian", text: "Pescatarian" },
                     { value: "kosher", text: "Kosher" },
                     { value: "raw", text: "Raw Food" },
                     { value: "low_sugar", text: "Low-Sugar" },
@@ -1734,15 +1733,15 @@ function ensureRecipeModal() {
             <h2 id="recipe-modal-title"></h2>
 
             <!-- Recipe Image -->
-            <div id="recipe-modal-image" style="text-align: center; margin-bottom: 1rem;">
-                <img id="recipe-modal-img" alt="Recipe Image" style="max-width: 100%; height: auto; border-radius: 8px; max-height: 300px;">
+            <div id="recipe-modal-image" class="modal-recipe-image" style="display:none;">
+                <img id="recipe-modal-img" src="" alt="" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;">
             </div>
             <p id="recipe-brief" class="recipe-brief"></p>
 
             <!-- Nutrition Summary (Top Section) -->
             <div class="nutrition-top-section" style="margin-bottom: 1.5rem;">
                 <h3>Nutrition Information</h3>
-                <div id="nutrition-summary" class="nutrition-summary">
+                <div id="nutrition-summary" class="nutri-grid">
                     <!-- nutrition cards inserted by JS -->
                 </div>
             </div>
@@ -1751,11 +1750,11 @@ function ensureRecipeModal() {
             <div class="modal-cols">
                 <div class="modal-col">
                     <h3>Ingredients</h3>
-                    <ul id="recipe-ingredients"></ul>
+                    <ul id="recipe-ingredients" class="ingredients-list"></ul>
                 </div>
                 <div class="modal-col">
                     <h3>Instructions</h3>
-                    <ol id="recipe-directions"></ol>
+                    <ol id="recipe-directions" class="directions-list"></ol>
                 </div>
             </div>
         </div>
@@ -1867,9 +1866,16 @@ async function openRecipeModal(recipeId) {
         if (sumEl) {
             let nutrition = recipe.nutrition;
 
-            // If no nutrition data, calculate it from ingredients
-            if (!nutrition && recipe.ingredients) {
-                console.log('Calculating nutrition for modal:', recipe.title);
+            // If no meaningful nutrition data (all zeros except maybe sodium), calculate it from ingredients
+            const hasValidNutrition = nutrition && (
+                (nutrition.calories && nutrition.calories > 0) ||
+                (nutrition.protein_g && nutrition.protein_g > 0) ||
+                (nutrition.carbs_g && nutrition.carbs_g > 0) ||
+                (nutrition.fat_g && nutrition.fat_g > 0)
+            );
+
+            if (!hasValidNutrition && recipe.ingredients) {
+                console.log('Calculating nutrition for modal (insufficient data):', recipe.title);
                 try {
                     nutrition = await calculateNutrition(recipe.ingredients, 1);
                 } catch (error) {
@@ -1879,24 +1885,38 @@ async function openRecipeModal(recipeId) {
             }
 
             if (nutrition) {
+                console.log('Recipe nutrition data:', nutrition);
                 const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
-                sumEl.innerHTML = `
-                    <div class="nutrition-grid">
-                        <div class="nutrition-item">
-                            <strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)} <span class="serving-note">(per serving)</span>
-                        </div>
-                        <div class="nutrition-item">
-                            <strong>Protein:</strong> ${formatNutritionNumber((nutrition.protein_g || 0) / servings, 'g')} <span class="serving-note">(per serving)</span>
-                        </div>
-                        <div class="nutrition-item">
-                            <strong>Carbs:</strong> ${formatNutritionNumber((nutrition.carbs_g || 0) / servings, 'g')} <span class="serving-note">(per serving)</span>
-                        </div>
-                        <div class="nutrition-item">
-                            <strong>Sodium:</strong> ${formatNutritionNumber((nutrition.sodium_mg || 0) / servings, 'mg')} <span class="serving-note">(per serving)</span>
-                        </div>
-                    </div>
-                    <div class="recipe-servings-info" style="margin-top: 0.5rem; font-size: 0.9em; color: #666;">Recipe serves ${servings} people</div>
-                `;
+                console.log('Recipe servings:', servings);
+                sumEl.innerHTML = '';
+
+                const nutritionPairs = [
+                    { key: 'calories', value: nutrition.calories || 0, unit: 'kcal', label: 'Calories' },
+                    { key: 'protein_g', value: nutrition.protein_g || 0, unit: 'g', label: 'Protein' },
+                    { key: 'carbs_g', value: nutrition.carbs_g || 0, unit: 'g', label: 'Carbs' },
+                    { key: 'fat_g', value: nutrition.fat_g || 0, unit: 'g', label: 'Fat' },
+                    { key: 'sodium_mg', value: nutrition.sodium_mg || 0, unit: 'mg', label: 'Sodium' }
+                ];
+
+                nutritionPairs.forEach(p => {
+                    const perServingValue = p.value / servings;
+                    const formattedValue = formatNutritionNumber(perServingValue, p.unit);
+                    console.log(`Nutrition debug: ${p.label} = ${p.value} / ${servings} = ${perServingValue} -> ${formattedValue}`);
+
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div class="key">${p.label}</div>
+                        <div class="val">${formattedValue}</div>
+                    `;
+                    sumEl.appendChild(card);
+                });
+
+                const servingsInfo = document.createElement('div');
+                servingsInfo.className = 'recipe-servings-info';
+                servingsInfo.style.cssText = 'margin-top: 0.5rem; font-size: 0.9em; color: #666;';
+                servingsInfo.textContent = `Recipe serves ${servings} people`;
+                sumEl.appendChild(servingsInfo);
             } else {
                 sumEl.innerHTML = '<p style="color: #666; font-style: italic;">Nutrition information not available</p>';
             }

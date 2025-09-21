@@ -46,6 +46,17 @@
 
 # Future Enhancements
 
+## Pescatarian Diet Support
+- **Feature**: Re-enable Pescatarian diet option when sufficient recipes are available
+- **Current Status**: Temporarily disabled due to only 1 recipe in database
+- **Implementation**:
+  - Add more pescatarian recipes to the database (target: 50+ recipes)
+  - Re-enable pescatarian option in frontend filters (explore-recipes.html, meal-planning.js)
+  - Add pescatarian back to backend VALID_HABITS array
+  - Update recipe tags and categorization for fish-based recipes
+- **Benefits**: Better diet diversity and pescatarian user support
+- **Priority**: Low (content expansion needed first)
+
 ## Allergic Ingredient Filtering
 - **Feature**: Add functionality to filter out recipes containing ingredients that users are allergic to
 - **Implementation**:
