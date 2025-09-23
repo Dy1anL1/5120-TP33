@@ -15,15 +15,15 @@
     <!-- Navigation Bar -->
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-logo">
+            <a href="home.html" class="nav-logo">
                 <div class="logo-icon">
                     <!-- Logo image -->
-                    <img src="logo.jpg" alt="Silver Spoon Society Logo" class="custom-logo">
+                    <img src="SliverSpoonSociety_Logo.jpg" alt="Silver Spoon Society Logo" class="custom-logo">
                 </div>
                 <div class="logo-text">
                     <h1>Silver Spoon Society</h1>
                 </div>
-            </div>
+            </a>
             <div class="nav-links">
                 <a href="home.html" class="nav-link">
                     <i class="fas fa-home"></i>
@@ -31,23 +31,23 @@
                 </a>
                 <a href="explore-recipes.html" class="nav-link">
                     <i class="fas fa-search"></i>
-                    <span>Explore Recipes</span>
+                    <span>Recipes</span>
+                </a>
+                <a href="nutrition-dashboard.html" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
                 </a>
                 <a href="daily-recommendations.html" class="nav-link">
                     <i class="fas fa-heart"></i>
-                    <span>Daily Recommendations</span>
+                    <span>Daily Tips</span>
                 </a>
                 <a href="meal-planning.html" class="nav-link">
-                    <i class="fas fa-calendar"></i>
-                    <span>Meal Planning</span>
-                </a>
-                <a href="nutrition-dashboard.html" class="nav-link">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Nutrition Dashboard</span>
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Planning</span>
                 </a>
                 <a href="shopping-list.html" class="nav-link active">
                     <i class="fas fa-shopping-cart"></i>
-                    <span>Shopping List</span>
+                    <span>Shopping</span>
                 </a>
             </div>
             
@@ -68,12 +68,166 @@
         </div>
     </nav>
     <main class="main-content">
+        <!-- Page Header -->
         <section class="page-header">
-            <h1 class="page-title">Shopping List</h1>
-            <p class="page-subtitle">There is nothing here for now.</p>
+            <div class="section-container">
+                <h1 class="page-title"><i class="fas fa-shopping-cart"></i> Smart Shopping List</h1>
+                <p class="page-subtitle">Organized ingredients from your meal plans and custom items</p>
+            </div>
+        </section>
+
+        <!-- Shopping List Controls -->
+        <section class="shopping-controls">
+            <div class="section-container">
+                <div class="controls-bar">
+                    <div class="source-selector">
+                        <label for="list-source">Generate from:</label>
+                        <select id="list-source" class="form-select">
+                            <option value="meal-plan">Current Meal Plan</option>
+                            <option value="custom">Custom List</option>
+                            <option value="both">Meal Plan + Custom</option>
+                        </select>
+                        <button id="generate-btn" class="btn btn-primary">
+                            <i class="fas fa-magic"></i> Generate List
+                        </button>
+                    </div>
+                    <div class="list-actions">
+                        <button id="clear-completed-btn" class="btn btn-secondary">
+                            <i class="fas fa-broom"></i> Clear Completed
+                        </button>
+                        <button id="clear-all-btn" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Clear All Items
+                        </button>
+                        <button id="select-all-btn" class="btn btn-outline">
+                            <i class="fas fa-check-square"></i> Select All
+                        </button>
+                        <!-- Temporarily commented out print functionality
+                        <button id="print-list-btn" class="btn btn-outline">
+                            <i class="fas fa-print"></i> Print List
+                        </button>
+                        -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Add Custom Item -->
+        <section class="add-item-section">
+            <div class="section-container">
+                <div class="add-item-card">
+                    <div class="add-item-header">
+                        <h3><i class="fas fa-plus-circle"></i> Add Custom Item</h3>
+                    </div>
+                    <div class="add-item-form">
+                        <input type="text" id="custom-item-input" placeholder="Enter item name (e.g., Fresh tomatoes, Whole wheat bread)" class="form-input">
+                        <select id="custom-category" class="form-select">
+                            <option value="produce">🥕 Produce</option>
+                            <option value="dairy">🥛 Dairy & Eggs</option>
+                            <option value="meat">🥩 Meat & Seafood</option>
+                            <option value="pantry">🥫 Pantry Items</option>
+                            <option value="frozen">🧊 Frozen Foods</option>
+                            <option value="bakery">🍞 Bakery</option>
+                            <option value="other">📦 Other</option>
+                        </select>
+                        <button id="add-item-btn" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Shopping List Display -->
+        <section class="shopping-list-section">
+            <div class="section-container">
+                <!-- List Summary -->
+                <div class="list-summary">
+                    <div class="summary-stats">
+                        <div class="stat-item">
+                            <span class="stat-number" id="total-items">0</span>
+                            <span class="stat-label">Total Items</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="completed-items">0</span>
+                            <span class="stat-label">Completed</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="remaining-items">0</span>
+                            <span class="stat-label">Remaining</span>
+                        </div>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="shopping-progress"></div>
+                        </div>
+                        <span class="progress-text" id="progress-percentage">0% Complete</span>
+                    </div>
+                </div>
+
+                <!-- Star Rating Explanation -->
+                <div class="star-explanation">
+                    <p><i class="fas fa-info-circle"></i> <strong>⭐ Stars indicate usage frequency:</strong> More stars mean the ingredient is used in more recipes</p>
+                </div>
+
+                <!-- Shopping Categories -->
+                <div id="shopping-categories" class="shopping-categories">
+                    <!-- Categories will be populated by JavaScript -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-shopping-basket"></i>
+                    </div>
+                    <h3>Your shopping list is empty</h3>
+                    <p>Generate a list from your meal plan or add custom items to get started.</p>
+                    <button class="btn btn-primary" onclick="document.getElementById('generate-btn').click()">
+                        <i class="fas fa-magic"></i> Generate from Meal Plan
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Shopping Tips -->
+        <section class="shopping-tips">
+            <div class="section-container">
+                <div class="tips-card">
+                    <h3><i class="fas fa-lightbulb"></i> Smart Shopping Tips</h3>
+                    <div class="tips-grid">
+                        <div class="tip-item">
+                            <i class="fas fa-route"></i>
+                            <span>Shop by category to save time - start with produce, then move to dairy</span>
+                        </div>
+                        <div class="tip-item">
+                            <i class="fas fa-clock"></i>
+                            <span>Best shopping times: Early morning or late evening to avoid crowds</span>
+                        </div>
+                        <div class="tip-item">
+                            <i class="fas fa-tag"></i>
+                            <span>Check store apps for digital coupons before you shop</span>
+                        </div>
+                        <div class="tip-item">
+                            <i class="fas fa-leaf"></i>
+                            <span>Choose fresh, seasonal produce for better nutrition and value</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
 
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="section-container">
+            <div class="footer-content">
+                <p class="footer-text">Supporting healthy eating habits for a better life</p>
+                <p class="footer-copyright">© 2024 Silver Spoon Society. Designed for senior wellness.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="config.js"></script>
     <script src="script.js"></script>
+    <script src="shopping-list.js"></script>
 </body>
 </html>

@@ -1766,6 +1766,7 @@ body {
     color: inherit;
     cursor: pointer;
     transition: opacity 0.2s ease;
+    flex-shrink: 0;
 }
 
 .nav-logo:hover {
@@ -1781,12 +1782,19 @@ body {
     position: relative;
     width: 80px;
     height: 80px;
-    background: #4CAF50;
+    min-width: 80px;
+    min-height: 80px;
+    max-width: 80px;
+    max-height: 80px;
+    aspect-ratio: 1 / 1;
+    background: #ffffff;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    border: 2px solid #4CAF50;
+    flex-shrink: 0;
 }
 
 /* Custom logo styles */
@@ -3222,6 +3230,15 @@ html {
     .logo-icon {
         width: 60px;
         height: 60px;
+        min-width: 60px;
+        min-height: 60px;
+        max-width: 60px;
+        max-height: 60px;
+        aspect-ratio: 1 / 1;
+        background: #ffffff;
+        border-radius: 50%;
+        border: 2px solid #4CAF50;
+        flex-shrink: 0;
     }
 
     .logo-text h1 {
@@ -3359,6 +3376,15 @@ html {
     .logo-icon {
         width: 50px;
         height: 50px;
+        min-width: 50px;
+        min-height: 50px;
+        max-width: 50px;
+        max-height: 50px;
+        aspect-ratio: 1 / 1;
+        background: #ffffff;
+        border-radius: 50%;
+        border: 2px solid #4CAF50;
+        flex-shrink: 0;
     }
 
     .logo-text h1 {

@@ -2,7 +2,7 @@
 (function() {
     const CORRECT_PASSWORD = 'tp33';
     const STORAGE_KEY = 'silver_spoon_auth';
-    const SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+    const SESSION_TIMEOUT = 60 * 60 * 1000; // 1 hour
 
     // Check if user is already authenticated
     function checkAuth() {
