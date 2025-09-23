@@ -335,8 +335,8 @@ const questionnaireSteps = [
                 options: [
                     { value: "", text: "Select your daily energy needs" },
                     { value: "1200-1500", text: "1200-1500 calories (Lower energy needs)" },
-                    { value: "1500-1800", text: "1500-1800 calories (Women's standard needs)" },
-                    { value: "1800-2200", text: "1800-2200 calories (Men's standard needs)" }
+                    { value: "1500-1800", text: "1500-1800 calories (Medium energy needs)" },
+                    { value: "1800-2200", text: "1800-2200 calories (High energy needs)" }
                 ]
             }/*,
             {
