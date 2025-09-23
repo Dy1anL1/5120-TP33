@@ -46,6 +46,26 @@
 
 ## 🔴 HIGH PRIORITY (Fix Immediately)
 
+### Frontend: Meal Plan Generation User Experience
+
+- **Issue**: Users are blocked from navigating to other pages during meal plan generation
+- **Impact**: Poor user experience - users must wait on a loading screen until generation completes
+- **Current Behavior**:
+  - Meal plan generation locks the UI with a loading spinner
+  - Users cannot browse recipes, nutrition dashboard, or other features during generation
+  - No notification when generation completes if user navigates away
+- **Proposed Solution**:
+  - Allow background meal plan generation with free navigation
+  - Add notification system (popup + optional sound) when generation completes
+  - Show mini progress indicator in navigation bar during generation
+  - Provide "Return to Meal Plan" button in completion notification
+- **Technical Implementation**:
+  - Convert to Web Worker or async background task
+  - Add global generation status tracking
+  - Implement Browser Notification API or Toast notifications
+  - Add Audio API for completion sound (with user preference toggle)
+- **Priority**: 🔴 High (significantly improves user experience)
+
 ### Backend: Nutrition Calculation Accuracy
 
 - **Issue**: Overly aggressive sodium adjustment logic may cause inaccurate nutrition values
