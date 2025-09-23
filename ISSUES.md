@@ -46,6 +46,49 @@
 
 ## 🔴 HIGH PRIORITY (Fix Immediately)
 
+### Backend: Recipe Search and Meal Plan Generation Performance
+
+- **Issue**: Recipe search and meal plan generation are extremely slow (5-30 seconds)
+- **Impact**: Poor user experience, timeouts, and user abandonment
+- **Root Causes**:
+  - **DynamoDB Scan Operations**: Using `ScanCommand` instead of `QueryCommand` for all searches
+    - Title search scans up to 5,000 items (`MAX_SCAN_ITEMS: 5000`)
+    - Category/habit filtering requires full table scan with client-side filtering
+    - Multiple round trips with `PAGE_LIMIT: 100` per scan
+  - **Missing Database Indexes**: Code comments indicate "GSI is not populated"
+    - No Global Secondary Index (GSI) for title search
+    - No GSI for categories, habits, or diet types
+    - All filtering done on client-side after full scan
+  - **Serial API Calls**: Meal plan generation makes sequential API calls
+    - Separate recipe API call for each meal type (breakfast, lunch, dinner)
+    - Multiple nutrition API calls processed serially
+    - No request parallelization or batching
+- **Performance Analysis**:
+  | Operation | Current Time | Target Time | Improvement Needed |
+  |-----------|--------------|-------------|-------------------|
+  | Recipe Search | 5-15 seconds | 1-3 seconds | 80%+ reduction |
+  | Meal Plan Generation | 15-30 seconds | 5-10 seconds | 65%+ reduction |
+- **Proposed Solutions** (Priority Order):
+  1. **🔴 Critical - Add DynamoDB GSI Indexes**:
+     - `title-index`: Enable efficient title search with QueryCommand
+     - `category-index`: Support category filtering via GSI
+     - `habits-index`: Support diet type and habit filtering
+     - `composite-index`: Enable multi-attribute queries
+  2. **🟡 Medium - Frontend Request Optimization**:
+     - Implement parallel API calls using `Promise.all()`
+     - Add client-side caching with `Map()` or localStorage
+     - Implement request debouncing for search inputs
+  3. **🟢 Low - Backend API Batching**:
+     - Create batch endpoints: `GET /recipes/batch?categories=breakfast,lunch,dinner`
+     - Pre-compute popular meal plan combinations
+     - Add pagination cursors for large result sets
+  4. **🔵 Future - Caching Layer**:
+     - CloudFront CDN for static recipe data
+     - Redis cache for frequent queries
+     - Pre-generated meal plan templates
+- **Expected Impact**: 80%+ performance improvement with GSI implementation
+- **Priority**: 🔴 Critical (affects core user experience)
+
 ### Frontend: Meal Plan Generation User Experience
 
 - **Issue**: Users are blocked from navigating to other pages during meal plan generation
