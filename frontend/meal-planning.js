@@ -215,7 +215,9 @@ const questionnaireSteps = [
                 validation: {
                     min: 55,
                     max: 65,
-                    message: "Age must be between 55 and 65 years"
+                    integerOnly: true,
+                    message: "Age must be between 55 and 65 years",
+                    integerMessage: "Please enter a number with no decimal"
                 }
             },
             {
@@ -544,7 +546,7 @@ function renderQuestion(question) {
 // Get hint text for questions
 function getQuestionHint(question) {
     const hints = {
-        age: "Please enter your age between 55 and 65 years",
+        age: "Please enter your age between 55 and 65 years (Like 55, 60, 65)",
         meal_preferences: "Choose the types of meals you'd like in your weekly plan",
         diet_types: "Select any dietary preferences you follow",
         allergies: "Select any foods you need to avoid due to allergies",
@@ -607,7 +609,7 @@ function handleCheckboxClick(event) {
     }
 
     saveUserPreferences();
-    validateField({ target: { id: questionId } });
+    validateField({ target: { id: questionId, value: '' } }); // Checkboxes don't need raw value validation
 }
 
 // Validate individual field
@@ -616,6 +618,8 @@ function validateField(event) {
     const question = findQuestionById(questionId);
     if (!question) return;
 
+    // Use raw input value for validation, not the converted value
+    const rawValue = event.target.value;
     const value = userPreferences[questionId];
     const errorElement = document.getElementById(`${questionId}-error`);
     const inputElement = document.getElementById(questionId);
@@ -644,12 +648,22 @@ function validateField(event) {
     }
 
     // Specific validation rules
-    if (isValid && value && question.validation) {
-        if (question.validation.min && value < question.validation.min) {
+    if (isValid && rawValue && question.validation) {
+        // Integer validation (check first, as it has priority)
+        if (question.validation.integerOnly) {
+            const numValue = parseFloat(rawValue);
+            if (!Number.isInteger(numValue)) {
+                isValid = false;
+                errorMessage = question.validation.integerMessage || "Please enter a number with no decimal";
+            }
+        }
+
+        // Range validation (only if still valid after integer check)
+        if (isValid && question.validation.min && parseFloat(rawValue) < question.validation.min) {
             isValid = false;
             errorMessage = question.validation.message;
         }
-        if (question.validation.max && value > question.validation.max) {
+        if (isValid && question.validation.max && parseFloat(rawValue) > question.validation.max) {
             isValid = false;
             errorMessage = question.validation.message;
         }
@@ -693,7 +707,8 @@ function validateCurrentStep() {
     let isValid = true;
 
     for (const question of stepData.questions) {
-        const fieldValid = validateField({ target: { id: question.id } });
+        const inputElement = document.getElementById(question.id);
+        const fieldValid = validateField({ target: { id: question.id, value: inputElement ? inputElement.value : '' } });
         if (!fieldValid) {
             isValid = false;
         }

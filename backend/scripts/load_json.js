@@ -136,6 +136,7 @@ function convertRecipe(recipe, index) {
   };
 }
 
+// load and upload function
 async function main() {
   const startTime = new Date();
   log("🥗 Loading recipes_processed.json to DynamoDB");
@@ -162,7 +163,7 @@ async function main() {
     log(`✅ Successfully converted ${convertedRecipes.length} recipes`);
     log(`📊 Average habits per recipe: ${(totalHabits / convertedRecipes.length).toFixed(1)}`);
     log(`📊 Average categories per recipe: ${(totalCategories / convertedRecipes.length).toFixed(1)}`);
-    log(`🖼️ Recipes with images: ${withImages}/${convertedRecipes.length} (${((withImages/convertedRecipes.length)*100).toFixed(1)}%)\n`);
+    log(`🖼️ Recipes with images: ${withImages}/${convertedRecipes.length} (${((withImages / convertedRecipes.length) * 100).toFixed(1)}%)\n`);
 
     // Upload to DynamoDB
     log("🚀 Starting DynamoDB upload...");
@@ -198,7 +199,7 @@ async function main() {
 
       } catch (error) {
         errors++;
-        const errorMsg = `❌ Batch ${Math.floor(i/batchSize) + 1} failed: ${error.message}`;
+        const errorMsg = `❌ Batch ${Math.floor(i / batchSize) + 1} failed: ${error.message}`;
         console.error(errorMsg);
         logStream.write(errorMsg + '\n');
 
