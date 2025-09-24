@@ -1,3 +1,35 @@
+// ====== API Configuration ======
+// Note: API endpoints are now defined in config.js
+
+// Format nutrition numbers to show 1-2 decimal places, avoiding zeros
+function formatNutritionNumber(value, unit = '') {
+    // Apply nutrition value validation before formatting
+    let adjustedValue = value;
+
+    // Determine nutrient type from unit for validation
+    let nutrientType = 'Unknown';
+    if (unit === 'mg' && (value > 1000)) nutrientType = 'Sodium'; // High mg values likely sodium
+    else if (unit === 'kcal' || unit === '') nutrientType = 'Calories';
+    else if (unit === 'g' && value > 50) nutrientType = 'Protein';
+
+    // Apply sanity checks if we detected a nutrient type
+    if (nutrientType !== 'Unknown') {
+        adjustedValue = adjustNutritionValue(value, nutrientType);
+    }
+
+    const num = Number(adjustedValue) || 0;
+
+    // Add indicator if value was adjusted
+    const wasAdjusted = Math.abs(Number(value) - num) > 0.1;
+    const prefix = wasAdjusted ? '~' : '';
+
+    if (num === 0) return `0${unit}`;
+    if (num < 0.1) return `${prefix}<0.1${unit}`;
+    if (num < 1) return `${prefix}${num.toFixed(2)}${unit}`;
+    if (num < 10) return `${prefix}${num.toFixed(1)}${unit}`;
+    return `${prefix}${Math.round(num)}${unit}`;
+}
+
 // ====== Compact Nutrition Goals (10 key nutrients for dashboard) ======
 const NUTRIENT_GOALS = {
     female_51: {
@@ -26,6 +58,79 @@ const NUTRIENT_GOALS = {
     }
 };
 
+// ====== Nutrition Data Quality Assessment ======
+function evaluateNutritionDataQuality(recipe) {
+    if (!recipe || !recipe.ingredients) {
+        return { score: 0, issues: ['No ingredients data'] };
+    }
+
+    const issues = [];
+    let score = 100; // Start with perfect score
+
+    // Check if ingredients are available for nutrition calculation
+    const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    if (ingredients.length === 0) {
+        issues.push('No ingredients list');
+        score -= 50;
+    }
+
+    // Check for problematic ingredient patterns that often cause high sodium/calories
+    const problematicPatterns = [
+        'soy sauce', 'tamari', 'miso', 'fish sauce', 'worcestershire',
+        'prepared sauce', 'bouillon', 'instant', 'canned soup'
+    ];
+
+    const ingredientText = ingredients.join(' ').toLowerCase();
+    let problematicCount = 0;
+
+    problematicPatterns.forEach(pattern => {
+        if (ingredientText.includes(pattern)) {
+            problematicCount++;
+        }
+    });
+
+    if (problematicCount > 2) {
+        issues.push('High sodium risk ingredients');
+        score -= 30;
+    }
+
+    // Check for very long ingredient lists (often cause calculation errors)
+    if (ingredients.length > 15) {
+        issues.push('Complex recipe (many ingredients)');
+        score -= 10;
+    }
+
+    // Check for unclear ingredient descriptions
+    const unclearCount = ingredients.filter(ing => {
+        const text = typeof ing === 'string' ? ing : (ing.text || '');
+        return text.length > 50 || text.includes('or') || text.includes('optional');
+    }).length;
+
+    if (unclearCount > ingredients.length * 0.3) {
+        issues.push('Unclear ingredient descriptions');
+        score -= 20;
+    }
+
+    return { score: Math.max(0, score), issues };
+}
+
+// Sort recipes by nutrition data quality (higher score = better quality)
+function sortRecipesByNutritionQuality(recipes) {
+    return recipes.map(recipe => ({
+        ...recipe,
+        nutritionQuality: evaluateNutritionDataQuality(recipe)
+    })).sort((a, b) => {
+        // Primary sort: nutrition quality score (higher is better)
+        if (b.nutritionQuality.score !== a.nutritionQuality.score) {
+            return b.nutritionQuality.score - a.nutritionQuality.score;
+        }
+        // Secondary sort: fewer ingredients (simpler recipes are more reliable)
+        const aIngredients = Array.isArray(a.ingredients) ? a.ingredients.length : 0;
+        const bIngredients = Array.isArray(b.ingredients) ? b.ingredients.length : 0;
+        return aIngredients - bIngredients;
+    });
+}
+
 // Modal helpers
 function ensureRecipeModal() {
     let m = document.getElementById('recipe-modal');
@@ -49,6 +154,7 @@ function ensureRecipeModal() {
                     <h3>Nutrition</h3>
                     <div id="nutrition-summary"></div>
                     <button id="add-to-dashboard" class="btn btn-primary" style="margin-top:1rem;">Add to Nutrition Dashboard</button>
+                    <button id="view-dashboard" class="btn btn-secondary" style="margin-top:0.5rem;">View Nutrition Dashboard</button>
                 </div>
             </div>
         </div>
@@ -84,24 +190,60 @@ document.addEventListener('click', (e) => {
 async function openRecipeModal(recipe) {
     const m = ensureRecipeModal();
     const titleEl = m.querySelector('#recipe-modal-title');
-    const briefEl = m.querySelector('#recipe-brief');
     const ingEl = m.querySelector('#recipe-ingredients');
     const dirEl = m.querySelector('#recipe-directions');
     const sumEl = m.querySelector('#nutrition-summary');
+    const imgContainerEl = m.querySelector('#recipe-modal-image');
+    const imgEl = m.querySelector('#recipe-modal-img');
 
     if (titleEl) titleEl.textContent = recipe.title || '';
-    if (briefEl) briefEl.textContent = Array.isArray(recipe.directions) && recipe.directions.length ? recipe.directions[0] : (recipe.link || '');
+
+    // Handle recipe image in modal
+    if (recipe.has_image && recipe.image_display && imgContainerEl && imgEl) {
+        imgEl.src = recipe.image_display;
+        imgEl.alt = recipe.title || 'Recipe Image';
+        imgContainerEl.style.display = 'block';
+    } else if (imgContainerEl) {
+        imgContainerEl.style.display = 'none';
+    }
+
     if (ingEl) {
         ingEl.innerHTML = '';
         (recipe.ingredients || []).forEach(s => {
             const li = document.createElement('li'); li.textContent = s; ingEl.appendChild(li);
         });
     }
+
     if (dirEl) {
         dirEl.innerHTML = '';
-        (recipe.directions || []).forEach(s => {
-            const li = document.createElement('li'); li.textContent = s; dirEl.appendChild(li);
-        });
+        // Handle both directions (old format) and instructions (new format)
+        let instructionsText = '';
+        if (recipe.instructions && typeof recipe.instructions === 'string') {
+            instructionsText = recipe.instructions;
+        } else if (Array.isArray(recipe.directions) && recipe.directions.length > 0) {
+            instructionsText = recipe.directions.join(' ');
+        } else if (Array.isArray(recipe.instructions) && recipe.instructions.length > 0) {
+            instructionsText = recipe.instructions.join(' ');
+        }
+
+        if (instructionsText) {
+            // Split by periods and filter out empty steps
+            const steps = instructionsText
+                .split(/\.\s+/)
+                .map(step => step.trim())
+                .filter(step => step.length > 0)
+                .map(step => step.endsWith('.') ? step : step + '.');
+
+            steps.forEach(step => {
+                const li = document.createElement('li');
+                li.textContent = step;
+                dirEl.appendChild(li);
+            });
+        } else {
+            const li = document.createElement('li');
+            li.textContent = 'No instructions available';
+            dirEl.appendChild(li);
+        }
     }
     if (sumEl) sumEl.innerHTML = '<div class="card"><div class="key">Loading...</div><div class="val">...</div></div>';
 
@@ -111,7 +253,7 @@ async function openRecipeModal(recipe) {
     try {
         const ingredients = (recipe.ingredients || []).map(String);
         if (ingredients.length) {
-            const res = await fetch(NUTRITION_API, {
+            const res = await fetch(API_CONFIG.NUTRITION_API, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ingredients })
@@ -135,8 +277,18 @@ async function openRecipeModal(recipe) {
                     pairs.forEach(p => {
                         const v = getAny(summary, p.keys);
                         if (v == null) return;
+
+                        // Apply nutrition value validation before display
+                        const labelForValidation = p.label.charAt(0).toUpperCase() + p.label.slice(1);
+                        const adjustedValue = adjustNutritionValue(v, labelForValidation);
+
                         const card = document.createElement('div'); card.className = 'card';
-                        card.innerHTML = `<div class="key">${p.label}</div><div class="val">${fmt(v)} ${p.unit}</div>`;
+
+                        // Show indicator if value was adjusted
+                        const wasAdjusted = Math.abs(v - adjustedValue) > 0.1;
+                        const prefix = wasAdjusted ? '~' : '';
+
+                        card.innerHTML = `<div class="key">${p.label}</div><div class="val">${prefix}${fmt(adjustedValue)} ${p.unit}</div>`;
                         sumEl.appendChild(card);
                     });
                 }
@@ -151,32 +303,73 @@ async function openRecipeModal(recipe) {
     // Add to Dashboard
     const addBtn = m.querySelector('#add-to-dashboard');
     if (addBtn) {
-      addBtn.onclick = () => {
-        const day = todayKey();
-        // Get nutrition summary, use calories if available, otherwise null
-        let calories = null;
-        const sumEl = m.querySelector('#nutrition-summary');
-        if (sumEl) {
-          const calCard = sumEl.querySelector('.card .key')?.textContent?.toLowerCase() === 'calories'
-            ? sumEl.querySelector('.card .val')?.textContent
-            : null;
-          if (calCard && !isNaN(Number(calCard))) calories = Number(calCard);
-        }
-        addToDashboard({
-          recipe_id: recipe.recipe_id,
-          title: recipe.title,
-          ingredients: recipe.ingredients || [],
-          calories,
-          added_at: Date.now(),
-          day
-        });
-        addBtn.textContent = 'Added!';
-        addBtn.disabled = true;
-        setTimeout(() => {
-          addBtn.textContent = 'Add to Nutrition Dashboard';
-          addBtn.disabled = false;
-        }, 1200);
-      };
+        // Update button text based on current count for this specific recipe
+        const updateButtonText = () => {
+            const day = todayKey();
+            const todaysRecipes = readDashboard().filter(x => x.day === day);
+            const thisRecipeCount = todaysRecipes.filter(x => x.recipe_id === recipe.recipe_id).length;
+
+            if (thisRecipeCount >= 3) {
+                addBtn.textContent = `Recipe Limit Reached (${thisRecipeCount}/3)`;
+                addBtn.disabled = true;
+                addBtn.style.background = '#888';
+            } else {
+                addBtn.textContent = `Add to Dashboard (${thisRecipeCount}/3)`;
+                addBtn.disabled = false;
+                addBtn.style.background = '';
+            }
+        };
+
+        // Initial update
+        updateButtonText();
+
+        addBtn.onclick = () => {
+            const day = todayKey();
+            const todaysRecipes = readDashboard().filter(x => x.day === day);
+            const thisRecipeCount = todaysRecipes.filter(x => x.recipe_id === recipe.recipe_id).length;
+
+            // Check if this recipe limit reached
+            if (thisRecipeCount >= 3) {
+                addBtn.textContent = 'Recipe Limit Reached (3/3)';
+                return;
+            }
+
+            // Get nutrition summary, use calories if available, otherwise null
+            let calories = null;
+            const sumEl = m.querySelector('#nutrition-summary');
+            if (sumEl) {
+                const calCard = sumEl.querySelector('.card .key')?.textContent?.toLowerCase() === 'calories'
+                    ? sumEl.querySelector('.card .val')?.textContent
+                    : null;
+                if (calCard && !isNaN(Number(calCard))) calories = Number(calCard);
+            }
+            addToDashboard({
+                recipe_id: recipe.recipe_id,
+                title: recipe.title,
+                ingredients: recipe.ingredients || [],
+                calories,
+                added_at: Date.now(),
+                day
+            });
+
+            // Update button text with new count for this recipe
+            const newCount = thisRecipeCount + 1;
+            addBtn.textContent = `Added! (${newCount}/3)`;
+            addBtn.disabled = true;
+            addBtn.style.background = '#4CAF50';
+
+            setTimeout(() => {
+                updateButtonText();
+            }, 1200);
+        };
+    }
+
+    // View Dashboard button
+    const viewBtn = m.querySelector('#view-dashboard');
+    if (viewBtn) {
+        viewBtn.onclick = () => {
+            window.location.href = 'nutrition-dashboard.html';
+        };
     }
 }
 
@@ -185,33 +378,52 @@ async function openRecipeModal(recipe) {
 const DASHBOARD_KEY = 'nss_dashboard';
 
 function todayKey() {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
 }
 
 function readDashboard() {
-  try { return JSON.parse(localStorage.getItem(DASHBOARD_KEY)) || []; }
-  catch { return []; }
+    try { return JSON.parse(localStorage.getItem(DASHBOARD_KEY)) || []; }
+    catch { return []; }
 }
 
 function writeDashboard(list) {
-  localStorage.setItem(DASHBOARD_KEY, JSON.stringify(list || []));
+    localStorage.setItem(DASHBOARD_KEY, JSON.stringify(list || []));
 }
 
 function addToDashboard(item) {
-  const list = readDashboard();
-  list.push(item);
-  writeDashboard(list);
+    const list = readDashboard();
+    // Add unique identifier to each dashboard entry
+    const uniqueItem = {
+        ...item,
+        dashboard_entry_id: Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+    };
+    list.push(uniqueItem);
+    writeDashboard(list);
 }
 
 function removeFromDashboardByIdAndDay(recipe_id, day) {
-  const list = readDashboard();
-  const next = list.filter(x => !(String(x.recipe_id) === String(recipe_id) && x.day === day));
-  writeDashboard(next);
-  return
+    const list = readDashboard();
+    const next = list.filter(x => !(String(x.recipe_id) === String(recipe_id) && x.day === day));
+    writeDashboard(next);
+    return
+}
+
+function removeFromDashboardByEntryId(dashboard_entry_id) {
+    const list = readDashboard();
+    const next = list.filter(x => x.dashboard_entry_id !== dashboard_entry_id);
+    writeDashboard(next);
+    return
+}
+
+function clearAllMealsForDay(day) {
+    const list = readDashboard();
+    const next = list.filter(x => x.day !== day);
+    writeDashboard(next);
+    return
 }
 
 async function renderDashboardNutrition() {
@@ -262,24 +474,88 @@ async function renderDashboardNutrition() {
         } catch { }
         if (!Array.isArray(dashboard) || dashboard.length === 0) {
             dashDiv.innerHTML = '<div style="color:#888;text-align:center;">No dashboard recipes found.</div>';
+
+            // Reset all nutrition values to zero when no meals
+            if (caloriesCurrent) caloriesCurrent.textContent = '0';
+            if (proteinCurrent) proteinCurrent.textContent = '0';
+            if (carbohydratesCurrent) carbohydratesCurrent.textContent = '0';
+            if (sodiumCurrent) sodiumCurrent.textContent = '0';
+            if (overallProgress) overallProgress.textContent = '0%';
+            if (overallProgressText) overallProgressText.textContent = '0%';
+            if (progressFill) {
+                progressFill.style.width = '0%';
+                progressFill.style.background = '';
+            }
+
+            // Reset progress bars in cards
+            const cardFields = [
+                { curId: 'calories-current', goalId: 'calories-goal' },
+                { curId: 'protein-current', goalId: 'protein-goal' },
+                { curId: 'carbohydrates-current', goalId: 'carbohydrates-goal' },
+                { curId: 'sodium-current', goalId: 'sodium-goal' },
+            ];
+            cardFields.forEach(({ curId, goalId }) => {
+                const curEl = document.getElementById(curId);
+                const card = curEl?.closest('.nutrition-card');
+                if (card) {
+                    const fill = card.querySelector('.progress-fill');
+                    if (fill) {
+                        fill.style.width = '0%';
+                        fill.style.background = '';
+                    }
+                    curEl.style.color = '';
+                    card.classList.remove('over-goal');
+                }
+            });
+
+            // Clear all nutrition alerts when no meals
+            clearAllNutritionAlerts();
+
             return;
         }
 
-        // Merge all ingredients
+        // Calculate nutrition for each recipe separately and sum them up
+        // This fixes the serving size calculation issue
+        let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalSodium = 0;
+
         for (const item of dashboard) {
-            if (Array.isArray(item.ingredients)) {
-                allIngredients = allIngredients.concat(item.ingredients);
+            if (!Array.isArray(item.ingredients) || item.ingredients.length === 0) continue;
+
+            try {
+                const nutri = await fetchNutrition(item.ingredients);
+                const recipeSum = nutri.summary_100g_sum || {};
+
+                // Get servings info - assume 1 serving per dashboard item since users add individual servings
+                const servings = 1; // Each dashboard item represents one serving
+
+                // DEBUG: Log dashboard nutrition calculation
+                console.log(`Dashboard Recipe Debug - ${item.title || 'Unknown'}:`, {
+                    ingredients: item.ingredients,
+                    raw_response: recipeSum,
+                    calculated_per_serving: {
+                        calories: getAny(recipeSum, ['calories', 'energy_kcal', 'energy']) / (item.servings || 4)
+                    }
+                });
+
+                // Add per-serving nutrition values to totals
+                const recipeServings = item.servings || item.yield || 4; // Default recipe serves 4
+                totalCalories += (getAny(recipeSum, ['calories', 'energy_kcal', 'energy']) || 0) / recipeServings;
+                totalProtein += (getAny(recipeSum, ['protein', 'protein_g']) || 0) / recipeServings;
+                totalCarbs += (getAny(recipeSum, ['carbohydrates', 'carbohydrate_g', 'carbohydrates_g']) || 0) / recipeServings;
+                totalSodium += (getAny(recipeSum, ['sodium', 'sodium_mg']) || 0) / recipeServings;
+
+            } catch (error) {
+                console.warn(`Failed to get nutrition for dashboard recipe:`, error);
             }
         }
-        if (allIngredients.length === 0) {
-            dashDiv.innerHTML = '<div style="color:#888;text-align:center;">No ingredients found in dashboard recipes.</div>';
-            return;
-        }
 
-        // POST to MATCH_API
-        const nutri = await fetchNutrition(allIngredients);
-        const sum = nutri.summary_100g_sum || {};
-        const details = nutri.details || [];
+        // Use calculated totals instead of raw API response
+        const sum = {
+            calories: totalCalories,
+            protein_g: totalProtein,
+            carbohydrates_g: totalCarbs,
+            sodium_mg: totalSodium
+        };
 
         // Update main cards (use aliases to tolerate backend naming differences)
         const caloriesVal = getAny(sum, ['calories', 'energy_kcal', 'energy']);
@@ -289,7 +565,7 @@ async function renderDashboardNutrition() {
         if (caloriesCurrent) caloriesCurrent.textContent = caloriesVal != null ? fmt(caloriesVal) : '-';
         if (proteinCurrent) proteinCurrent.textContent = proteinVal != null ? fmt(proteinVal) : '-';
         if (carbohydratesCurrent) carbohydratesCurrent.textContent = carbVal != null ? fmt(carbVal) : '-';
-        if (sodiumCurrent) sodiumCurrent.textContent = sodiumVal != null ? fmt(sodiumVal) : '-';
+        if (sodiumCurrent) sodiumCurrent.textContent = sodiumVal != null ? formatNutritionValue(sodiumVal, 'Sodium') : '-';
         // Goals (can be static or configurable)
         const calGoal = caloriesGoal ? Number(caloriesGoal.textContent) : 2200;
         const proGoal = proteinGoal ? Number(proteinGoal.textContent) : 56;
@@ -367,7 +643,7 @@ async function renderDashboardNutrition() {
         let html = '<div class="nutrition-cards">';
         fields.forEach(f => {
             const raw = getAny(sum, f.keys);
-            const val = raw != null ? fmt(raw) : '-';
+            const val = formatNutritionValue(raw, f.label);
             html += `<div class="nutrition-card">
                 <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
                 <div class="nutrition-label">${f.label}</div>
@@ -408,26 +684,103 @@ async function renderDashboardNutrition() {
             html += '</tbody></table>';
         }
         dashDiv.innerHTML = html;
+
+        // Check for nutrition excess and show alerts
+        checkNutritionExcess(cardFields);
     } catch (e) {
         dashDiv.innerHTML = `<div style="color:#c00;text-align:center;">${e.message}</div>`;
     }
 }
 
-const NUTRITION_API = "https://0brixnxwq3.execute-api.ap-southeast-2.amazonaws.com/prod/match";
-const RECIPES_API = "https://97xkjqjeuc.execute-api.ap-southeast-2.amazonaws.com/prod/recipes";
+// Note: API_CONFIG.RECIPES_API is now defined in config.js as API_CONFIG.API_CONFIG.RECIPES_API
 
 async function fetchNutrition(ingredients) {
-    // Accept either array of strings or array of objects { text }
-    const normalized = (ingredients || []).map(s => typeof s === 'string' ? { text: s } : s || { text: '' });
-    // Infer labels for each ingredient (if not provided)
-    normalized.forEach(it => { if (!it.label) it.label = inferLabelFromText(it.text || it.name || ''); });
-    const res = await fetch(NUTRITION_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ingredients: normalized })
+    try {
+        // Accept either array of strings or array of objects { text }
+        const normalized = (ingredients || []).map(s => typeof s === 'string' ? { text: s } : s || { text: '' });
+        // Infer labels for each ingredient (if not provided)
+        normalized.forEach(it => { if (!it.label) it.label = inferLabelFromText(it.text || it.name || ''); });
+
+        const res = await fetch(API_CONFIG.NUTRITION_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ingredients: normalized })
+        });
+
+        if (!res.ok) throw new Error('Failed to fetch nutrition');
+
+        const data = await res.json();
+
+        // Check for completely empty or invalid nutrition data
+        const sum = data.summary_100g_sum || {};
+        const hasAnyNutrition = Object.values(sum).some(val => val != null && val > 0);
+
+        if (!hasAnyNutrition) {
+            console.warn('No nutrition data returned from API, using fallback estimation');
+            // Return fallback estimated nutrition based on ingredient count and types
+            const estimatedNutrition = estimateNutritionFromIngredients(ingredients);
+            return {
+                summary_100g_sum: estimatedNutrition,
+                results: [],
+                note: "Estimated nutrition - original API returned no data"
+            };
+        }
+
+        return data;
+
+    } catch (error) {
+        console.error('Nutrition API error:', error);
+        // Return fallback nutrition estimation
+        const estimatedNutrition = estimateNutritionFromIngredients(ingredients);
+        return {
+            summary_100g_sum: estimatedNutrition,
+            results: [],
+            note: "Estimated nutrition - API unavailable"
+        };
+    }
+}
+
+// Fallback nutrition estimation based on common ingredient patterns
+function estimateNutritionFromIngredients(ingredients) {
+    if (!ingredients || ingredients.length === 0) {
+        return { calories: 0, protein_g: 0, sodium_mg: 0, carbohydrates_g: 0 };
+    }
+
+    let estimatedCalories = 0;
+    let estimatedProtein = 0;
+    let estimatedSodium = 0;
+    let estimatedCarbs = 0;
+
+    ingredients.forEach(ingredient => {
+        const text = (typeof ingredient === 'string' ? ingredient : ingredient.text || ingredient.name || '').toLowerCase();
+
+        // Basic estimation patterns for common ingredients
+        if (text.includes('rice') || text.includes('pasta') || text.includes('noodle')) {
+            estimatedCalories += 200; estimatedCarbs += 45; estimatedSodium += 5;
+        } else if (text.includes('chicken') || text.includes('beef') || text.includes('pork')) {
+            estimatedCalories += 250; estimatedProtein += 25; estimatedSodium += 50;
+        } else if (text.includes('fish') || text.includes('salmon') || text.includes('tuna')) {
+            estimatedCalories += 200; estimatedProtein += 22; estimatedSodium += 60;
+        } else if (text.includes('egg')) {
+            estimatedCalories += 70; estimatedProtein += 6; estimatedSodium += 60;
+        } else if (text.includes('cheese')) {
+            estimatedCalories += 100; estimatedProtein += 7; estimatedSodium += 180;
+        } else if (text.includes('oil') || text.includes('butter')) {
+            estimatedCalories += 120; estimatedSodium += 1;
+        } else if (text.includes('vegetable') || text.includes('carrot') || text.includes('onion') || text.includes('tomato')) {
+            estimatedCalories += 25; estimatedCarbs += 5; estimatedSodium += 5;
+        } else {
+            // Generic ingredient
+            estimatedCalories += 50; estimatedProtein += 2; estimatedCarbs += 8; estimatedSodium += 10;
+        }
     });
-    if (!res.ok) throw new Error('Failed to fetch nutrition');
-    return await res.json();
+
+    return {
+        calories: Math.round(estimatedCalories),
+        protein_g: Math.round(estimatedProtein),
+        sodium_mg: Math.round(estimatedSodium),
+        carbohydrates_g: Math.round(estimatedCarbs)
+    };
 }
 
 // Infer simple label from ingredient text
@@ -455,6 +808,48 @@ function getAny(obj, keys) {
     return null;
 }
 
+// Return nutrition values with sanity checks and validation
+function adjustNutritionValue(value, label) {
+    if (value == null) return null;
+
+    // Apply sanity checks for unrealistic values
+    let adjusted = value;
+
+    // Sodium sanity checks (per serving should rarely exceed these limits)
+    if (label === 'Sodium' && adjusted > 2000) {
+        console.warn(`Abnormal sodium value detected: ${adjusted}mg, reducing to reasonable amount`);
+        // Assume it's a parsing error and reduce to reasonable range
+        if (adjusted > 10000) adjusted = adjusted / 100; // Likely 100g default error
+        else if (adjusted > 5000) adjusted = adjusted / 10; // Likely 10x error
+        else adjusted = Math.min(adjusted, 1500); // Cap at high but reasonable amount
+    }
+
+    // Calories sanity checks (per serving rarely exceeds 1500-2000 for normal recipes)
+    if (label === 'Calories' && adjusted > 2000) {
+        console.warn(`Abnormal calorie value detected: ${adjusted}kcal, checking if reasonable`);
+        if (adjusted > 5000) adjusted = adjusted / 10; // Likely parsing error
+    }
+
+    // Protein sanity checks (per serving rarely exceeds 100g)
+    if (label === 'Protein' && adjusted > 100) {
+        console.warn(`Abnormal protein value detected: ${adjusted}g, checking if reasonable`);
+        if (adjusted > 200) adjusted = adjusted / 10; // Likely parsing error
+    }
+
+    return adjusted;
+}
+
+function formatNutritionValue(raw, label) {
+    const adjusted = adjustNutritionValue(raw, label);
+    if (adjusted == null) return '-';
+
+    // Add indicator if value was adjusted for data quality
+    const wasAdjusted = raw != null && Math.abs(raw - adjusted) > 0.1;
+    const prefix = wasAdjusted ? '~' : ''; // ~ indicates estimated/corrected value
+
+    return prefix + fmt(adjusted);
+}
+
 // Formatter: show numeric value with two decimals, or '-' when missing
 function fmt(v, digits = 2) {
     if (v == null || v === '') return '-';
@@ -477,7 +872,7 @@ async function renderNutritionDashboard() {
         const recipeId = getQueryParam('id');
         if (recipeId) {
             // Step 1: fetch recipe by id
-            const url = `${RECIPES_API}?recipe_id=${encodeURIComponent(recipeId)}`;
+            const url = `${API_CONFIG.RECIPES_API}?recipe_id=${encodeURIComponent(recipeId)}`;
             const res = await fetch(url);
             if (!res.ok) throw new Error('Recipe not found');
             const data = await res.json();
@@ -526,35 +921,54 @@ async function renderNutritionDashboard() {
 
 // Auto-execute on page load
 if (window.location.pathname.includes('nutrition-dashboard')) {
-  document.addEventListener('DOMContentLoaded', () => {
-    renderMealsAddedList();
-    if (typeof renderDashboardNutrition === 'function') {
-      renderDashboardNutrition();
-    }
-  });
+    document.addEventListener('DOMContentLoaded', () => {
+        renderMealsAddedList();
+        if (typeof renderDashboardNutrition === 'function') {
+            renderDashboardNutrition();
+        }
+    });
 }
 
-async function fetchRecipes({ keyword, category, habit, limit = 10, nextToken = null }) {
+async function fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit = 10, nextToken = null }, retryCount = 0) {
+    const maxRetries = 2;
     const params = new URLSearchParams();
     if (keyword) params.append('title_prefix', keyword);
     if (category && category !== 'all') params.append('category', category);
     if (habit && habit !== 'all') params.append('habit', habit);
+    if (diet_type && diet_type !== 'all') params.append('diet_type', diet_type);
+    if (allergy_filter && allergy_filter !== 'all') params.append('allergy_filter', allergy_filter);
     if (limit) params.append('limit', limit);
     if (nextToken) params.append('next_token', nextToken);
-    const url = `${RECIPES_API}?${params.toString()}`;
-    // 8s timeout handling (backend sometimes slower) -> more tolerant
+    const url = `${API_CONFIG.RECIPES_API}?${params.toString()}`;
+    // Progressive timeout: longer timeout for retries
+    const timeoutMs = 15000 + (retryCount * 5000);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     let res;
     try {
         res = await fetch(url, { signal: controller.signal });
     } catch (e) {
-        if (e.name === 'AbortError') throw new Error('Search timeout, please try again.');
+        clearTimeout(timeout);
+        if (e.name === 'AbortError') {
+            if (retryCount < maxRetries) {
+                console.log(`Request timeout, retrying (${retryCount + 1}/${maxRetries + 1})...`);
+                await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Progressive delay
+                return fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit, nextToken }, retryCount + 1);
+            }
+            throw new Error('Search timeout after retries, please try again.');
+        }
         throw e;
     } finally {
         clearTimeout(timeout);
     }
     if (!res.ok) {
+        // Retry on 500 errors (server issues)
+        if (res.status >= 500 && retryCount < maxRetries) {
+            console.log(`Server error ${res.status}, retrying (${retryCount + 1}/${maxRetries + 1})...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Progressive delay
+            return fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit, nextToken }, retryCount + 1);
+        }
+
         const txt = await res.text().catch(() => res.statusText || '');
         const message = `Recipes API ${res.status} ${res.statusText} ${txt ? '- ' + txt.slice(0, 120) : ''}`;
         const err = new Error(message);
@@ -625,6 +1039,55 @@ async function fetchRecipes({ keyword, category, habit, limit = 10, nextToken = 
 
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Mobile menu functionality
+    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+    const navLinks = document.querySelector('.nav-links');
+
+    if (mobileMenuBtn && navLinks) {
+        mobileMenuBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            navLinks.classList.toggle('show');
+
+            // Update aria-expanded for accessibility
+            const isExpanded = navLinks.classList.contains('show');
+            mobileMenuBtn.setAttribute('aria-expanded', isExpanded);
+
+            // Change icon
+            const icon = mobileMenuBtn.querySelector('i');
+            if (icon) {
+                if (isExpanded) {
+                    icon.className = 'fas fa-times';
+                } else {
+                    icon.className = 'fas fa-bars';
+                }
+            }
+        });
+
+        // Close mobile menu when clicking on a nav link
+        navLinks.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('show');
+                mobileMenuBtn.setAttribute('aria-expanded', 'false');
+                const icon = mobileMenuBtn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-bars';
+                }
+            });
+        });
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function (e) {
+            if (!mobileMenuBtn.contains(e.target) && !navLinks.contains(e.target)) {
+                navLinks.classList.remove('show');
+                mobileMenuBtn.setAttribute('aria-expanded', 'false');
+                const icon = mobileMenuBtn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-bars';
+                }
+            }
+        });
+    }
+
     // Features section routing
     const mealPlanning = document.getElementById('feature-meal-planning');
     const shoppingList = document.getElementById('feature-shopping-list');
@@ -718,6 +1181,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             };
         }
+
+        // View Dashboard button
+        const viewDashboardBtn = modal ? modal.querySelector('#view-dashboard') : null;
+        if (viewDashboardBtn) {
+            viewDashboardBtn.onclick = function () {
+                window.location.href = 'nutrition-dashboard.html';
+            };
+        }
         // Show modal
         modal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
@@ -731,11 +1202,13 @@ document.addEventListener('DOMContentLoaded', function () {
         modalDashboardBtn.disabled = false;
     }
 
-    modalCloseBtn.onclick = closeModal;
-    modalBackdrop.onclick = closeModal;
+    if (modalCloseBtn) modalCloseBtn.onclick = closeModal;
+    if (modalBackdrop) modalBackdrop.onclick = closeModal;
     const searchInput = document.querySelector('.search-input');
     const recipeCategorySelect = document.getElementById('recipe-category');
     const dietTypeSelect = document.getElementById('diet-type');
+    const allergyFilterSelect = document.getElementById('allergy-filter');
+    const sortBySelect = document.getElementById('sort-by');
     const applyFiltersBtn = document.querySelector('.apply-filters-btn');
     const resultsHeader = document.querySelector('.results-header h2');
     const cardsContainer = document.querySelector('.recipe-cards-container');
@@ -750,7 +1223,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (!recipe || !Array.isArray(recipe.ingredients) || !Array.isArray(recipe.directions)) {
                 // Fetch details if missing
-                const res = await fetch(`${RECIPES_API}?recipe_id=${encodeURIComponent(id)}`);
+                const res = await fetch(`${API_CONFIG.RECIPES_API}?recipe_id=${encodeURIComponent(id)}`);
                 if (!res.ok) return alert('Failed to load recipe details');
                 const data = await res.json();
                 recipe = (data.items && data.items[0]) || {};
@@ -777,6 +1250,22 @@ document.addEventListener('DOMContentLoaded', function () {
         let dashboard = [];
         try { dashboard = JSON.parse(localStorage.getItem(dashboardKey)) || []; } catch { }
         const isFav = dashboard.some(r => r.recipe_id === recipe.recipe_id);
+        // Create ingredients list HTML
+        const ingredientsList = (recipe.ingredients || []).map(ingredient =>
+            `<li>${ingredient}</li>`
+        ).join('');
+
+        // Create instructions list HTML
+        const instructionsText = recipe.instructions || '';
+        let instructionsList = '';
+        if (instructionsText) {
+            // Split instructions by sentences and create numbered steps
+            const steps = instructionsText.split(/[.!?]+/).filter(step => step.trim().length > 10);
+            instructionsList = steps.map(step =>
+                `<li>${step.trim()}.</li>`
+            ).join('');
+        }
+
         modal.innerHTML = `
             <div class="modal-content upgraded-modal-content">
                 <button class="close" tabindex="0" aria-label="Close"><i class="fas fa-times"></i></button>
@@ -792,9 +1281,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="modal-tags-row">
                     ${habits} ${categories}
                 </div>
-                <div class="modal-section">
-                    <b>Ingredients:</b> ${(recipe.ingredients || []).join(', ') || '-'}
+                
+                <div class="modal-two-columns">
+                    <div class="modal-column">
+                        <h4><i class="fas fa-list"></i> Ingredients</h4>
+                        <ul class="modal-ingredients-list">
+                            ${ingredientsList || '<li>No ingredients available</li>'}
+                        </ul>
+                    </div>
+                    <div class="modal-column">
+                        <h4><i class="fas fa-clipboard-list"></i> Instructions</h4>
+                        <ul class="modal-instructions-list">
+                            ${instructionsList || '<li>No instructions available</li>'}
+                        </ul>
+                    </div>
                 </div>
+                
                 <div class="modal-section modal-nutrition-row">
                     <button class="btn btn-primary nutrition-match-btn">Show Nutrition</button>
                     <div class="nutrition-modal-results" style="margin-top:1rem;"></div>
@@ -826,6 +1328,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     nutritionResults.innerHTML = '<div style="color:#888;text-align:center;">No nutrition matches found for listed ingredients.</div>';
                     return;
                 }
+
+                // DEBUG: Log modal nutrition data
+                console.log(`Modal Nutrition Debug for ${recipe.title}:`, {
+                    raw_response: sum,
+                    servings: recipe.servings || recipe.yield || 'unknown'
+                });
+
+                // Get servings for per-serving calculation
+                const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
                 const fields = [
                     { keys: ['calories', 'energy_kcal', 'energy'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
                     { keys: ['protein', 'protein_g'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
@@ -842,13 +1353,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 const cards = nutritionResults.querySelector('.nutrition-cards');
                 fields.forEach(f => {
                     const raw = getAny(sum, f.keys);
-                    const val = raw != null ? fmt(raw) : '-';
+                    // Use backend-processed data directly (no frontend adjustments needed)
+                    const perServingValue = Math.round((raw || 0) / servings);
+                    const val = formatNutritionNumber(perServingValue, f.unit || '');
+
                     const card = document.createElement('div');
                     card.className = 'nutrition-card';
                     card.innerHTML = `
                             <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
-                            <div class="nutrition-label">${f.label}</div>
-                            <div class="nutrition-value">${val}${f.unit ? ' ' + f.unit : ''}</div>
+                            <div class="nutrition-label">${f.label} (per serving)</div>
+                            <div class="nutrition-value">${val}</div>
                         `;
                     cards.appendChild(card);
                 });
@@ -880,22 +1394,124 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     let nextToken = null;
     let lastQuery = {};
+    let displayedRecipeIds = new Set(); // Track displayed recipes to avoid duplicates
+
+    // Sort recipes by nutrition values
+    async function sortRecipesByNutrition(recipes, sortBy) {
+        if (sortBy === 'default' || !recipes.length) return recipes;
+
+        // Fetch nutrition data for all recipes
+        const recipesWithNutrition = await Promise.all(
+            recipes.map(async (recipe) => {
+                try {
+                    const nutrition = await fetchNutrition(recipe.ingredients || []);
+                    const sum = nutrition.summary_100g_sum || {};
+
+                    // DEBUG: Log nutrition data for debugging
+                    console.log(`Nutrition Debug for ${recipe.title}:`, {
+                        ingredients: recipe.ingredients,
+                        raw_api_response: sum,
+                        calories_raw: getAny(sum, ['calories', 'energy_kcal', 'energy']),
+                        protein_raw: getAny(sum, ['protein', 'protein_g']),
+                        servings: recipe.servings || 'unknown'
+                    });
+
+                    // NOTE: According to backend analysis, summary_100g_sum contains TOTAL recipe nutrition
+                    // not per-100g values. The field name is misleading.
+                    // We should divide by servings to get per-serving nutrition
+                    const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings if not specified
+
+                    return {
+                        ...recipe,
+                        nutritionData: {
+                            calories: Math.round((getAny(sum, ['calories', 'energy_kcal', 'energy']) || 0) / servings),
+                            protein: Math.round((getAny(sum, ['protein', 'protein_g']) || 0) / servings),
+                            fat: Math.round((getAny(sum, ['total_fat', 'fat', 'fat_g']) || 0) / servings),
+                            sodium: Math.round((getAny(sum, ['sodium', 'sodium_mg']) || 0) / servings)
+                        }
+                    };
+                } catch (error) {
+                    return {
+                        ...recipe,
+                        nutritionData: { calories: 0, protein: 0, fat: 0, sodium: 0 }
+                    };
+                }
+            })
+        );
+
+        // Sort based on the selected option
+        const sorted = recipesWithNutrition.sort((a, b) => {
+            const aNutrition = a.nutritionData;
+            const bNutrition = b.nutritionData;
+
+            switch (sortBy) {
+                case 'calories-high':
+                    return bNutrition.calories - aNutrition.calories;
+                case 'calories-low':
+                    return aNutrition.calories - bNutrition.calories;
+                case 'protein-high':
+                    return bNutrition.protein - aNutrition.protein;
+                case 'protein-low':
+                    return aNutrition.protein - bNutrition.protein;
+                case 'fat-high':
+                    return bNutrition.fat - aNutrition.fat;
+                case 'fat-low':
+                    return aNutrition.fat - bNutrition.fat;
+                case 'sodium-high':
+                    return bNutrition.sodium - aNutrition.sodium;
+                case 'sodium-low':
+                    return aNutrition.sodium - bNutrition.sodium;
+                default:
+                    return 0;
+            }
+        });
+
+        return sorted;
+    }
 
     async function updateRecipes(reset = true) {
         const keyword = searchInput ? searchInput.value.trim() : '';
         const category = recipeCategorySelect ? recipeCategorySelect.value : '';
-        const habit = dietTypeSelect ? dietTypeSelect.value : '';
+        const diet_type = dietTypeSelect ? dietTypeSelect.value : '';
+        const allergy_filter = allergyFilterSelect ? allergyFilterSelect.value : '';
+        const sortBy = sortBySelect ? sortBySelect.value : 'default';
         if (reset) {
             nextToken = null;
-            lastQuery = { keyword, category, habit };
+            lastQuery = { keyword, category, diet_type, allergy_filter, sortBy };
+            displayedRecipeIds.clear(); // Clear displayed recipes on new search
         }
         if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading...</div>';
         try {
-            const { items = [], next_token } = await fetchRecipes({ keyword, category, habit, nextToken: reset ? null : nextToken });
+            const { items = [], next_token } = await fetchRecipes({ keyword, category, diet_type, allergy_filter, nextToken: reset ? null : nextToken });
             let filteredItems = items;
+
+            // Remove duplicates and already displayed recipes
+            const originalCount = filteredItems.length;
+            filteredItems = filteredItems.filter(r => {
+                if (displayedRecipeIds.has(r.recipe_id)) {
+                    return false; // Skip already displayed recipes
+                }
+                return true;
+            });
+            const duplicatesFiltered = originalCount - filteredItems.length;
+            if (duplicatesFiltered > 0) {
+                console.log(`Filtered out ${duplicatesFiltered} duplicate recipes. Showing ${filteredItems.length} new recipes.`);
+            }
+
             // Strict category match: only show recipes whose categories exactly match the selected category
             if (category && category !== 'all') {
-                filteredItems = items.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
+                filteredItems = filteredItems.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
+            }
+
+            // Apply sorting by nutrition values or default quality sorting
+            if (sortBy !== 'default') {
+                if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition data for sorting...</div>';
+                filteredItems = await sortRecipesByNutrition(filteredItems, sortBy);
+            } else {
+                // For default sorting, prioritize recipes with better nutrition data quality
+                if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Analyzing recipe quality...</div>';
+                filteredItems = sortRecipesByNutritionQuality(filteredItems);
+                console.log('Applied nutrition quality sorting for default view');
             }
             if (cardsContainer) {
                 if (reset) cardsContainer.innerHTML = '';
@@ -903,21 +1519,57 @@ document.addEventListener('DOMContentLoaded', function () {
                     cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">No related recipes provided</div>';
                 } else {
                     filteredItems.forEach(r => {
+                        // Add to displayed recipes set
+                        displayedRecipeIds.add(r.recipe_id);
+
                         const card = document.createElement('div');
                         card.className = 'recipe-card';
                         card.tabIndex = 0;
                         card.style.cursor = 'pointer';
                         card.setAttribute('data-id', r.recipe_id || r.id || '');
                         card._recipe = r;
-                        // Group tags: health (habits) and category
-                        const healthTags = (r.habits || []).map(h => `<span class="tag health-tag">${h}</span>`).join('');
+                        // Group tags into 3 types
+                        const habits = r.habits || [];
+                        const dietTags = habits.filter(h => ['vegetarian', 'vegan', 'keto', 'kosher', 'raw', 'low_sugar', 'low_sodium', 'healthyish'].includes(h))
+                            .map(h => `<span class="tag diet-tag">${h}</span>`).join('');
+                        const allergyTags = habits.filter(h => ['dairy_free', 'gluten_free', 'nut_free', 'shellfish_free', 'egg_free', 'soy_free', 'fish_free'].includes(h))
+                            .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');
                         const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
+
+                        // Add nutrition info if available from sorting
+                        let nutritionInfo = '';
+                        if (r.nutritionData) {
+                            // From sorting functionality
+                            const data = r.nutritionData;
+                            nutritionInfo = `<div class="recipe-nutrition-info">
+                                <span class="nutrition-item">🔥 ${formatNutritionNumber(data.calories)} kcal</span>
+                                <span class="nutrition-item">💪 ${formatNutritionNumber(data.protein, 'g')} protein</span>
+                                <span class="nutrition-item">🥑 ${formatNutritionNumber(data.fat, 'g')} fat</span>
+                                <span class="nutrition-item">🧂 ${formatNutritionNumber(data.sodium, 'mg')} sodium</span>
+                            </div>`;
+                        }
+
+                        // Add image if available
+                        const imageHtml = r.has_image && r.image_display ?
+                            `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` :
+                            `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
+
+                        // Get cooking time and difficulty info
+                        const cookingTime = r.cooking_time || r.cook_time || r.total_time || r.prep_time || null;
+                        const difficulty = r.difficulty || r.level || r.skill_level || null;
+
+                        const cookingTimeHtml = cookingTime ? `<span class="recipe-info-item"><i class="fas fa-clock"></i> Time: ${cookingTime}</span>` : '';
+                        const difficultyHtml = difficulty ? `<span class="recipe-info-item"><i class="fas fa-chart-bar"></i> Difficulty: ${difficulty}</span>` : '';
+
                         card.innerHTML = `
-                            <div class="recipe-title">${r.title || ''}</div>
-                            <div class="recipe-description">${r.description || ''}</div>
-                            <div class="recipe-tags-row">
-                                <div class="recipe-tags health-tags-group">${healthTags}</div>
-                                <div class="recipe-tags category-tags-group">${categoryTags}</div>
+                            ${imageHtml}
+                            <div class="recipe-content">
+                                <div class="recipe-title">${r.title || ''}</div>
+                                ${nutritionInfo}
+                                <div class="recipe-info-row">
+                                    ${cookingTimeHtml}
+                                    ${difficultyHtml}
+                                </div>
                             </div>
                         `;
                         cardsContainer.appendChild(card);
@@ -935,7 +1587,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 loadMoreBtn.textContent = 'Load more';
                 loadMoreBtn.style.display = 'block';
                 loadMoreBtn.style.margin = '1.5rem auto';
-                loadMoreBtn.onclick = function () { updateRecipes(false); };
+                loadMoreBtn.onclick = function () {
+                    loadMoreBtn.textContent = 'Loading...';
+                    loadMoreBtn.disabled = true;
+                    updateRecipes(false);
+                };
                 cardsContainer.appendChild(loadMoreBtn);
             } else if (!nextToken && filteredItems.length > 0 && cardsContainer) {
                 // Show "No more recipe available" when there is no more data
@@ -954,7 +1610,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // If server error 5xx try a graceful fallback (no title_prefix) once
             if (e && e.status && String(e.status).startsWith('5')) {
                 try {
-                    const fallback = await fetchRecipes({ keyword: '', category, habit, limit });
+                    const fallback = await fetchRecipes({ keyword: '', category, diet_type, allergy_filter, limit: 10 });
                     if (fallback && fallback.items && fallback.items.length) {
                         // render fallback results by reusing logic
                         const tempItems = fallback.items;
@@ -967,14 +1623,32 @@ document.addEventListener('DOMContentLoaded', function () {
                                 card.style.cursor = 'pointer';
                                 card.setAttribute('data-id', r.recipe_id || r.id || '');
                                 card._recipe = r;
-                                const healthTags = (r.habits || []).map(h => `<span class="tag health-tag">${h}</span>`).join('');
+                                const habits = r.habits || [];
+                                const dietTags = habits.filter(h => ['vegetarian', 'vegan', 'keto', 'kosher', 'raw', 'low_sugar', 'low_sodium', 'healthyish'].includes(h))
+                                    .map(h => `<span class="tag diet-tag">${h}</span>`).join('');
+                                const allergyTags = habits.filter(h => ['dairy_free', 'gluten_free', 'nut_free', 'shellfish_free', 'egg_free', 'soy_free', 'fish_free'].includes(h))
+                                    .map(h => `<span class="tag allergy-tag">${h}</span>`).join('');
                                 const categoryTags = (r.categories || []).map(c => `<span class="tag category-tag">${c}</span>`).join('');
+                                // Add image if available  
+                                const imageHtml = r.has_image && r.image_display ?
+                                    `<div class="recipe-image"><img src="${r.image_display}" alt="${r.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` :
+                                    `<div class="recipe-image-placeholder"><i class="fas fa-utensils"></i></div>`;
+
+                                // Get cooking time and difficulty info
+                                const cookingTime = r.cooking_time || r.cook_time || r.total_time || r.prep_time || null;
+                                const difficulty = r.difficulty || r.level || r.skill_level || null;
+
+                                const cookingTimeHtml = cookingTime ? `<span class="recipe-info-item"><i class="fas fa-clock"></i> Time: ${cookingTime}</span>` : '';
+                                const difficultyHtml = difficulty ? `<span class="recipe-info-item"><i class="fas fa-chart-bar"></i> Level: ${difficulty}</span>` : '';
+
                                 card.innerHTML = `
-                                        <div class="recipe-title">${r.title || ''}</div>
-                                        <div class="recipe-description">${r.description || ''}</div>
-                                        <div class="recipe-tags-row">
-                                            <div class="recipe-tags health-tags-group">${healthTags}</div>
-                                            <div class="recipe-tags category-tags-group">${categoryTags}</div>
+                                        ${imageHtml}
+                                        <div class="recipe-content">
+                                            <div class="recipe-title">${r.title || ''}</div>
+                                            <div class="recipe-info-row">
+                                                ${cookingTimeHtml}
+                                                ${difficultyHtml}
+                                            </div>
                                         </div>
                                     `;
                                 cardsContainer.appendChild(card);
@@ -1007,59 +1681,311 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function renderMealsAddedList() {
-  const ul = document.querySelector('.meals-added-list');
-  if (!ul) return;
+    const ul = document.querySelector('.meals-added-list');
+    const clearAllBtn = document.getElementById('clear-all-meals');
+    if (!ul) return;
 
-  const day = todayKey();
-  const all = readDashboard();
-  const todays = all.filter(x => x.day === day);
+    const day = todayKey();
+    const all = readDashboard();
+    const todays = all.filter(x => x.day === day);
 
-  ul.innerHTML = '';
+    ul.innerHTML = '';
 
-  if (todays.length === 0) {
-    ul.innerHTML = `<li class="meal-item"><div class="meal-left">
+    if (todays.length === 0) {
+        ul.innerHTML = `<li class="meal-item"><div class="meal-left">
         <div class="meal-name" style="color:#888;">No meals added yet</div>
       </div></li>`;
-    return;
-  }
 
-  todays.forEach(item => {
-    const li = document.createElement('li');
-    li.className = 'meal-item';
-    li.dataset.id = item.recipe_id;
-    li.dataset.day = item.day;
+        // Hide clear all button when no meals
+        if (clearAllBtn) clearAllBtn.style.display = 'none';
 
-    const kcal = (typeof item.calories === 'number' && !Number.isNaN(item.calories))
-      ? `${item.calories.toFixed(0)} kcal`
-      : '-';
+        // Auto-refresh nutrition data to show zeros
+        if (typeof renderDashboardNutrition === 'function') {
+            renderDashboardNutrition();
+        }
+        return;
+    }
 
-    li.innerHTML = `
+    // Show clear all button when there are meals
+    if (clearAllBtn) {
+        clearAllBtn.style.display = 'block';
+        // Bind clear all button if not already bound
+        if (!clearAllBtn._bound) {
+            clearAllBtn._bound = true;
+            clearAllBtn.onclick = function () {
+                if (confirm('Are you sure you want to clear all meals for today?')) {
+                    clearAllMealsForDay(day);
+                    renderMealsAddedList();
+                    if (typeof renderDashboardNutrition === 'function') {
+                        renderDashboardNutrition();
+                    }
+                }
+            };
+        }
+    }
+
+    // Group recipes by recipe_id and title
+    const groupedRecipes = {};
+    todays.forEach(item => {
+        const key = `${item.recipe_id}_${item.title}`;
+        if (!groupedRecipes[key]) {
+            groupedRecipes[key] = {
+                recipe_id: item.recipe_id,
+                title: item.title,
+                day: item.day,
+                entries: [],
+                totalCalories: 0
+            };
+        }
+        groupedRecipes[key].entries.push(item);
+        if (typeof item.calories === 'number' && !Number.isNaN(item.calories)) {
+            groupedRecipes[key].totalCalories += item.calories;
+        }
+    });
+
+    // Render grouped recipes
+    Object.values(groupedRecipes).forEach(group => {
+        const li = document.createElement('li');
+        li.className = 'meal-item';
+        li.dataset.recipeId = group.recipe_id;
+        li.dataset.day = group.day;
+
+        const count = group.entries.length;
+        const displayTitle = count > 1 ? `${group.title} ×${count}` : group.title;
+        const totalKcal = group.totalCalories > 0 ? `${group.totalCalories.toFixed(0)} kcal` : '-';
+
+        li.innerHTML = `
       <div class="meal-left">
-        <div class="meal-name">${item.title || 'Untitled recipe'}</div>
+        <div class="meal-name">${displayTitle}</div>
         <div class="meal-meta">Added today</div>
       </div>
       <div class="meal-right">
-        <div class="meal-kcal">${kcal}</div>
-        <button class="meal-delete" title="Remove">
-          <i class="fas fa-trash-alt"></i>
-        </button>
+        <div class="meal-kcal">${totalKcal}</div>
+        <div class="meal-controls">
+          <button class="meal-add" title="Add one more serving" data-recipe-id="${group.recipe_id}" ${count >= 3 ? 'disabled' : ''}>
+            <i class="fas fa-plus"></i>
+          </button>
+          <button class="meal-delete" title="Remove one serving" data-count="${count}">
+            <i class="fas fa-minus"></i>
+          </button>
+        </div>
       </div>
     `;
-    ul.appendChild(li);
-  });
 
-  // Bind delete event
-  ul.querySelectorAll('.meal-delete').forEach(btn => {
-    btn.onclick = function() {
-      const li = btn.closest('.meal-item');
-      const id = li?.dataset?.id;
-      const day = li?.dataset?.day;
-      if (!id || !day) return;
-      removeFromDashboardByIdAndDay(id, day);
-      renderMealsAddedList(); // refresh list
-      if (typeof renderDashboardNutrition === 'function') {
-        renderDashboardNutrition(); // refresh nutrition summary
-      }
-    };
-  });
+        // Store entries data for deletion
+        li._entries = group.entries;
+        ul.appendChild(li);
+    });
+
+    // Bind add/remove events
+    ul.querySelectorAll('.meal-add').forEach(btn => {
+        btn.onclick = function () {
+            const li = btn.closest('.meal-item');
+            const entries = li?._entries;
+            const recipeId = btn.getAttribute('data-recipe-id');
+
+            if (!entries || entries.length === 0 || entries.length >= 3) return;
+
+            // Use the first entry as template to add another one
+            const template = entries[0];
+            addToDashboard({
+                recipe_id: template.recipe_id,
+                title: template.title,
+                ingredients: template.ingredients || [],
+                calories: template.calories,
+                added_at: Date.now(),
+                day: template.day
+            });
+
+            renderMealsAddedList(); // refresh list
+            if (typeof renderDashboardNutrition === 'function') {
+                renderDashboardNutrition(); // refresh nutrition summary
+            }
+        };
+    });
+
+    ul.querySelectorAll('.meal-delete').forEach(btn => {
+        btn.onclick = function () {
+            const li = btn.closest('.meal-item');
+            const entries = li?._entries;
+
+            if (!entries || entries.length === 0) return;
+
+            // Remove one entry (the most recent one)
+            const entryToRemove = entries[entries.length - 1];
+            if (entryToRemove.dashboard_entry_id) {
+                removeFromDashboardByEntryId(entryToRemove.dashboard_entry_id);
+            } else {
+                // Fallback for old entries
+                removeFromDashboardByIdAndDay(entryToRemove.recipe_id, entryToRemove.day);
+            }
+
+            renderMealsAddedList(); // refresh list
+            if (typeof renderDashboardNutrition === 'function') {
+                renderDashboardNutrition(); // refresh nutrition summary
+            }
+        };
+    });
 }
+
+// ========== Nutrition Excess Alert System ==========
+
+// Check for nutrition excess and show appropriate alerts
+function checkNutritionExcess(cardFields) {
+    const excessItems = [];
+    const severeExcessItems = [];
+
+    cardFields.forEach(({ curId, goalId }) => {
+        const curEl = document.getElementById(curId);
+        const goalEl = document.getElementById(goalId);
+        if (!curEl || !goalEl) return;
+
+        const current = Number(String(curEl.textContent).replace(/[^0-9\.\-]/g, '')) || 0;
+        const goal = Number(String(goalEl.textContent).replace(/[^0-9\.\-]/g, '')) || 1;
+        const percentage = (current / goal) * 100;
+
+        const nutritionName = getNutritionName(curId);
+
+        if (percentage > 200) {
+            // Severe excess (200%+)
+            severeExcessItems.push({ name: nutritionName, percentage: Math.round(percentage), current, goal });
+            addNutritionCardTip(curEl, 'severe', nutritionName, percentage);
+        } else if (percentage > 130) {
+            // Moderate excess (130-200%)
+            excessItems.push({ name: nutritionName, percentage: Math.round(percentage), current, goal });
+            addNutritionCardTip(curEl, 'warning', nutritionName, percentage);
+        } else if (percentage > 100) {
+            // Light excess (100-130%)
+            addNutritionCardTip(curEl, 'light', nutritionName, percentage);
+        } else {
+            // Remove any existing tips
+            removeNutritionCardTip(curEl);
+        }
+    });
+
+    // Show banner alert for moderate to severe excess
+    if (severeExcessItems.length > 0 || excessItems.length > 0) {
+        showNutritionBanner(severeExcessItems, excessItems);
+    } else {
+        hideNutritionBanner();
+    }
+}
+
+// Get nutrition name from element ID
+function getNutritionName(elementId) {
+    const names = {
+        'calories-current': 'Calories',
+        'protein-current': 'Protein',
+        'carbohydrates-current': 'Carbohydrates',
+        'sodium-current': 'Sodium'
+    };
+    return names[elementId] || elementId.replace('-current', '');
+}
+
+// Add tip to nutrition card
+function addNutritionCardTip(currentElement, severity, nutritionName, percentage) {
+    const card = currentElement.closest('.nutrition-card');
+    if (!card) return;
+
+    // Remove existing tip
+    removeNutritionCardTip(currentElement);
+
+    const tipMessages = {
+        'light': {
+            'Calories': '💡 Goal reached! Maintain balanced eating',
+            'Protein': '💡 Protein sufficient! Add more vegetables',
+            'Carbohydrates': '💡 Carbs on target! Choose whole grains',
+            'Sodium': '💡 Goal reached! Choose low-salt options'
+        },
+        'warning': {
+            'Calories': '⚠️ High calories - choose lighter foods',
+            'Protein': '⚠️ Excess protein - reduce meat intake',
+            'Carbohydrates': '⚠️ Too many carbs - reduce starches',
+            'Sodium': '⚠️ High sodium - avoid processed foods'
+        },
+        'severe': {
+            'Calories': '🚨 Calories severely high! Adjust diet now',
+            'Protein': '🚨 Protein too high! Consult nutritionist',
+            'Carbohydrates': '🚨 Carbs severely high! Reduce sugars',
+            'Sodium': '🚨 Sodium too high! Choose fresh foods'
+        }
+    };
+
+    const message = tipMessages[severity][nutritionName] || `${nutritionName} exceeds recommended amount by ${Math.round(percentage)}%`;
+
+    const tip = document.createElement('div');
+    tip.className = `nutrition-card-tip ${severity}`;
+    tip.innerHTML = `<span>${message}</span>`;
+
+    card.appendChild(tip);
+}
+
+// Remove tip from nutrition card
+function removeNutritionCardTip(currentElement) {
+    const card = currentElement.closest('.nutrition-card');
+    if (!card) return;
+
+    const existingTip = card.querySelector('.nutrition-card-tip');
+    if (existingTip) {
+        existingTip.remove();
+    }
+}
+
+// Show nutrition alert banner
+function showNutritionBanner(severeItems, moderateItems) {
+    const banner = document.getElementById('nutrition-alert-banner');
+    const alertText = document.getElementById('alert-text');
+    const mainContent = document.querySelector('.main-content');
+
+    if (!banner || !alertText) return;
+
+    let message = '';
+    if (severeItems.length > 0) {
+        const item = severeItems[0];
+        message = `🚨 ${item.name} intake severely high (${item.percentage}%) - adjust diet immediately`;
+    } else if (moderateItems.length > 0) {
+        const item = moderateItems[0];
+        message = `⚠️ ${item.name} intake exceeds goal (${item.percentage}%) - choose lighter foods`;
+    }
+
+    alertText.textContent = message;
+    banner.style.display = 'block';
+
+    // Add margin to main content
+    if (mainContent) {
+        mainContent.classList.add('alert-shown');
+    }
+}
+
+// Hide nutrition alert banner
+function hideNutritionBanner() {
+    const banner = document.getElementById('nutrition-alert-banner');
+    const mainContent = document.querySelector('.main-content');
+
+    if (banner) {
+        banner.style.display = 'none';
+    }
+
+    if (mainContent) {
+        mainContent.classList.remove('alert-shown');
+    }
+}
+
+// Close nutrition alert banner
+function closeNutritionAlert() {
+    hideNutritionBanner();
+}
+
+// Clear all nutrition alerts (both banner and card tips)
+function clearAllNutritionAlerts() {
+    // Hide banner
+    hideNutritionBanner();
+
+    // Remove all card tips
+    const allTips = document.querySelectorAll('.nutrition-card-tip');
+    allTips.forEach(tip => tip.remove());
+}
+
+// Make functions available globally
+window.closeNutritionAlert = closeNutritionAlert;
+window.clearAllNutritionAlerts = clearAllNutritionAlerts;

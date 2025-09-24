@@ -124,7 +124,7 @@
 	<!-- Welcome Section -->
 	<section class="welcome-section" id="welcome">
 		<div class="welcome-card" role="region" aria-labelledby="welcome-heading">
-			<h1 class="welcome-title shine-animate">Welcome to Silver Spoon Society</h1>
+			<h1 class="welcome-title">Welcome to Silver Spoon Society</h1>
 			<p class="welcome-sub">Designed for healthy eating, our recipes and nutrition tools are easy to use and suitable for long-term use.</p>
 			<a href="#home" class="welcome-btn" aria-label="Get Started">
 				<i class="fas fa-arrow-down"></i>
@@ -136,14 +136,14 @@
 	<!-- Navigation Bar -->
 	<nav class="navbar">
 		<div class="nav-container">
-			<div class="nav-logo">
+			<a href="home.html" class="nav-logo">
 				<div class="logo-icon">
-					<img src="logo.jpg" alt="Silver Spoon Society Logo" class="custom-logo">
+					<img src="SliverSpoonSociety_Logo.jpg" alt="Silver Spoon Society Logo" class="custom-logo">
 				</div>
 				<div class="logo-text">
 					<h1>Silver Spoon Society</h1>
 				</div>
-			</div>
+			</a>
 			
 			<div class="nav-links">
 				<a href="#welcome" class="nav-link">
@@ -152,27 +152,38 @@
 				</a>
 				<a href="explore-recipes.html" class="nav-link">
 					<i class="fas fa-search"></i>
-					<span>Explore Recipes</span>
+					<span>Recipes</span>
+				</a>
+				<a href="nutrition-dashboard.html" class="nav-link">
+					<i class="fas fa-chart-line"></i>
+					<span>Dashboard</span>
 				</a>
 				<a href="daily-recommendations.html" class="nav-link">
 					<i class="fas fa-heart"></i>
-					<span>Daily Recommendations</span>
+					<span>Daily Tips</span>
 				</a>
 				<a href="meal-planning.html" class="nav-link">
-					<i class="fas fa-calendar"></i>
-					<span>Meal Planning</span>
-				</a>
-				<a href="nutrition-dashboard.html" class="nav-link">
-					<i class="fas fa-chart-bar"></i>
-					<span>Nutrition Dashboard</span>
+					<i class="fas fa-calendar-alt"></i>
+					<span>Planning</span>
 				</a>
 				<a href="shopping-list.html" class="nav-link">
 					<i class="fas fa-shopping-cart"></i>
-					<span>Shopping List</span>
+					<span>Shopping</span>
 				</a>
 			</div>
 			
-			<button class="mobile-menu-btn">
+			<!--
+			<div class="nav-right">
+				<button class="nav-icon-btn">
+					<i class="fas fa-globe"></i>
+				</button>
+				<button class="nav-icon-btn">
+					<i class="fas fa-ellipsis-v"></i>
+				</button>
+			</div>
+			-->
+			
+			<button class="mobile-menu-btn" aria-label="Toggle mobile menu" aria-expanded="false">
 				<i class="fas fa-bars"></i>
 			</button>
 		</div>
@@ -333,6 +344,7 @@
 			});
 		});
 	</script>
+	<script src="config.js"></script>
 	<script src="script.js"></script>
 </body>
 </html>
