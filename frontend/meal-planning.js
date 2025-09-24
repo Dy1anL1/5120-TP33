@@ -479,6 +479,27 @@ function renderCurrentStep() {
 function renderQuestion(question) {
     const value = userPreferences[question.id];
 
+    // Special logic for calorie_target - only show if gender is 'other' or 'prefer_not_to_say'
+    if (question.id === 'calorie_target') {
+        const gender = userPreferences.gender;
+        if (gender === 'male' || gender === 'female') {
+            // Skip rendering this question for male/female since we auto-set their calories
+            return `
+                <div class="question-group" style="display: none;">
+                    <div class="auto-selected-info">
+                        <i class="fas fa-info-circle"></i>
+                        Daily calorie target automatically set based on gender selection: ${userPreferences.calorie_target || 'Not set'}
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // Special logic for allergies - filter options based on diet types
+    if (question.id === 'allergies') {
+        question = filterAllergiesBasedOnDietTypes(question);
+    }
+
     switch (question.type) {
         case 'text':
         case 'number':
@@ -523,16 +544,22 @@ function renderQuestion(question) {
                     </label>
                     <div class="checkbox-group">
                         ${question.options.map(opt => `
-                            <div class="checkbox-option ${selectedValues.includes(opt.value) ? 'selected' : ''}" 
+                            <div class="checkbox-option ${selectedValues.includes(opt.value) ? 'selected' : ''}"
                                  data-question-id="${question.id}" data-value="${opt.value}">
-                                <input type="checkbox" 
-                                       id="${question.id}-${opt.value}" 
+                                <input type="checkbox"
+                                       id="${question.id}-${opt.value}"
                                        value="${opt.value}"
                                        ${selectedValues.includes(opt.value) ? 'checked' : ''}>
                                 <label for="${question.id}-${opt.value}">${opt.text}</label>
                             </div>
                         `).join('')}
                     </div>
+                    ${question.hiddenOptionsNote ? `
+                        <div class="hidden-options-note">
+                            <i class="fas fa-info-circle"></i>
+                            ${question.hiddenOptionsNote}
+                        </div>
+                    ` : ''}
                     <div class="input-hint">${getQuestionHint(question)}</div>
                     <div id="${question.id}-error" class="validation-message error-message" style="display:none;"></div>
                 </div>
@@ -580,8 +607,87 @@ function handleInputChange(event) {
         userPreferences[id] = value;
     }
 
+    // Handle gender-specific logic for calorie selection
+    if (id === 'gender') {
+        handleGenderChange(value);
+    }
+
     saveUserPreferences();
     validateField(event);
+}
+
+// Handle gender change and auto-set calorie target for male/female
+function handleGenderChange(gender) {
+    if (gender === 'male') {
+        // Auto-set male calorie target (typically higher needs)
+        userPreferences.calorie_target = '1800-2200';
+    } else if (gender === 'female') {
+        // Auto-set female calorie target (typically moderate needs)
+        userPreferences.calorie_target = '1500-1800';
+    } else {
+        // For 'other' or 'prefer_not_to_say', clear auto-selection to allow manual choice
+        if (gender === 'other' || gender === 'prefer_not_to_say') {
+            userPreferences.calorie_target = '';
+        }
+    }
+}
+
+// Filter allergies options based on selected diet types (hide irrelevant options)
+function filterAllergiesBasedOnDietTypes(allergiesQuestion) {
+    const selectedDietTypes = userPreferences.diet_types || [];
+
+    // If no diet types selected, show all allergies options
+    if (selectedDietTypes.length === 0) {
+        return allergiesQuestion;
+    }
+
+    // Create a copy of the question to avoid modifying the original
+    const filteredQuestion = { ...allergiesQuestion };
+
+    // Start with all options
+    let availableOptions = [...allergiesQuestion.options];
+
+    // Logic for different diet types - hide options that are redundant
+    const isVegan = selectedDietTypes.includes('vegan');
+    const isVegetarian = selectedDietTypes.includes('vegetarian');
+    const isKosher = selectedDietTypes.includes('kosher');
+
+    // Options to hide based on diet choices
+    let optionsToHide = [];
+
+    if (isVegan) {
+        // Vegans automatically avoid these, so hide these options
+        optionsToHide.push('dairy_free', 'egg_free', 'fish_free', 'shellfish_free');
+    } else if (isVegetarian) {
+        // Vegetarians automatically avoid these, so hide these options
+        optionsToHide.push('fish_free', 'shellfish_free');
+    }
+
+    if (isKosher) {
+        // Kosher diet automatically avoids shellfish, so hide this option
+        optionsToHide.push('shellfish_free');
+    }
+
+    // Remove duplicate options to hide
+    optionsToHide = [...new Set(optionsToHide)];
+
+    // Filter out the options that should be hidden
+    filteredQuestion.options = availableOptions.filter(option =>
+        !optionsToHide.includes(option.value)
+    );
+
+    // Add a note if options were hidden
+    if (optionsToHide.length > 0) {
+        const hiddenOptionsText = optionsToHide.map(option => {
+            const originalOption = allergiesQuestion.options.find(opt => opt.value === option);
+            return originalOption ? originalOption.text : option;
+        }).join(', ');
+
+        // Add info about hidden options
+        filteredQuestion.hiddenOptionsNote = `Note: ${hiddenOptionsText} ${optionsToHide.length === 1 ? 'is' : 'are'} automatically avoided based on your diet choices.`;
+    }
+
+    return filteredQuestion;
 }
 
 // Handle checkbox clicks

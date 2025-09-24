@@ -109,6 +109,54 @@
   - Add Audio API for completion sound (with user preference toggle)
 - **Priority**: 🔴 High (significantly improves user experience)
 
+### Frontend: Meal Planning Questionnaire Reset
+
+- **Issue**: Users who leave meal planning page and return should have a clean questionnaire experience
+- **Impact**: Old form data persists which may confuse users or lead to outdated meal plans
+- **Current Behavior**:
+  - User preferences are saved in localStorage and persist when returning to meal planning
+  - Form inputs remain filled with previous selections
+  - Users may not realize they need to review/update their preferences
+- **Proposed Solution**:
+  - Clear all meal planning form data when users navigate away from meal planning page
+  - Reset questionnaire to Step 1 with empty inputs when returning
+  - Show welcome message indicating fresh questionnaire start
+  - Optionally provide "Load Previous Preferences" button for power users
+- **Technical Implementation**:
+  - Add beforeunload event listener to clear meal planning localStorage data
+  - Reset currentStep to 1 and clear userPreferences object on page entry
+  - Update loadUserPreferences() to skip loading for fresh starts
+  - Consider adding user preference toggle for this behavior
+- **Priority**: 🔴 High (improves user experience and prevents confusion)
+- **User Benefit**: Particularly helpful for elderly users who may be confused by pre-filled forms
+
+### Frontend: Recipe Ingredient Portion Display
+
+- **Issue**: Multi-serving recipes show ingredient amounts for entire recipe instead of per-person portions
+- **Impact**: Users see confusing ingredient quantities that don't match individual serving sizes
+- **Current Behavior**:
+  - Recipe ingredients list shows total amounts for all servings (e.g., "4 cups rice" for 4-person recipe)
+  - Both meal-planning.html and explore-recipes.html display raw ingredient amounts from database
+  - Users must manually calculate per-person portions for shopping or cooking
+  - Inconsistent with nutrition information which is already shown per-serving
+- **Expected Behavior**:
+  - Ingredient amounts should be automatically calculated and displayed per person
+  - Example: "4 cups rice (serves 4)" should display as "1 cup rice per person"
+  - Consistent across both meal planning and recipe exploration interfaces
+- **Technical Implementation**:
+  - Parse ingredient text to extract quantities (numbers + units)
+  - Divide quantities by recipe serving size (recipe.servings || recipe.yield || 4)
+  - Handle different quantity formats: "2 cups", "1/2 tablespoon", "3-4 pieces"
+  - Preserve non-quantified ingredients: "salt to taste", "fresh herbs"
+  - Update ingredient display in both recipe modal and meal planning interfaces
+  - Add small note: "Amounts shown per serving" for clarity
+- **Code Areas Affected**:
+  - `meal-planning.js`: Recipe modal ingredient rendering
+  - `explore-recipes.js`: Recipe card and modal ingredient display
+  - Both ingredient parsing and display logic
+- **Priority**: 🟡 Medium (improves user experience and practical usability)
+- **User Benefit**: Easier meal preparation and grocery shopping, especially for single-person cooking
+
 ### Backend: Nutrition Calculation Accuracy
 
 - **Issue**: Overly aggressive sodium adjustment logic may cause inaccurate nutrition values
