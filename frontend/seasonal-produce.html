@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Seasonal Fruits & Vegetables - Silver Spoon Society</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="password-protection.js"></script>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <div class="logo-icon">
+                    <img src="SliverSpoonSociety_Logo.jpg" alt="Silver Spoon Society Logo" class="custom-logo">
+                </div>
+                <div class="logo-text">
+                    <h1>Silver Spoon Society</h1>
+                </div>
+            </a>
+
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="explore-recipes.html" class="nav-link">
+                    <i class="fas fa-search"></i>
+                    <span>Recipes</span>
+                </a>
+                <a href="nutrition-dashboard.html" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="daily-recommendations.html" class="nav-link">
+                    <i class="fas fa-heart"></i>
+                    <span>Daily Tips</span>
+                </a>
+                <a href="meal-planning.html" class="nav-link">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Planning</span>
+                </a>
+                <a href="shopping-list.html" class="nav-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Shopping</span>
+                </a>
+                <a href="seasonal-produce.html" class="nav-link active">
+                    <i class="fas fa-leaf"></i>
+                    <span>Seasonal</span>
+                </a>
+            </div>
+
+            <button class="mobile-menu-btn" aria-label="Toggle mobile menu" aria-expanded="false">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content seasonal-main">
+        <!-- Hero Section -->
+        <section class="seasonal-hero">
+            <h1><i class="fas fa-leaf"></i> Seasonal Fruits & Vegetables</h1>
+            <p>Discover the freshest, most nutritious produce available throughout the year. Eating seasonally supports your health and brings the best flavors to your table.</p>
+        </section>
+
+        <!-- Season Selector -->
+        <div class="season-selector">
+            <button class="season-btn active" data-season="spring">
+                <i class="fas fa-seedling"></i>
+                Spring
+            </button>
+            <button class="season-btn" data-season="summer">
+                <i class="fas fa-sun"></i>
+                Summer
+            </button>
+            <button class="season-btn" data-season="autumn">
+                <i class="fas fa-maple-leaf"></i>
+                Autumn
+            </button>
+            <button class="season-btn" data-season="winter">
+                <i class="fas fa-snowflake"></i>
+                Winter
+            </button>
+        </div>
+
+        <!-- Spring Content -->
+        <div class="season-content active" id="spring-content">
+            <div class="season-intro">
+                <h2>Spring Produce (March - May)</h2>
+                <p>Spring brings fresh, tender vegetables and early fruits. These foods help detoxify your body after winter and provide energy for the active season ahead.</p>
+            </div>
+
+        </div>
+
+        <!-- Summer Content -->
+        <div class="season-content" id="summer-content">
+            <div class="season-intro">
+                <h2>Summer Produce (June - August)</h2>
+                <p>Summer offers hydrating fruits and vegetables perfect for hot weather. These foods are naturally cooling and provide essential electrolytes.</p>
+            </div>
+
+        </div>
+
+        <!-- Autumn Content -->
+        <div class="season-content" id="autumn-content">
+            <div class="season-intro">
+                <h2>Autumn Produce (September - November)</h2>
+                <p>Fall brings hearty, warming foods rich in vitamins and minerals to prepare your body for winter. Perfect for comforting, nutritious meals.</p>
+            </div>
+
+        </div>
+
+        <!-- Winter Content -->
+        <div class="season-content" id="winter-content">
+            <div class="season-intro">
+                <h2>Winter Produce (December - February)</h2>
+                <p>Winter vegetables are rich in nutrients that boost immunity and provide warming, comforting nutrition during the cold months.</p>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="section-container">
+            <div class="footer-content">
+                <p class="footer-text">Supporting healthy eating habits for a better life</p>
+                <p class="footer-copyright">© 2024 Silver Spoon Society. Designed for senior wellness.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Season selector functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const seasonBtns = document.querySelectorAll('.season-btn');
+            const seasonContents = document.querySelectorAll('.season-content');
+
+            seasonBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Remove active class from all buttons and content
+                    seasonBtns.forEach(b => b.classList.remove('active'));
+                    seasonContents.forEach(c => c.classList.remove('active'));
+
+                    // Add active class to clicked button
+                    this.classList.add('active');
+
+                    // Show corresponding content
+                    const season = this.getAttribute('data-season');
+                    document.getElementById(season + '-content').classList.add('active');
+                });
+            });
+
+            // Mobile menu toggle
+            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+            const navLinks = document.querySelector('.nav-links');
+
+            if (mobileMenuBtn && navLinks) {
+                mobileMenuBtn.addEventListener('click', function() {
+                    navLinks.classList.toggle('show');
+                });
+            }
+        });
+    </script>
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
