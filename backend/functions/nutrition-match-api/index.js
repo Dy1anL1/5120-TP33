@@ -73,6 +73,62 @@ function norm(s = "") {
     .trim();
 }
 
+// Enhanced normalization with multiple fallback strategies
+function getSearchVariations(name) {
+  const variations = [];
+  const base = norm(name);
+
+  // Add the basic normalized version
+  variations.push(base);
+
+  // Add singular/plural variations
+  if (base.endsWith('s') && base.length > 3) {
+    variations.push(base.slice(0, -1)); // Remove 's'
+  } else if (!base.endsWith('s')) {
+    variations.push(base + 's'); // Add 's'
+  }
+
+  // Add common food word simplifications
+  const simplifications = [
+    [/\bfresh\s+/, ''],
+    [/\braw\s+/, ''],
+    [/\borganic\s+/, ''],
+    [/\bdried\s+/, ''],
+    [/\bcooked\s+/, ''],
+    [/\bboiled\s+/, ''],
+    [/\bsteamed\s+/, ''],
+    [/\bfried\s+/, ''],
+    [/\bgrilled\s+/, ''],
+    [/\bbaked\s+/, ''],
+    [/\broasted\s+/, ''],
+    [/\bwhole\s+/, ''],
+    [/\bground\s+/, ''],
+    [/\bchopped\s+/, ''],
+    [/\bsliced\s+/, ''],
+    [/\bdiced\s+/, ''],
+    [/\bminced\s+/, ''],
+  ];
+
+  simplifications.forEach(([pattern, replacement]) => {
+    const simplified = base.replace(pattern, replacement).trim();
+    if (simplified && simplified !== base && !variations.includes(simplified)) {
+      variations.push(simplified);
+    }
+  });
+
+  // Add partial matches (first word, last word)
+  const words = base.split(/\s+/).filter(w => w.length > 2);
+  if (words.length > 1) {
+    words.forEach(word => {
+      if (!variations.includes(word)) {
+        variations.push(word);
+      }
+    });
+  }
+
+  return variations.filter(v => v.length > 0);
+}
+
 function addInto(sum, obj) {
   if (!obj) return;
   for (const [k, v] of Object.entries(obj)) {
@@ -124,45 +180,81 @@ exports.handler = async (event) => {
       const providedLabel = typeof rawItem === 'object' ? (rawItem.label || null) : null;
       // Parse amount, unit, and main ingredient
       const { amount, unit, name } = parseAmountUnit(raw);
-      const q = norm(name);
-      if (!q) { results.push({ ingredient: rawItem, query: q, match: null }); continue; }
+      const searchVariations = getSearchVariations(name);
 
-      // Query by prefix, take the first match
-      let data = await ddb.send(new QueryCommand({
-        TableName: TABLE,
-        IndexName: GSI,
-        KeyConditionExpression: "name_lc_first1 = :pk AND begins_with(name_lc, :pfx)",
-        ExpressionAttributeValues: { ":pk": first1(q), ":pfx": q },
-        Limit: 5,
-      }));
+      if (searchVariations.length === 0) {
+        results.push({ ingredient: rawItem, query: name, match: null, search_attempts: [] });
+        continue;
+      }
 
-      // Prefer a candidate whose labels match providedLabel (if any) - be tolerant to labels stored as object/array/string
+      // Try multiple search variations until we find a match
       let candidate = null;
-      const items = data.Items || [];
-      console.log('Query:', q, 'candidates:', items.length, 'providedLabel:', providedLabel);
-      if (providedLabel && items.length > 0) {
-        for (const it of items) {
-          const rawLabels = parseMaybeJson(it.labels);
-          let labelKeys = [];
-          if (Array.isArray(rawLabels)) {
-            labelKeys = rawLabels.map(String);
-          } else if (rawLabels && typeof rawLabels === 'object') {
-            labelKeys = Object.keys(rawLabels).map(String);
-          } else if (typeof rawLabels === 'string') {
-            // try parse JSON string
-            try {
-              const p = JSON.parse(rawLabels);
-              if (Array.isArray(p)) labelKeys = p.map(String);
-              else if (p && typeof p === 'object') labelKeys = Object.keys(p).map(String);
-              else labelKeys = [String(p)];
-            } catch (e) {
-              labelKeys = [rawLabels];
+      let searchAttempts = [];
+      let successfulQuery = null;
+
+      for (const q of searchVariations) {
+        // Query by prefix with more candidates
+        let data = await ddb.send(new QueryCommand({
+          TableName: TABLE,
+          IndexName: GSI,
+          KeyConditionExpression: "name_lc_first1 = :pk AND begins_with(name_lc, :pfx)",
+          ExpressionAttributeValues: { ":pk": first1(q), ":pfx": q },
+          Limit: 15, // Increased from 5 to 15 for better matching
+        }));
+
+        const items = data.Items || [];
+        searchAttempts.push({ query: q, candidates: items.length });
+
+        if (items.length === 0) continue;
+
+        // Score and rank candidates
+        const scoredCandidates = items.map(item => {
+          let score = 0;
+          const itemName = (item.name_lc || '').toLowerCase();
+
+          // Exact match gets highest score
+          if (itemName === q) score += 100;
+
+          // Close match (starts with query)
+          else if (itemName.startsWith(q)) score += 80;
+
+          // Contains query
+          else if (itemName.includes(q)) score += 60;
+
+          // Label matching bonus
+          if (providedLabel) {
+            const rawLabels = parseMaybeJson(item.labels);
+            let labelKeys = [];
+            if (Array.isArray(rawLabels)) {
+              labelKeys = rawLabels.map(String);
+            } else if (rawLabels && typeof rawLabels === 'object') {
+              labelKeys = Object.keys(rawLabels).map(String);
+            } else if (typeof rawLabels === 'string') {
+              try {
+                const p = JSON.parse(rawLabels);
+                if (Array.isArray(p)) labelKeys = p.map(String);
+                else if (p && typeof p === 'object') labelKeys = Object.keys(p).map(String);
+                else labelKeys = [String(p)];
+              } catch (e) {
+                labelKeys = [rawLabels];
+              }
             }
+            if (labelKeys.includes(String(providedLabel))) score += 50;
           }
-          if (labelKeys.includes(String(providedLabel))) { candidate = it; break; }
+
+          return { item, score, name: itemName };
+        });
+
+        // Sort by score and take the best match
+        scoredCandidates.sort((a, b) => b.score - a.score);
+
+        if (scoredCandidates.length > 0 && scoredCandidates[0].score >= 60) {
+          candidate = scoredCandidates[0].item;
+          successfulQuery = q;
+          console.log(`Found match for "${name}" using query "${q}": ${candidate.name} (score: ${scoredCandidates[0].score})`);
+          break;
         }
       }
-      if (!candidate && items.length > 0) candidate = items[0];
       if (candidate) {
         console.log('Selected id:', candidate.id, 'name:', candidate.name);
         const nutrition = parseMaybeJson(candidate.nutrition_100g);
@@ -173,26 +265,47 @@ exports.handler = async (event) => {
           let n = Number(v) * (gram / 100);
           if (!Number.isFinite(n)) continue;
 
-          // Apply sodium adjustment logic
+          // Apply more conservative sodium adjustment logic
           if (k === 'sodium' || k === 'sodium_mg') {
-            if (n > 10000) {
-              n = n / 100;
-            } else if (n > 5000) {
-              n = n / 20;
-            } else if (n > 1000) {
-              n = n / 10;
+            // Only adjust if values are extremely high (likely unit conversion errors)
+            // Be much more conservative than before
+            if (n > 50000) {
+              // Values above 50g sodium (50,000mg) are likely in wrong units
+              n = n / 1000;  // Convert from mg to g, then back to mg
+              console.log(`Adjusted extremely high sodium value: ${Number(v) * (gram / 100)} -> ${n} for ${candidate.name}`);
+            } else if (n > 20000) {
+              // Values above 20g sodium might be unit errors
+              n = n / 100;   // Moderate adjustment
+              console.log(`Adjusted high sodium value: ${Number(v) * (gram / 100)} -> ${n} for ${candidate.name}`);
             }
+            // Values under 20g (20,000mg) sodium are kept as-is
+            // This preserves legitimate high-sodium foods like processed foods, salt, etc.
           }
 
           summary[k] = (summary[k] || 0) + n;
         }
         results.push({
           ingredient: rawItem,
-          query: q,
-          match: { id: candidate.id, name: candidate.name, nutrition_100g: nutrition, gram_used: gram, matched_label: providedLabel || null }
+          query: searchVariations[0], // Show the first search term attempted
+          match: {
+            id: candidate.id,
+            name: candidate.name,
+            nutrition_100g: nutrition,
+            gram_used: gram,
+            matched_label: providedLabel || null
+          },
+          search_attempts: searchAttempts,
+          successful_query: successfulQuery
         });
       } else {
-        results.push({ ingredient: rawItem, query: q, match: null });
+        console.log(`No match found for "${name}" after trying variations:`, searchVariations);
+        results.push({
+          ingredient: rawItem,
+          query: searchVariations[0] || name,
+          match: null,
+          search_attempts: searchAttempts,
+          tried_variations: searchVariations
+        });
       }
     }
 

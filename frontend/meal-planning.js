@@ -16,6 +16,31 @@ const nutritionCache = new Map();
 let lastNutritionRequest = 0;
 const NUTRITION_REQUEST_DELAY = 100; // 100ms delay between requests
 
+// Get consistent nutrition data (same logic as modal)
+async function getConsistentNutrition(recipe) {
+    let nutrition = recipe.nutrition;
+
+    // If no meaningful nutrition data (all zeros except maybe sodium), calculate it from ingredients
+    const hasValidNutrition = nutrition && (
+        (nutrition.calories && nutrition.calories > 0) ||
+        (nutrition.protein_g && nutrition.protein_g > 0) ||
+        (nutrition.carbs_g && nutrition.carbs_g > 0) ||
+        (nutrition.fat_g && nutrition.fat_g > 0)
+    );
+
+    if (!hasValidNutrition && recipe.ingredients) {
+        try {
+            nutrition = await calculateNutrition(recipe.ingredients, 1);
+        } catch (error) {
+            console.error('Error calculating nutrition:', error);
+            nutrition = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0 };
+        }
+    }
+
+    return nutrition || { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0 };
+}
+
+
 // Format nutrition numbers to show 1-2 decimal places, avoiding zeros
 function formatNutritionNumber(value, unit = '') {
     // Apply nutrition value validation before formatting (using script.js function)
@@ -377,7 +402,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     renderCurrentStep();
 
     // Always show the Weekly Summary (even with placeholder data)
-    generateWeeklySummary();
+    await generateWeeklySummary();
 });
 
 // Load saved user preferences from localStorage
@@ -745,6 +770,7 @@ function validateField(event) {
                     errorMessage = question.validation.message;
                 }
             }
+
         } else {
             if (!value || value === '') {
                 isValid = false;
@@ -1692,7 +1718,7 @@ async function renderWeeklyDays() {
     container.innerHTML = dayHTML.join('');
 
     // Generate Weekly Summary
-    generateWeeklySummary(weeklyPlan);
+    await generateWeeklySummary(weeklyPlan);
 }
 
 // Render large recipe card (same style as explore-recipes)
@@ -1707,10 +1733,9 @@ async function renderLargeRecipeCard(mealType, recipe) {
         `;
     }
 
-    // Use recipe's existing nutrition data and calculate per-serving values
-    const nutrition = recipe.nutrition || {};
+    // Use consistent nutrition data (same logic as modal)
+    const nutrition = await getConsistentNutrition(recipe);
     const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
-
 
     const nutritionInfo = `<div class="recipe-nutrition-info">
         <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)}</span>
@@ -1752,8 +1777,8 @@ async function renderMealCard(mealType, recipe) {
         `;
     }
 
-    // Use recipe's existing nutrition data and calculate per-serving values
-    const nutrition = recipe.nutrition || {};
+    // Use consistent nutrition data (same logic as modal)
+    const nutrition = await getConsistentNutrition(recipe);
     const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
     const nutritionInfo = `<div class="recipe-nutrition-info">
         <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)}</span>
@@ -1983,27 +2008,10 @@ async function openRecipeModal(recipeId) {
             }
         }
 
-        // Show nutrition info (per serving) - calculate if not available
+        // Show nutrition info (per serving) - use consistent nutrition data
         if (sumEl) {
-            let nutrition = recipe.nutrition;
-
-            // If no meaningful nutrition data (all zeros except maybe sodium), calculate it from ingredients
-            const hasValidNutrition = nutrition && (
-                (nutrition.calories && nutrition.calories > 0) ||
-                (nutrition.protein_g && nutrition.protein_g > 0) ||
-                (nutrition.carbs_g && nutrition.carbs_g > 0) ||
-                (nutrition.fat_g && nutrition.fat_g > 0)
-            );
-
-            if (!hasValidNutrition && recipe.ingredients) {
-                console.log('Calculating nutrition for modal (insufficient data):', recipe.title);
-                try {
-                    nutrition = await calculateNutrition(recipe.ingredients, 1);
-                } catch (error) {
-                    console.error('Error calculating nutrition for modal:', error);
-                    nutrition = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0 };
-                }
-            }
+            console.log('Getting consistent nutrition for modal:', recipe.title);
+            const nutrition = await getConsistentNutrition(recipe);
 
             if (nutrition) {
                 console.log('Recipe nutrition data:', nutrition);
@@ -2057,7 +2065,7 @@ function printMealPlan() {
 }
 
 // Generate Weekly Summary
-function generateWeeklySummary(weeklyPlan) {
+async function generateWeeklySummary(weeklyPlan) {
     const summaryContainer = document.getElementById('weekly-summary');
     if (!summaryContainer) return;
 
@@ -2098,20 +2106,31 @@ function generateWeeklySummary(weeklyPlan) {
     let totalMeals = 0;
 
     // Calculate totals from all meals (convert to per-serving values)
-    weeklyPlan.days.forEach(day => {
-        ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
+    // Use async processing for consistent nutrition data
+    // Get the actual meal types the user selected
+    const selectedMealTypes = weeklyPlan.preferences?.meal_preferences || ['breakfast', 'lunch', 'dinner'];
+
+    for (const day of weeklyPlan.days) {
+        for (const mealType of selectedMealTypes) {
             const recipe = day.meals[mealType];
-            if (recipe && recipe.nutrition) {
-                const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
-                // Convert total recipe nutrition to per-serving values
-                totalCalories += (recipe.nutrition.calories || 0) / servings;
-                totalProtein += (recipe.nutrition.protein_g || 0) / servings;
-                totalCarbs += (recipe.nutrition.carbs_g || 0) / servings;
-                totalSodium += (recipe.nutrition.sodium_mg || 0) / servings;
-                totalMeals++;
+            if (recipe) {
+                try {
+                    // Use consistent nutrition data (same logic as cards and modal)
+                    const nutrition = await getConsistentNutrition(recipe);
+                    const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+
+                    // Convert total recipe nutrition to per-serving values
+                    totalCalories += (nutrition.calories || 0) / servings;
+                    totalProtein += (nutrition.protein_g || 0) / servings;
+                    totalCarbs += (nutrition.carbs_g || 0) / servings;
+                    totalSodium += (nutrition.sodium_mg || 0) / servings;
+                    totalMeals++;
+                } catch (error) {
+                    console.error(`Error getting nutrition for ${recipe.title}:`, error);
+                }
             }
-        });
-    });
+        }
+    }
 
     // Calculate daily averages (for the days we have data)
     const daysWithData = weeklyPlan.days ? weeklyPlan.days.length : 1;

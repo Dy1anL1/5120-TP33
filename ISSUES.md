@@ -109,27 +109,6 @@
   - Add Audio API for completion sound (with user preference toggle)
 - **Priority**: 🔴 High (significantly improves user experience)
 
-### Frontend: Meal Planning Questionnaire Reset
-
-- **Issue**: Users who leave meal planning page and return should have a clean questionnaire experience
-- **Impact**: Old form data persists which may confuse users or lead to outdated meal plans
-- **Current Behavior**:
-  - User preferences are saved in localStorage and persist when returning to meal planning
-  - Form inputs remain filled with previous selections
-  - Users may not realize they need to review/update their preferences
-- **Proposed Solution**:
-  - Clear all meal planning form data when users navigate away from meal planning page
-  - Reset questionnaire to Step 1 with empty inputs when returning
-  - Show welcome message indicating fresh questionnaire start
-  - Optionally provide "Load Previous Preferences" button for power users
-- **Technical Implementation**:
-  - Add beforeunload event listener to clear meal planning localStorage data
-  - Reset currentStep to 1 and clear userPreferences object on page entry
-  - Update loadUserPreferences() to skip loading for fresh starts
-  - Consider adding user preference toggle for this behavior
-- **Priority**: 🔴 High (improves user experience and prevents confusion)
-- **User Benefit**: Particularly helpful for elderly users who may be confused by pre-filled forms
-
 ### Frontend: Recipe Ingredient Portion Display
 
 - **Issue**: Multi-serving recipes show ingredient amounts for entire recipe instead of per-person portions
@@ -156,6 +135,30 @@
   - Both ingredient parsing and display logic
 - **Priority**: 🟡 Medium (improves user experience and practical usability)
 - **User Benefit**: Easier meal preparation and grocery shopping, especially for single-person cooking
+
+### Frontend: Nutrition Calculation Inconsistencies
+
+- **Issue**: Different nutrition calculation logic between explore-recipes and meal-planning pages
+- **Impact**: Users see different nutrition values for the same recipes, many recipes show zero nutrition
+- **Root Causes**:
+  - **Different Functions**: `script.js` uses `fetchNutrition()` while `meal-planning.js` uses `calculateNutrition()`
+  - **Inconsistent Data Processing**: Different handling of API responses and fallback logic
+  - **Zero Value Returns**: meal-planning.js returns zeros when API has no data instead of using estimation
+  - **Cache Implementation**: Only meal-planning.js has nutrition caching, leading to different performance
+- **Current Behavior**:
+  - explore-recipes: Shows nutrition when available, handles missing data gracefully
+  - meal-planning: Often shows zero nutrition values, less robust error handling
+- **Proposed Solution**:
+  - Unify nutrition calculation logic into a single shared function
+  - Implement consistent fallback strategies across both pages
+  - Add better ingredient matching and estimation algorithms
+  - Apply consistent caching strategy for both pages
+- **Technical Implementation**:
+  - Create unified `getNutritionData()` function in shared utility file
+  - Implement improved ingredient parsing and matching logic
+  - Add consistent error handling and fallback estimation
+  - Update both pages to use the same nutrition calculation approach
+- **Priority**: 🔴 High (affects core functionality and user trust in nutrition data)
 
 ### Backend: Nutrition Calculation Accuracy
 
@@ -201,6 +204,27 @@
 - **Issue**: No caching for frequent queries
 - **Fix**: Add Redis or DynamoDB DAX caching
 - **Priority**: 🟢 Low
+
+### Frontend: Meal Planning Questionnaire Reset
+
+- **Issue**: Users who leave meal planning page and return should have a clean questionnaire experience
+- **Impact**: Old form data persists which may confuse users or lead to outdated meal plans
+- **Current Behavior**:
+  - User preferences are saved in localStorage and persist when returning to meal planning
+  - Form inputs remain filled with previous selections
+  - Users may not realize they need to review/update their preferences
+- **Proposed Solution**:
+  - Clear all meal planning form data when users navigate away from meal planning page
+  - Reset questionnaire to Step 1 with empty inputs when returning
+  - Show welcome message indicating fresh questionnaire start
+  - Optionally provide "Load Previous Preferences" button for power users
+- **Technical Implementation**:
+  - Add beforeunload event listener to clear meal planning localStorage data
+  - Reset currentStep to 1 and clear userPreferences object on page entry
+  - Update loadUserPreferences() to skip loading for fresh starts
+  - Consider adding user preference toggle for this behavior
+- **Priority**: 🟢 Low (pending discussion with instructor about user experience approach)
+- **User Benefit**: Particularly helpful for elderly users who may be confused by pre-filled forms
 
 ---
 

@@ -2,23 +2,15 @@
 (function() {
     const CORRECT_PASSWORD = 'tp33';
     const STORAGE_KEY = 'silver_spoon_auth';
-    const SESSION_TIMEOUT = 60 * 60 * 1000; // 1 hour
 
     // Check if user is already authenticated
     function checkAuth() {
         const authData = localStorage.getItem(STORAGE_KEY);
         if (authData) {
             try {
-                const { timestamp, authenticated } = JSON.parse(authData);
-                const now = Date.now();
-                
-                // Check if session is still valid
-                if (authenticated && (now - timestamp) < SESSION_TIMEOUT) {
-                    return true;
-                } else {
-                    // Session expired, clear auth data
-                    localStorage.removeItem(STORAGE_KEY);
-                }
+                const { authenticated } = JSON.parse(authData);
+                // No timeout check - once authenticated, always authenticated
+                return authenticated === true;
             } catch (e) {
                 // Invalid auth data, clear it
                 localStorage.removeItem(STORAGE_KEY);
@@ -31,7 +23,7 @@
     function saveAuth() {
         const authData = {
             authenticated: true,
-            timestamp: Date.now()
+            timestamp: Date.now() // Keep timestamp for reference, but don't use for expiration
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(authData));
     }
