@@ -47,7 +47,6 @@ const CATEGORIES = {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('Shopping List initialized');
     loadShoppingList();
     setupEventListeners();
     checkForMealPlanIngredients(); // Check for ingredients from meal planning
@@ -61,8 +60,6 @@ function checkForMealPlanIngredients() {
         const mealPlanIngredients = localStorage.getItem(MEAL_PLAN_INGREDIENTS_KEY);
         if (mealPlanIngredients) {
             const ingredients = JSON.parse(mealPlanIngredients);
-            console.log('Found meal plan ingredients from meal planning page:', ingredients.length, 'ingredients');
-
             // Auto-generate shopping list from these ingredients
             autoGenerateFromMealPlanIngredients(ingredients);
 

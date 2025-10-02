@@ -445,27 +445,6 @@ async function renderDashboardNutrition() {
     const progressFill = document.querySelector('.progress-fill');
     let allIngredients = [];
 
-    /* 思考（要不要加）
-    // ====== Auto-reference recommended values ======
-    // 默认 female_51，可根据实际需求切换
-    const userType = window.localStorage.getItem('nss_user_type') || 'female_51';
-    const goals = NUTRIENT_GOALS[userType] || NUTRIENT_GOALS['female_51'];
-    // Map compact goals to DOM elements (if present)
-    if (caloriesGoal) caloriesGoal.textContent = goals.calories_kcal;
-    if (proteinGoal) proteinGoal.textContent = goals.protein_g;
-    if (fiberGoal) fiberGoal.textContent = goals.fiber_g;
-    // Optional goal elements: create or set sodium/calcium/vitD/vitB12 if present
-    const sodiumGoalEl = document.getElementById('sodium-goal');
-    if (sodiumGoalEl) sodiumGoalEl.textContent = goals.sodium_mg;
-    const calciumGoalEl = document.getElementById('calcium-goal');
-    if (calciumGoalEl) calciumGoalEl.textContent = goals.calcium_mg;
-    const potassiumGoalEl = document.getElementById('potassium-goal');
-    if (potassiumGoalEl) potassiumGoalEl.textContent = goals.potassium_mg;
-    const vitDGoalEl = document.getElementById('vitaminD-goal');
-    if (vitDGoalEl) vitDGoalEl.textContent = goals.vitaminD_IU;
-    const vitB12GoalEl = document.getElementById('vitaminB12-goal');
-    if (vitB12GoalEl) vitB12GoalEl.textContent = goals.vitaminB12_mcg;
-    */
     try {
         // Read dashboard from localStorage
         let dashboard = [];
@@ -528,14 +507,7 @@ async function renderDashboardNutrition() {
                 // Get servings info - assume 1 serving per dashboard item since users add individual servings
                 const servings = 1; // Each dashboard item represents one serving
 
-                // DEBUG: Log dashboard nutrition calculation
-                console.log(`Dashboard Recipe Debug - ${item.title || 'Unknown'}:`, {
-                    ingredients: item.ingredients,
-                    raw_response: recipeSum,
-                    calculated_per_serving: {
-                        calories: getAny(recipeSum, ['calories', 'energy_kcal', 'energy']) / (item.servings || 4)
-                    }
-                });
+                // Calculate per-serving values for dashboard
 
                 // Add per-serving nutrition values to totals
                 const recipeServings = item.servings || item.yield || 4; // Default recipe serves 4
@@ -951,7 +923,6 @@ async function fetchRecipes({ keyword, category, habit, diet_type, allergy_filte
         clearTimeout(timeout);
         if (e.name === 'AbortError') {
             if (retryCount < maxRetries) {
-                console.log(`Request timeout, retrying (${retryCount + 1}/${maxRetries + 1})...`);
                 await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Progressive delay
                 return fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit, nextToken }, retryCount + 1);
             }
@@ -964,7 +935,6 @@ async function fetchRecipes({ keyword, category, habit, diet_type, allergy_filte
     if (!res.ok) {
         // Retry on 500 errors (server issues)
         if (res.status >= 500 && retryCount < maxRetries) {
-            console.log(`Server error ${res.status}, retrying (${retryCount + 1}/${maxRetries + 1})...`);
             await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Progressive delay
             return fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit, nextToken }, retryCount + 1);
         }
@@ -1330,7 +1300,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 // DEBUG: Log modal nutrition data
-                console.log(`Modal Nutrition Debug for ${recipe.title}:`, {
+                // Modal Nutrition Debug for ${recipe.title}:
                     raw_response: sum,
                     servings: recipe.servings || recipe.yield || 'unknown'
                 });
@@ -1408,7 +1378,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const sum = nutrition.summary_100g_sum || {};
 
                     // DEBUG: Log nutrition data for debugging
-                    console.log(`Nutrition Debug for ${recipe.title}:`, {
+                    // Nutrition Debug for ${recipe.title}:
                         ingredients: recipe.ingredients,
                         raw_api_response: sum,
                         calories_raw: getAny(sum, ['calories', 'energy_kcal', 'energy']),
@@ -1495,7 +1465,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             const duplicatesFiltered = originalCount - filteredItems.length;
             if (duplicatesFiltered > 0) {
-                console.log(`Filtered out ${duplicatesFiltered} duplicate recipes. Showing ${filteredItems.length} new recipes.`);
             }
 
             // Strict category match: only show recipes whose categories exactly match the selected category
@@ -1511,7 +1480,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 // For default sorting, prioritize recipes with better nutrition data quality
                 if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Analyzing recipe quality...</div>';
                 filteredItems = sortRecipesByNutritionQuality(filteredItems);
-                console.log('Applied nutrition quality sorting for default view');
             }
             if (cardsContainer) {
                 if (reset) cardsContainer.innerHTML = '';
