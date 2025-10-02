@@ -195,15 +195,15 @@ async function calculateNutrition(ingredients, servings = 1) {
         // Store the total values - do NOT divide by servings here
         // Servings division should be done at display time
         const nutrition = {
-            calories: Math.round(sum.calories || sum.energy_kcal || sum.energy || 0),
-            protein_g: Math.round(sum.protein_g || sum.protein || 0),
-            carbs_g: Math.round(sum.carbohydrates || sum.carbohydrate_g || sum.carbohydrate || sum.carbs_g || sum.carbs || 0),
-            fat_g: Math.round(sum.total_fat || sum.fat_g || sum.fat || 0),
-            sodium_mg: Math.round(sum.sodium_mg || sum.sodium || 0),
+            calories: Math.round(sum.calories || 0),
+            protein_g: Math.round(sum.protein || 0),
+            carbs_g: Math.round(sum.carbohydrates || 0),
+            fat_g: Math.round(sum.total_fat || 0),
+            sodium_mg: Math.round(sum.sodium || 0),
             // Keep backward compatibility
-            protein: Math.round(sum.protein_g || sum.protein || 0),
-            carbs: Math.round(sum.carbohydrates || sum.carbohydrate_g || sum.carbohydrate || sum.carbs_g || sum.carbs || 0),
-            fat: Math.round(sum.total_fat || sum.fat_g || sum.fat || 0)
+            protein: Math.round(sum.protein || 0),
+            carbs: Math.round(sum.carbohydrates || 0),
+            fat: Math.round(sum.total_fat || 0)
         };
 
         // Cache the result

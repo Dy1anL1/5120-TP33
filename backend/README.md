@@ -6,9 +6,9 @@ A serverless backend system providing comprehensive nutrition and recipe APIs fo
 
 The backend consists of three main serverless functions deployed as AWS Lambda functions:
 
-- **recipes-api** - Recipe search, filtering, and meal planning
-- **nutrition-match-api** - Nutritional analysis and ingredient matching
-- **foods-api** - Food database and nutritional information
+- **recipes-api** - Recipe search, filtering, and meal planning functionality
+- **nutrition-match-api** - Advanced nutritional analysis with intelligent ingredient matching
+- **foods-api** - Food database management and nutritional information lookup
 
 ## Project Structure
 
@@ -18,7 +18,7 @@ backend/
 │   ├── recipes-api/        # Recipe management and search
 │   ├── nutrition-match-api/ # Nutrition calculation service
 │   └── foods-api/          # Food database service
-├── scripts/                # Deployment and utility scripts
+├── scripts/                # Data management and utility scripts
 ├── package.json           # Root workspace configuration
 └── README.md              # This file
 ```
@@ -50,24 +50,85 @@ backend/
 
 ### DynamoDB Tables
 
-- **Recipes** - Recipe data with ingredients, instructions, and metadata
-- **Foods** - Nutritional information for individual food items
-- **Nutrition** - Calculated nutritional values and ingredient mappings
+#### Foods_v2 Table
+**Primary Key**: `id` (String)
+**Global Secondary Index**: `gsi_name_prefix`
+- Partition Key: `name_lc_first1` (String) - First character of lowercase name
+- Sort Key: `name_lc` (String) - Full lowercase name
+
+**Data Structure**:
+```javascript
+{
+  id: "fd_2dObzdqa6o2J",                    // Unique food identifier
+  name: "Chicken Breast, Boneless Skinless", // Display name
+  name_lc: "chicken breast, boneless skinless", // Lowercase for searching
+  name_lc_first1: "c",                     // First character for prefix queries
+  alternate_names: ["cooked chicken breast", ...], // Search variations
+  description: "Lean protein source...",   // Detailed description
+  type: "everyday",                        // Food category
+  nutrition_100g: {                        // Nutrition per 100g
+    calories: 151,
+    protein: 30.54,
+    total_fat: 3.17,
+    sodium: 52,
+    // ... other nutrients
+  },
+  serving: {                               // Recommended serving size
+    common: { unit: "oz", quantity: 3 },
+    metric: { unit: "g", quantity: 85 }
+  }
+}
+```
+
+#### Recipes Table
+- Recipe data with ingredients, instructions, and metadata
+- Supports filtering by dietary preferences and allergies
+- Includes nutritional analysis integration
 
 ## Key Features
 
-- **Senior-Friendly Filtering** - Tailored for users aged 55-65
-- **Dietary Restrictions** - Supports vegetarian, vegan, gluten-free, etc.
-- **Allergy Management** - Comprehensive allergy filtering system
-- **Performance Optimized** - DynamoDB scan operations with intelligent caching
-- **Error Handling** - Robust error responses with user-friendly messages
+### Nutrition Matching System
+- **Intelligent Ingredient Parsing** - Extracts amounts, units, and ingredient names
+- **Fuzzy Matching** - Multiple search strategies with scoring algorithm
+- **Data Source** - OpenNutrition database with 10,000+ food items
+- **Unit Conversion** - Supports cups, tablespoons, grams, ounces, etc.
+- **Conservative Adjustments** - Smart sodium value correction for data quality
+
+### Search & Filtering
+- **Senior-Friendly Design** - Optimized for users aged 55-65
+- **Dietary Restrictions** - Vegetarian, vegan, keto, low-sodium, etc.
+- **Allergy Management** - Comprehensive allergen filtering
+- **Performance Optimized** - DynamoDB GSI queries with efficient indexing
+- **Error Handling** - Robust error responses with detailed debugging
+
+## Data Management
+
+### CSV Upload Script
+Upload OpenNutrition foods data to DynamoDB:
+
+```bash
+cd scripts/
+npm install @aws-sdk/client-dynamodb @aws-sdk/lib-dynamodb
+node upload-foods.js
+```
+
+**Features**:
+- Processes CSV with JSON fields (nutrition_100g, serving, etc.)
+- Handles batch uploads (25 items per batch)
+- Creates proper GSI keys (`name_lc`, `name_lc_first1`)
+- Comprehensive error handling and progress reporting
+
+### Table Structure Verification
+```bash
+node check-table.js  # Verify DynamoDB table structure
+```
 
 ## Local Development
 
 ### Prerequisites
 - Node.js 18+
-- AWS CLI configured
-- DynamoDB Local (optional)
+- AWS CLI configured with ap-southeast-2 region
+- Access to Foods_v2 DynamoDB table
 
 ### Setup
 ```bash
@@ -107,9 +168,49 @@ npm run deploy
 
 ## Environment Variables
 
+- `AWS_REGION` - AWS deployment region (default: ap-southeast-2)
+- `FOODS_TABLE` - Foods database table name (default: Foods_v2)
+- `FOODS_GSI` - Foods table GSI name (default: gsi_name_prefix)
 - `RECIPES_TABLE_NAME` - DynamoDB recipes table
-- `FOODS_TABLE_NAME` - DynamoDB foods table
-- `AWS_REGION` - AWS deployment region
+
+## Nutrition API Details
+
+### Request Format
+```javascript
+POST /nutrition
+{
+  "ingredients": [
+    "2 cups cooked rice",
+    "6 oz chicken breast",
+    "1 tbsp olive oil"
+  ]
+}
+```
+
+### Response Format
+```javascript
+{
+  "results": [
+    {
+      "ingredient": "2 cups cooked rice",
+      "query": "cooked rice",
+      "match": {
+        "id": "fd_gbtVB7G9twmc",
+        "name": "Rice, Cooked",
+        "nutrition_100g": { "calories": 130, "protein": 2.69, ... },
+        "gram_used": 480
+      },
+      "search_attempts": [...],
+      "successful_query": "rice"
+    }
+  ],
+  "summary_100g_sum": {
+    "calories": 892.4,
+    "protein": 58.2,
+    "total_fat": 15.7,
+    "sodium": 127.3
+  }
+}
 
 ## Error Handling
 

@@ -265,27 +265,34 @@ async function openRecipeModal(recipe) {
             } else {
                 if (sumEl) {
                     sumEl.innerHTML = '';
+
+                    // Get servings for per-serving calculation
+                    const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+
                     const pairs = [
-                        { keys: ['calories', 'energy_kcal', 'energy'], unit: 'kcal', label: 'calories' },
-                        { keys: ['protein', 'protein_g'], unit: 'g', label: 'protein' },
-                        { keys: ['total_fat', 'fat', 'fat_g'], unit: 'g', label: 'fat' },
-                        { keys: ['carbohydrates', 'carbohydrate_g', 'carbohydrates_g'], unit: 'g', label: 'carbohydrates' },
-                        { keys: ['sodium', 'sodium_mg'], unit: 'mg', label: 'sodium' },
-                        { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], unit: 'g', label: 'sugars' },
-                        { keys: ['saturated_fats', 'saturated_fat', 'saturated_fats_g'], unit: 'g', label: 'saturated fats' }
+                        { keys: ['calories'], unit: 'kcal', label: 'calories' },
+                        { keys: ['protein'], unit: 'g', label: 'protein' },
+                        { keys: ['total_fat'], unit: 'g', label: 'fat' },
+                        { keys: ['carbohydrates'], unit: 'g', label: 'carbohydrates' },
+                        { keys: ['sodium'], unit: 'mg', label: 'sodium' },
+                        { keys: ['total_sugars'], unit: 'g', label: 'sugars' },
+                        { keys: ['saturated_fats'], unit: 'g', label: 'saturated fats' }
                     ];
                     pairs.forEach(p => {
                         const v = getAny(summary, p.keys);
                         if (v == null) return;
 
+                        // Divide by servings to get per-serving nutrition values
+                        const perServingValue = v / servings;
+
                         // Apply nutrition value validation before display
                         const labelForValidation = p.label.charAt(0).toUpperCase() + p.label.slice(1);
-                        const adjustedValue = adjustNutritionValue(v, labelForValidation);
+                        const adjustedValue = adjustNutritionValue(perServingValue, labelForValidation);
 
                         const card = document.createElement('div'); card.className = 'card';
 
                         // Show indicator if value was adjusted
-                        const wasAdjusted = Math.abs(v - adjustedValue) > 0.1;
+                        const wasAdjusted = Math.abs(perServingValue - adjustedValue) > 0.1;
                         const prefix = wasAdjusted ? '~' : '';
 
                         card.innerHTML = `<div class="key">${p.label}</div><div class="val">${prefix}${fmt(adjustedValue)} ${p.unit}</div>`;
@@ -511,10 +518,10 @@ async function renderDashboardNutrition() {
 
                 // Add per-serving nutrition values to totals
                 const recipeServings = item.servings || item.yield || 4; // Default recipe serves 4
-                totalCalories += (getAny(recipeSum, ['calories', 'energy_kcal', 'energy']) || 0) / recipeServings;
-                totalProtein += (getAny(recipeSum, ['protein', 'protein_g']) || 0) / recipeServings;
-                totalCarbs += (getAny(recipeSum, ['carbohydrates', 'carbohydrate_g', 'carbohydrates_g']) || 0) / recipeServings;
-                totalSodium += (getAny(recipeSum, ['sodium', 'sodium_mg']) || 0) / recipeServings;
+                totalCalories += (getAny(recipeSum, ['calories']) || 0) / recipeServings;
+                totalProtein += (getAny(recipeSum, ['protein']) || 0) / recipeServings;
+                totalCarbs += (getAny(recipeSum, ['carbohydrates']) || 0) / recipeServings;
+                totalSodium += (getAny(recipeSum, ['sodium']) || 0) / recipeServings;
 
             } catch (error) {
                 console.warn(`Failed to get nutrition for dashboard recipe:`, error);
@@ -529,11 +536,14 @@ async function renderDashboardNutrition() {
             sodium_mg: totalSodium
         };
 
+        // Initialize details array (empty for dashboard summary)
+        const details = [];
+
         // Update main cards (use aliases to tolerate backend naming differences)
-        const caloriesVal = getAny(sum, ['calories', 'energy_kcal', 'energy']);
-        const proteinVal = getAny(sum, ['protein', 'protein_g']);
-        const carbVal = getAny(sum, ['carbohydrates', 'carbohydrate_g', 'carbohydrates_g']);
-        const sodiumVal = getAny(sum, ['sodium', 'sodium_mg']);
+        const caloriesVal = getAny(sum, ['calories']);
+        const proteinVal = getAny(sum, ['protein']);
+        const carbVal = getAny(sum, ['carbohydrates']);
+        const sodiumVal = getAny(sum, ['sodium']);
         if (caloriesCurrent) caloriesCurrent.textContent = caloriesVal != null ? fmt(caloriesVal) : '-';
         if (proteinCurrent) proteinCurrent.textContent = proteinVal != null ? fmt(proteinVal) : '-';
         if (carbohydratesCurrent) carbohydratesCurrent.textContent = carbVal != null ? fmt(carbVal) : '-';
@@ -601,16 +611,16 @@ async function renderDashboardNutrition() {
         });
         // Render dashboard summary below (extended nutrients)
         const fields = [
-            { keys: ['calories', 'energy_kcal', 'energy'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
-            { keys: ['protein', 'protein_g'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
-            { keys: ['total_fat', 'fat', 'fat_g'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
-            { keys: ['fiber', 'fiber_g', 'dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
-            { keys: ['potassium', 'potassium_mg'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
-            { keys: ['calcium', 'calcium_mg'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
-            { keys: ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
-            { keys: ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
-            { keys: ['sodium', 'sodium_mg'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
-            { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
+            { keys: ['calories'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
+            { keys: ['protein'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
+            { keys: ['total_fat'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
+            { keys: ['dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
+            { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
+            { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+            { keys: ['vitamin_d'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
+            { keys: ['vitamin_b12'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
+            { keys: ['sodium'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
+            { keys: ['total_sugars'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
         ];
         let html = '<div class="nutrition-cards">';
         fields.forEach(f => {
@@ -629,16 +639,16 @@ async function renderDashboardNutrition() {
             html += '<table class="nutrition-details-table" style="width:100%;margin-top:1rem;border-collapse:collapse;">';
             html += '<thead><tr><th>Ingredient</th><th>Calories</th><th>Protein</th><th>Fat</th><th>Fiber</th><th>Potassium</th><th>Calcium</th><th>Vit D</th><th>Vit B12</th><th>Sodium</th><th>Sugar</th></tr></thead><tbody>';
             details.forEach(d => {
-                const rowCalories = getAny(d, ['calories', 'energy_kcal', 'energy']);
-                const rowProtein = getAny(d, ['protein', 'protein_g']);
-                const rowFat = getAny(d, ['total_fat', 'fat', 'fat_g']);
-                const rowFiber = getAny(d, ['fiber', 'fiber_g', 'dietary_fiber']);
-                const rowPotassium = getAny(d, ['potassium', 'potassium_mg']);
-                const rowCalcium = getAny(d, ['calcium', 'calcium_mg']);
-                const rowVitD = getAny(d, ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu']);
-                const rowVitB12 = getAny(d, ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg']);
-                const rowSodium = getAny(d, ['sodium', 'sodium_mg']);
-                const rowSugar = getAny(d, ['total_sugars', 'sugar', 'sugars', 'sugar_g']);
+                const rowCalories = getAny(d, ['calories']);
+                const rowProtein = getAny(d, ['protein']);
+                const rowFat = getAny(d, ['total_fat']);
+                const rowFiber = getAny(d, ['dietary_fiber']);
+                const rowPotassium = getAny(d, ['potassium']);
+                const rowCalcium = getAny(d, ['calcium']);
+                const rowVitD = getAny(d, ['vitamin_d']);
+                const rowVitB12 = getAny(d, ['vitamin_b12']);
+                const rowSodium = getAny(d, ['sodium']);
+                const rowSugar = getAny(d, ['total_sugars']);
                 html += `<tr>
                     <td>${d.ingredient || '-'}</td>
                     <td>${rowCalories != null ? fmt(rowCalories) : '-'}</td>
@@ -854,23 +864,29 @@ async function renderNutritionDashboard() {
             // Step 2: fetch nutrition summary
             const nutri = await fetchNutrition(ingredients);
             const sum = nutri.summary_100g_sum || {};
+
+            // Get servings for per-serving calculation
+            const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+
             const fields = [
-                { keys: ['calories', 'energy_kcal', 'energy'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
-                { keys: ['protein', 'protein_g'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
-                { keys: ['total_fat', 'fat', 'fat_g'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
-                { keys: ['fiber', 'fiber_g', 'dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
-                { keys: ['potassium', 'potassium_mg'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
-                { keys: ['calcium', 'calcium_mg'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
-                { keys: ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
-                { keys: ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
-                { keys: ['sodium', 'sodium_mg'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
-                { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
+                { keys: ['calories'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
+                { keys: ['protein'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
+                { keys: ['total_fat'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
+                { keys: ['dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
+                { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
+                { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+                { keys: ['vitamin_d'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
+                { keys: ['vitamin_b12'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
+                { keys: ['sodium'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
+                { keys: ['total_sugars'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
             ];
             resultsDiv.innerHTML = '<div class="nutrition-cards"></div>';
             const cards = resultsDiv.querySelector('.nutrition-cards');
             fields.forEach(f => {
                 const raw = getAny(sum, f.keys);
-                const val = raw != null ? fmt(raw) : '-';
+                // Divide by servings to get per-serving nutrition values
+                const perServingValue = raw != null ? raw / servings : null;
+                const val = perServingValue != null ? fmt(perServingValue) : '-';
                 const card = document.createElement('div');
                 card.className = 'nutrition-card';
                 card.innerHTML = `
@@ -1075,7 +1091,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalIngredients = modal ? modal.querySelector('.modal-ingredients') : null;
     const modalInstructions = modal ? modal.querySelector('.modal-instructions') : null;
     const modalNutrition = modal ? modal.querySelector('.modal-nutrition') : null;
-    const modalDashboardBtn = modal ? modal.querySelector('.modal-dashboard-btn') : null;
+    const modalDashboardBtn = modal ? modal.querySelector('#add-to-dashboard') : null;
 
     function openModal(recipe) {
         if (!modal) return;
@@ -1107,22 +1123,28 @@ document.addEventListener('DOMContentLoaded', function () {
                     modalNutrition.innerHTML = '<div style="color:#888;text-align:center;">No nutrition matches found for listed ingredients.</div>';
                     return;
                 }
+
+                // Get servings for per-serving calculation
+                const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+
                 const fields = [
-                    { keys: ['calories', 'energy_kcal', 'energy'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
-                    { keys: ['protein', 'protein_g'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
-                    { keys: ['total_fat', 'fat', 'fat_g'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
-                    { keys: ['fiber', 'fiber_g', 'dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
-                    { keys: ['potassium', 'potassium_mg'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
-                    { keys: ['calcium', 'calcium_mg'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
-                    { keys: ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
-                    { keys: ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
-                    { keys: ['sodium', 'sodium_mg'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
-                    { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
+                    { keys: ['calories'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
+                    { keys: ['protein'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
+                    { keys: ['total_fat'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
+                    { keys: ['dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
+                    { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
+                    { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+                    { keys: ['vitamin_d'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
+                    { keys: ['vitamin_b12'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
+                    { keys: ['sodium'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
+                    { keys: ['total_sugars'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
                 ];
                 let html = '<div class="nutrition-cards">';
                 fields.forEach(f => {
                     const raw = getAny(sum, f.keys);
-                    const val = raw != null ? fmt(raw) : '-';
+                    // Divide by servings to get per-serving nutrition values
+                    const perServingValue = raw != null ? raw / servings : null;
+                    const val = perServingValue != null ? fmt(perServingValue) : '-';
                     html += `<div class="nutrition-card">
                             <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
                             <div class="nutrition-label">${f.label}</div>
@@ -1139,10 +1161,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (modalDashboardBtn) {
             modalDashboardBtn.onclick = function () {
                 let dashboard = [];
-                try { dashboard = JSON.parse(localStorage.getItem('nss_dashboard')) || []; } catch { }
+                try { dashboard = JSON.parse(localStorage.getItem(DASHBOARD_KEY)) || []; } catch { }
                 if (!dashboard.some(r => r.recipe_id === recipe.recipe_id)) {
                     dashboard.push(recipe);
-                    localStorage.setItem('nss_dashboard', JSON.stringify(dashboard));
+                    localStorage.setItem(DASHBOARD_KEY, JSON.stringify(dashboard));
                     modalDashboardBtn.textContent = 'Added!';
                     modalDashboardBtn.disabled = true;
                 } else {
@@ -1168,8 +1190,10 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
         // Reset button state
-        modalDashboardBtn.textContent = 'Add to Dashboard';
-        modalDashboardBtn.disabled = false;
+        if (modalDashboardBtn) {
+            modalDashboardBtn.textContent = 'Add to Nutrition Dashboard';
+            modalDashboardBtn.disabled = false;
+        }
     }
 
     if (modalCloseBtn) modalCloseBtn.onclick = closeModal;
@@ -1300,24 +1324,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 // DEBUG: Log modal nutrition data
-                // Modal Nutrition Debug for ${recipe.title}:
-                    raw_response: sum,
-                    servings: recipe.servings || recipe.yield || 'unknown'
-                });
+                // Modal Nutrition Debug for ${recipe.title}
 
                 // Get servings for per-serving calculation
                 const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
                 const fields = [
-                    { keys: ['calories', 'energy_kcal', 'energy'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
-                    { keys: ['protein', 'protein_g'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
-                    { keys: ['total_fat', 'fat', 'fat_g'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
-                    { keys: ['fiber', 'fiber_g', 'dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
-                    { keys: ['potassium', 'potassium_mg'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
-                    { keys: ['calcium', 'calcium_mg'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
-                    { keys: ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
-                    { keys: ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
-                    { keys: ['sodium', 'sodium_mg'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
-                    { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
+                    { keys: ['calories'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
+                    { keys: ['protein'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
+                    { keys: ['total_fat'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
+                    { keys: ['dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
+                    { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
+                    { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+                    { keys: ['vitamin_d'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
+                    { keys: ['vitamin_b12'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
+                    { keys: ['sodium'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
+                    { keys: ['total_sugars'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
                 ];
                 nutritionResults.innerHTML = '<div class="nutrition-cards"></div>';
                 const cards = nutritionResults.querySelector('.nutrition-cards');
@@ -1378,13 +1399,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const sum = nutrition.summary_100g_sum || {};
 
                     // DEBUG: Log nutrition data for debugging
-                    // Nutrition Debug for ${recipe.title}:
-                        ingredients: recipe.ingredients,
-                        raw_api_response: sum,
-                        calories_raw: getAny(sum, ['calories', 'energy_kcal', 'energy']),
-                        protein_raw: getAny(sum, ['protein', 'protein_g']),
-                        servings: recipe.servings || 'unknown'
-                    });
+                    // Nutrition Debug for ${recipe.title}
 
                     // NOTE: According to backend analysis, summary_100g_sum contains TOTAL recipe nutrition
                     // not per-100g values. The field name is misleading.
@@ -1394,10 +1409,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     return {
                         ...recipe,
                         nutritionData: {
-                            calories: Math.round((getAny(sum, ['calories', 'energy_kcal', 'energy']) || 0) / servings),
-                            protein: Math.round((getAny(sum, ['protein', 'protein_g']) || 0) / servings),
-                            fat: Math.round((getAny(sum, ['total_fat', 'fat', 'fat_g']) || 0) / servings),
-                            sodium: Math.round((getAny(sum, ['sodium', 'sodium_mg']) || 0) / servings)
+                            calories: Math.round((getAny(sum, ['calories']) || 0) / servings),
+                            protein: Math.round((getAny(sum, ['protein']) || 0) / servings),
+                            fat: Math.round((getAny(sum, ['total_fat']) || 0) / servings),
+                            sodium: Math.round((getAny(sum, ['sodium']) || 0) / servings)
                         }
                     };
                 } catch (error) {
