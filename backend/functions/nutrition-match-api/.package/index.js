@@ -1,4 +1,4 @@
-// Unit conversion table (approximate)
+// Basic unit conversion table
 const UNIT_TO_GRAM = {
   g: 1,
   gram: 1,
@@ -9,19 +9,97 @@ const UNIT_TO_GRAM = {
   lb: 453.6,
   ml: 1,
   l: 1000,
-  cup: 240,
+  // Basic volumetric conversions (will be overridden by ingredient-specific)
+  cup: 240,    // Default for liquids
   cups: 240,
-  tbsp: 15,
+  tbsp: 15,    // Default tablespoon
   tablespoon: 15,
   tablespoons: 15,
-  tsp: 5,
+  tsp: 5,      // Default teaspoon
   teaspoon: 5,
-  teaspoons: 5
+  teaspoons: 5,
+  // Size conversions
+  large: 50,   // large egg
+  medium: 118, // medium banana/apple average
+  small: 114,  // small avocado
+  slice: 30,   // bread slice
+  clove: 3,    // garlic clove
+  cloves: 3,
+  bunch: 340,  // spinach bunch
+  can: 411     // diced tomatoes can
 };
+
+// Ingredient-specific conversions (based on OpenNutrition data)
+const INGREDIENT_CONVERSIONS = {
+  // Flour family
+  'flour': { cup: 125, tbsp: 8 },
+  'all-purpose flour': { cup: 125, tbsp: 8 },
+  'wheat flour': { cup: 125, tbsp: 8 },
+
+  // Dairy
+  'milk': { cup: 240, tbsp: 15 },
+  'cheese': { cup: 113 },
+  'cheddar cheese': { cup: 113 },
+  'shredded cheese': { cup: 113 },
+
+  // Vegetables
+  'onion': { cup: 160 },
+  'chopped onion': { cup: 160 },
+  'diced onion': { cup: 160 },
+  'garlic': { clove: 3, tbsp: 15 },
+  'minced garlic': { tbsp: 15 },
+  'spinach': { bunch: 340 },
+
+  // Grains
+  'rice': { cup: 185 },
+  'cooked rice': { cup: 185 },
+  'white rice': { cup: 185 },
+
+  // Oils and fats
+  'olive oil': { tbsp: 14, tsp: 5 },
+  'oil': { tbsp: 14, tsp: 5 },
+
+  // Fruits
+  'banana': { medium: 118 },
+  'apple': { medium: 182 },
+  'avocado': { small: 114, medium: 136 },
+
+  // Proteins
+  'egg': { large: 50, medium: 44 },
+  'chicken breast': { oz: 28.35 },
+
+  // Canned goods
+  'diced tomatoes': { can: 411 },
+  'tomatoes': { can: 411 },
+
+  // Bread
+  'bread': { slice: 30 }
+};
+
+// Smart conversion function that considers ingredient type
+function convertToGrams(amount, unit, ingredientName) {
+  // Normalize ingredient name for lookup
+  const normalizedName = ingredientName.toLowerCase().trim();
+
+  // Check for ingredient-specific conversions first
+  for (const [key, conversions] of Object.entries(INGREDIENT_CONVERSIONS)) {
+    if (normalizedName.includes(key)) {
+      if (conversions[unit]) {
+        console.log(`Using ingredient-specific conversion for ${ingredientName}: ${amount} ${unit} = ${amount * conversions[unit]}g`);
+        return amount * conversions[unit];
+      }
+    }
+  }
+
+  // Fallback to general conversion table
+  const gramValue = UNIT_TO_GRAM[unit] || 1;
+  console.log(`Using general conversion for ${ingredientName}: ${amount} ${unit} = ${amount * gramValue}g`);
+  return amount * gramValue;
+}
 
 function parseAmountUnit(str) {
   // Parse like "1.5 tbsp sugar", return {amount: 1.5, unit: 'tbsp', name: 'sugar'}
-  const re = /([\d.\/]+)\s*(kg|g|gram|grams|oz|lb|pound|ml|l|cup|cups|tbsp|tablespoon|tablespoons|tsp|teaspoon|teaspoons)?\s*(.*)/i;
+  const re = /([\d.\/]+)\s*(kg|g|gram|grams|oz|lb|pound|ml|l|cup|cups|tbsp|tablespoon|tablespoons|tsp|teaspoon|teaspoons|large|medium|small|slice|slices|clove|cloves|bunch|can)?\s*(.*)/i;
   const m = String(str).match(re);
   if (!m) return { amount: 100, unit: 'g', name: str };
   let amount = m[1];
@@ -258,29 +336,14 @@ exports.handler = async (event) => {
       if (candidate) {
         console.log('Selected id:', candidate.id, 'name:', candidate.name);
         const nutrition = parseMaybeJson(candidate.nutrition_100g);
-        // Convert unit to grams
-        const gram = amount * (UNIT_TO_GRAM[unit] || 1);
+        // Convert unit to grams using smart conversion
+        const gram = convertToGrams(amount, unit, candidate.name);
         // Accumulate nutrition based on actual amount used
         for (const [k, v] of Object.entries(nutrition)) {
           let n = Number(v) * (gram / 100);
           if (!Number.isFinite(n)) continue;
 
-          // Apply more conservative sodium adjustment logic
-          if (k === 'sodium' || k === 'sodium_mg') {
-            // Only adjust if values are extremely high (likely unit conversion errors)
-            // Be much more conservative than before
-            if (n > 50000) {
-              // Values above 50g sodium (50,000mg) are likely in wrong units
-              n = n / 1000;  // Convert from mg to g, then back to mg
-              console.log(`Adjusted extremely high sodium value: ${Number(v) * (gram / 100)} -> ${n} for ${candidate.name}`);
-            } else if (n > 20000) {
-              // Values above 20g sodium might be unit errors
-              n = n / 100;   // Moderate adjustment
-              console.log(`Adjusted high sodium value: ${Number(v) * (gram / 100)} -> ${n} for ${candidate.name}`);
-            }
-            // Values under 20g (20,000mg) sodium are kept as-is
-            // This preserves legitimate high-sodium foods like processed foods, salt, etc.
-          }
+          // No special adjustments needed for simplified nutrient set
 
           summary[k] = (summary[k] || 0) + n;
         }
