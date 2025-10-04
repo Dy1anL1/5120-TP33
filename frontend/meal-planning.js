@@ -33,11 +33,11 @@ async function getConsistentNutrition(recipe) {
             nutrition = await calculateNutrition(recipe.ingredients, 1);
         } catch (error) {
             console.error('Error calculating nutrition:', error);
-            nutrition = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0 };
+            nutrition = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sugars_g: 0, saturated_fat_g: 0, trans_fat_g: 0, vitamin_d_iu: 0, calcium_mg: 0, iron_mg: 0, potassium_mg: 0 };
         }
     }
 
-    return nutrition || { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0 };
+    return nutrition || { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sugars_g: 0, saturated_fat_g: 0, trans_fat_g: 0, vitamin_d_iu: 0, calcium_mg: 0, iron_mg: 0, potassium_mg: 0 };
 }
 
 
@@ -73,7 +73,7 @@ function formatNutritionNumber(value, unit = '') {
 // Simple estimated nutrition based on common ingredients (fallback)
 function estimateNutrition(ingredients, servings = 1) {
     if (!ingredients || !Array.isArray(ingredients)) {
-        return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+        return { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugars: 0, saturated_fat: 0, trans_fat: 0, vitamin_d: 0, calcium: 0, iron: 0, potassium: 0 };
     }
 
     let totalCalories = 0;
@@ -139,7 +139,7 @@ function estimateNutrition(ingredients, servings = 1) {
 // Nutrition calculation using the nutrition API with caching and fallback
 async function calculateNutrition(ingredients, servings = 1) {
     if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
-        return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+        return { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugars: 0, saturated_fat: 0, trans_fat: 0, vitamin_d: 0, calcium: 0, iron: 0, potassium: 0 };
     }
 
     // Create cache key
@@ -178,7 +178,7 @@ async function calculateNutrition(ingredients, servings = 1) {
                 return estimated;
             }
             // For other failures (400, 404, etc), return zero values instead of wrong estimates
-            return { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0, protein: 0, carbs: 0, fat: 0 };
+            return { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sugars_g: 0, saturated_fat_g: 0, trans_fat_g: 0, vitamin_d_iu: 0, calcium_mg: 0, iron_mg: 0, potassium_mg: 0 };
         }
 
         const data = await response.json();
@@ -187,7 +187,7 @@ async function calculateNutrition(ingredients, servings = 1) {
             console.warn('No nutrition data found in API response');
             // If backend didn't provide any data, it means ingredients couldn't be matched
             // Return zero values instead of making up data
-            return { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0, protein: 0, carbs: 0, fat: 0 };
+            return { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sugars_g: 0, saturated_fat_g: 0, trans_fat_g: 0, vitamin_d_iu: 0, calcium_mg: 0, iron_mg: 0, potassium_mg: 0 };
         }
 
         const sum = data.summary_100g_sum;
@@ -199,7 +199,14 @@ async function calculateNutrition(ingredients, servings = 1) {
             protein_g: Math.round(sum.protein || 0),
             carbs_g: Math.round(sum.carbohydrates || 0),
             fat_g: Math.round(sum.total_fat || 0),
-            sodium_mg: Math.round(sum.sodium || 0),
+            fiber_g: Math.round(sum.dietary_fiber || 0),
+            sugars_g: Math.round(sum.total_sugars || 0),
+            saturated_fat_g: Math.round(sum.saturated_fats || 0),
+            trans_fat_g: Math.round(sum.trans_fats || 0),
+            vitamin_d_iu: Math.round(sum.vitamin_d || 0),
+            calcium_mg: Math.round(sum.calcium || 0),
+            iron_mg: Math.round(sum.iron || 0),
+            potassium_mg: Math.round(sum.potassium || 0),
             // Keep backward compatibility
             protein: Math.round(sum.protein || 0),
             carbs: Math.round(sum.carbohydrates || 0),
@@ -1740,8 +1747,8 @@ async function renderLargeRecipeCard(mealType, recipe) {
     const nutritionInfo = `<div class="recipe-nutrition-info">
         <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)}</span>
         <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber((nutrition.protein_g || 0) / servings, 'g')}</span>
-        <span class="nutrition-item"><strong>Carbs:</strong> ${formatNutritionNumber((nutrition.carbs_g || 0) / servings, 'g')}</span>
-        <span class="nutrition-item"><strong>Sodium:</strong> ${formatNutritionNumber((nutrition.sodium_mg || 0) / servings, 'mg')}</span>
+        <span class="nutrition-item"><strong>Calcium:</strong> ${formatNutritionNumber((nutrition.calcium_mg || 0) / servings, 'mg')}</span>
+        <span class="nutrition-item"><strong>Vitamin D:</strong> ${formatNutritionNumber((nutrition.vitamin_d_iu || 0) / servings, 'IU')}</span>
     </div>`;
 
     // Image handling (same as explore-recipes)
@@ -1783,8 +1790,8 @@ async function renderMealCard(mealType, recipe) {
     const nutritionInfo = `<div class="recipe-nutrition-info">
         <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)}</span>
         <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber((nutrition.protein_g || 0) / servings, 'g')}</span>
-        <span class="nutrition-item"><strong>Carbs:</strong> ${formatNutritionNumber((nutrition.carbs_g || 0) / servings, 'g')}</span>
-        <span class="nutrition-item"><strong>Sodium:</strong> ${formatNutritionNumber((nutrition.sodium_mg || 0) / servings, 'mg')}</span>
+        <span class="nutrition-item"><strong>Calcium:</strong> ${formatNutritionNumber((nutrition.calcium_mg || 0) / servings, 'mg')}</span>
+        <span class="nutrition-item"><strong>Vitamin D:</strong> ${formatNutritionNumber((nutrition.vitamin_d_iu || 0) / servings, 'IU')}</span>
     </div>`;
 
     // Image handling (same as explore-recipes)
@@ -2022,9 +2029,8 @@ async function openRecipeModal(recipeId) {
                 const nutritionPairs = [
                     { key: 'calories', value: nutrition.calories || 0, unit: 'kcal', label: 'Calories' },
                     { key: 'protein_g', value: nutrition.protein_g || 0, unit: 'g', label: 'Protein' },
-                    { key: 'carbs_g', value: nutrition.carbs_g || 0, unit: 'g', label: 'Carbs' },
-                    { key: 'fat_g', value: nutrition.fat_g || 0, unit: 'g', label: 'Fat' },
-                    { key: 'sodium_mg', value: nutrition.sodium_mg || 0, unit: 'mg', label: 'Sodium' }
+                    { key: 'calcium_mg', value: nutrition.calcium_mg || 0, unit: 'mg', label: 'Calcium' },
+                    { key: 'vitamin_d_iu', value: nutrition.vitamin_d_iu || 0, unit: 'IU', label: 'Vitamin D' }
                 ];
 
                 nutritionPairs.forEach(p => {

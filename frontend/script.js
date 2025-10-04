@@ -274,9 +274,14 @@ async function openRecipeModal(recipe) {
                         { keys: ['protein'], unit: 'g', label: 'protein' },
                         { keys: ['total_fat'], unit: 'g', label: 'fat' },
                         { keys: ['carbohydrates'], unit: 'g', label: 'carbohydrates' },
-                        { keys: ['sodium'], unit: 'mg', label: 'sodium' },
+                        { keys: ['dietary_fiber'], unit: 'g', label: 'fiber' },
                         { keys: ['total_sugars'], unit: 'g', label: 'sugars' },
-                        { keys: ['saturated_fats'], unit: 'g', label: 'saturated fats' }
+                        { keys: ['saturated_fats'], unit: 'g', label: 'saturated fats' },
+                        { keys: ['trans_fats'], unit: 'g', label: 'trans fats' },
+                        { keys: ['vitamin_d'], unit: 'IU', label: 'vitamin D' },
+                        { keys: ['calcium'], unit: 'mg', label: 'calcium' },
+                        { keys: ['iron'], unit: 'mg', label: 'iron' },
+                        { keys: ['potassium'], unit: 'mg', label: 'potassium' }
                     ];
                     pairs.forEach(p => {
                         const v = getAny(summary, p.keys);
@@ -442,10 +447,10 @@ async function renderDashboardNutrition() {
     const caloriesGoal = document.getElementById('calories-goal');
     const proteinCurrent = document.getElementById('protein-current');
     const proteinGoal = document.getElementById('protein-goal');
-    const carbohydratesCurrent = document.getElementById('carbohydrates-current');
-    const carbohydratesGoal = document.getElementById('carbohydrates-goal');
-    const sodiumCurrent = document.getElementById('sodium-current');
-    const sodiumGoal = document.getElementById('sodium-goal');
+    const calciumCurrent = document.getElementById('calcium-current');
+    const calciumGoal = document.getElementById('calcium-goal');
+    const vitaminDCurrent = document.getElementById('vitamin_d-current');
+    const vitaminDGoal = document.getElementById('vitamin_d-goal');
     const overallProgress = document.getElementById('overall-progress');
     const overallProgressText = document.getElementById('overall-progress-text');
     // Progress bar
@@ -464,8 +469,8 @@ async function renderDashboardNutrition() {
             // Reset all nutrition values to zero when no meals
             if (caloriesCurrent) caloriesCurrent.textContent = '0';
             if (proteinCurrent) proteinCurrent.textContent = '0';
-            if (carbohydratesCurrent) carbohydratesCurrent.textContent = '0';
-            if (sodiumCurrent) sodiumCurrent.textContent = '0';
+            if (calciumCurrent) calciumCurrent.textContent = '0';
+            if (vitaminDCurrent) vitaminDCurrent.textContent = '0';
             if (overallProgress) overallProgress.textContent = '0%';
             if (overallProgressText) overallProgressText.textContent = '0%';
             if (progressFill) {
@@ -477,8 +482,8 @@ async function renderDashboardNutrition() {
             const cardFields = [
                 { curId: 'calories-current', goalId: 'calories-goal' },
                 { curId: 'protein-current', goalId: 'protein-goal' },
-                { curId: 'carbohydrates-current', goalId: 'carbohydrates-goal' },
-                { curId: 'sodium-current', goalId: 'sodium-goal' },
+                { curId: 'calcium-current', goalId: 'calcium-goal' },
+                { curId: 'vitamin_d-current', goalId: 'vitamin_d-goal' },
             ];
             cardFields.forEach(({ curId, goalId }) => {
                 const curEl = document.getElementById(curId);
@@ -502,7 +507,7 @@ async function renderDashboardNutrition() {
 
         // Calculate nutrition for each recipe separately and sum them up
         // This fixes the serving size calculation issue
-        let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalSodium = 0;
+        let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalFiber = 0, totalSugars = 0, totalSaturatedFat = 0, totalTransFat = 0, totalVitaminD = 0, totalCalcium = 0, totalIron = 0, totalPotassium = 0;
 
         for (const item of dashboard) {
             if (!Array.isArray(item.ingredients) || item.ingredients.length === 0) continue;
@@ -521,7 +526,15 @@ async function renderDashboardNutrition() {
                 totalCalories += (getAny(recipeSum, ['calories']) || 0) / recipeServings;
                 totalProtein += (getAny(recipeSum, ['protein']) || 0) / recipeServings;
                 totalCarbs += (getAny(recipeSum, ['carbohydrates']) || 0) / recipeServings;
-                totalSodium += (getAny(recipeSum, ['sodium']) || 0) / recipeServings;
+                totalFat += (getAny(recipeSum, ['total_fat']) || 0) / recipeServings;
+                totalFiber += (getAny(recipeSum, ['dietary_fiber']) || 0) / recipeServings;
+                totalSugars += (getAny(recipeSum, ['total_sugars']) || 0) / recipeServings;
+                totalSaturatedFat += (getAny(recipeSum, ['saturated_fats']) || 0) / recipeServings;
+                totalTransFat += (getAny(recipeSum, ['trans_fats']) || 0) / recipeServings;
+                totalVitaminD += (getAny(recipeSum, ['vitamin_d']) || 0) / recipeServings;
+                totalCalcium += (getAny(recipeSum, ['calcium']) || 0) / recipeServings;
+                totalIron += (getAny(recipeSum, ['iron']) || 0) / recipeServings;
+                totalPotassium += (getAny(recipeSum, ['potassium']) || 0) / recipeServings;
 
             } catch (error) {
                 console.warn(`Failed to get nutrition for dashboard recipe:`, error);
@@ -531,37 +544,43 @@ async function renderDashboardNutrition() {
         // Use calculated totals instead of raw API response
         const sum = {
             calories: totalCalories,
-            protein_g: totalProtein,
-            carbohydrates_g: totalCarbs,
-            sodium_mg: totalSodium
+            protein: totalProtein,
+            carbohydrates: totalCarbs,
+            total_fat: totalFat,
+            dietary_fiber: totalFiber,
+            total_sugars: totalSugars,
+            saturated_fats: totalSaturatedFat,
+            trans_fats: totalTransFat,
+            vitamin_d: totalVitaminD,
+            calcium: totalCalcium,
+            iron: totalIron,
+            potassium: totalPotassium
         };
 
         // Initialize details array (empty for dashboard summary)
         const details = [];
 
-        // Update main cards (use aliases to tolerate backend naming differences)
-        const caloriesVal = getAny(sum, ['calories']);
-        const proteinVal = getAny(sum, ['protein']);
-        const carbVal = getAny(sum, ['carbohydrates']);
-        const sodiumVal = getAny(sum, ['sodium']);
-        if (caloriesCurrent) caloriesCurrent.textContent = caloriesVal != null ? fmt(caloriesVal) : '-';
-        if (proteinCurrent) proteinCurrent.textContent = proteinVal != null ? fmt(proteinVal) : '-';
-        if (carbohydratesCurrent) carbohydratesCurrent.textContent = carbVal != null ? fmt(carbVal) : '-';
-        if (sodiumCurrent) sodiumCurrent.textContent = sodiumVal != null ? formatNutritionValue(sodiumVal, 'Sodium') : '-';
+        // Main nutrition display is handled by the fields loop below
         // Goals (can be static or configurable)
         const calGoal = caloriesGoal ? Number(caloriesGoal.textContent) : 2200;
         const proGoal = proteinGoal ? Number(proteinGoal.textContent) : 56;
-        // Carbohydrates and sodium goals
-        const carbGoal = carbohydratesGoal ? Number(carbohydratesGoal.textContent) : 130;
-        const sodiumGoalVal = sodiumGoal ? Number(sodiumGoal.textContent) : 2300;
+        // Calcium and vitamin D goals
+        const calciumGoalVal = calciumGoal ? Number(calciumGoal.textContent) : 1200;
+        const vitaminDGoalVal = vitaminDGoal ? Number(vitaminDGoal.textContent) : 600;
+
+        // Set current nutrition values
+        if (caloriesCurrent) caloriesCurrent.textContent = Math.round(totalCalories);
+        if (proteinCurrent) proteinCurrent.textContent = Math.round(totalProtein);
+        if (calciumCurrent) calciumCurrent.textContent = Math.round(totalCalcium);
+        if (vitaminDCurrent) vitaminDCurrent.textContent = Math.round(totalVitaminD);
 
         // Progress calculation (simple average)
         let percent = 0;
         let count = 0;
-        if (caloriesVal != null) { percent += Math.min(caloriesVal / calGoal, 1); count++; }
-        if (proteinVal != null) { percent += Math.min(proteinVal / proGoal, 1); count++; }
-        if (carbVal != null) { percent += Math.min(carbVal / carbGoal, 1); count++; }
-        if (sodiumVal != null) { percent += Math.min(sodiumVal / sodiumGoalVal, 1); count++; }
+        if (totalCalories != null) { percent += Math.min(totalCalories / calGoal, 1); count++; }
+        if (totalProtein != null) { percent += Math.min(totalProtein / proGoal, 1); count++; }
+        if (totalCalcium != null) { percent += Math.min(totalCalcium / calciumGoalVal, 1); count++; }
+        if (totalVitaminD != null) { percent += Math.min(totalVitaminD / vitaminDGoalVal, 1); count++; }
         percent = count ? Math.round((percent / count) * 100) : 0;
         if (overallProgress) overallProgress.textContent = percent + '%';
         if (overallProgressText) overallProgressText.textContent = percent + '%';
@@ -582,8 +601,8 @@ async function renderDashboardNutrition() {
         const cardFields = [
             { curId: 'calories-current', goalId: 'calories-goal' },
             { curId: 'protein-current', goalId: 'protein-goal' },
-            { curId: 'carbohydrates-current', goalId: 'carbohydrates-goal' },
-            { curId: 'sodium-current', goalId: 'sodium-goal' },
+            { curId: 'calcium-current', goalId: 'calcium-goal' },
+            { curId: 'vitamin_d-current', goalId: 'vitamin_d-goal' },
         ];
         cardFields.forEach(({ curId, goalId }) => {
             const curEl = document.getElementById(curId);
@@ -613,14 +632,16 @@ async function renderDashboardNutrition() {
         const fields = [
             { keys: ['calories'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
             { keys: ['protein'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
-            { keys: ['total_fat'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
+            { keys: ['total_fat'], label: 'Total Fat', icon: 'fa-bacon', unit: 'g' },
+            { keys: ['carbohydrates'], label: 'Carbs', icon: 'fa-bread-slice', unit: 'g' },
             { keys: ['dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
-            { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
-            { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+            { keys: ['total_sugars'], label: 'Sugars', icon: 'fa-cube', unit: 'g' },
+            { keys: ['saturated_fats'], label: 'Saturated Fat', icon: 'fa-cheese', unit: 'g' },
+            { keys: ['trans_fats'], label: 'Trans Fat', icon: 'fa-ban', unit: 'g' },
             { keys: ['vitamin_d'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
-            { keys: ['vitamin_b12'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
-            { keys: ['sodium'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
-            { keys: ['total_sugars'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
+            { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+            { keys: ['iron'], label: 'Iron', icon: 'fa-magnet', unit: 'mg' },
+            { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
         ];
         let html = '<div class="nutrition-cards">';
         fields.forEach(f => {
@@ -637,7 +658,7 @@ async function renderDashboardNutrition() {
         if (details.length > 0) {
             html += '<h3 style="margin-top:2rem;">Ingredient Details</h3>';
             html += '<table class="nutrition-details-table" style="width:100%;margin-top:1rem;border-collapse:collapse;">';
-            html += '<thead><tr><th>Ingredient</th><th>Calories</th><th>Protein</th><th>Fat</th><th>Fiber</th><th>Potassium</th><th>Calcium</th><th>Vit D</th><th>Vit B12</th><th>Sodium</th><th>Sugar</th></tr></thead><tbody>';
+            html += '<thead><tr><th>Ingredient</th><th>Calories</th><th>Protein</th><th>Fat</th><th>Fiber</th><th>Potassium</th><th>Calcium</th><th>Vit D</th><th>Iron</th><th>Sugars</th><th>Sat Fat</th></tr></thead><tbody>';
             details.forEach(d => {
                 const rowCalories = getAny(d, ['calories']);
                 const rowProtein = getAny(d, ['protein']);
@@ -646,9 +667,9 @@ async function renderDashboardNutrition() {
                 const rowPotassium = getAny(d, ['potassium']);
                 const rowCalcium = getAny(d, ['calcium']);
                 const rowVitD = getAny(d, ['vitamin_d']);
-                const rowVitB12 = getAny(d, ['vitamin_b12']);
-                const rowSodium = getAny(d, ['sodium']);
+                const rowIron = getAny(d, ['iron']);
                 const rowSugar = getAny(d, ['total_sugars']);
+                const rowSaturatedFat = getAny(d, ['saturated_fats']);
                 html += `<tr>
                     <td>${d.ingredient || '-'}</td>
                     <td>${rowCalories != null ? fmt(rowCalories) : '-'}</td>
@@ -658,9 +679,9 @@ async function renderDashboardNutrition() {
                     <td>${rowPotassium != null ? fmt(rowPotassium) + ' mg' : '-'}</td>
                     <td>${rowCalcium != null ? fmt(rowCalcium) + ' mg' : '-'}</td>
                     <td>${rowVitD != null ? fmt(rowVitD) + ' IU' : '-'}</td>
-                    <td>${rowVitB12 != null ? fmt(rowVitB12) + ' mcg' : '-'}</td>
-                    <td>${rowSodium != null ? fmt(rowSodium) : '-'}</td>
+                    <td>${rowIron != null ? fmt(rowIron) + ' mg' : '-'}</td>
                     <td>${rowSugar != null ? fmt(rowSugar) : '-'}</td>
+                    <td>${rowSaturatedFat != null ? fmt(rowSaturatedFat) : '-'}</td>
                 </tr>`;
             });
             html += '</tbody></table>';
@@ -869,16 +890,18 @@ async function renderNutritionDashboard() {
             const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
 
             const fields = [
-                { keys: ['calories'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
-                { keys: ['protein'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
-                { keys: ['total_fat'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
-                { keys: ['dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
-                { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
-                { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
-                { keys: ['vitamin_d'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
-                { keys: ['vitamin_b12'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
-                { keys: ['sodium'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
-                { keys: ['total_sugars'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
+                { keys: ['calories'], label: 'Calories', icon: 'fa-fire', unit: 'kcal', daily_male: 2200, daily_female: 1800 },
+                { keys: ['protein'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g', daily_male: 56, daily_female: 46 },
+                { keys: ['total_fat'], label: 'Total Fat', icon: 'fa-bacon', unit: 'g', daily_male: 73, daily_female: 60 },
+                { keys: ['carbohydrates'], label: 'Carbs', icon: 'fa-bread-slice', unit: 'g', daily_male: 130, daily_female: 130 },
+                { keys: ['dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g', daily_male: 28, daily_female: 22.4 },
+                { keys: ['total_sugars'], label: 'Sugars', icon: 'fa-cube', unit: 'g', daily_male: null, daily_female: null },
+                { keys: ['saturated_fats'], label: 'Saturated Fat', icon: 'fa-cheese', unit: 'g', daily_male: 24, daily_female: 20 },
+                { keys: ['trans_fats'], label: 'Trans Fat', icon: 'fa-ban', unit: 'g', daily_male: 0, daily_female: 0 },
+                { keys: ['vitamin_d'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU', daily_male: 600, daily_female: 600 },
+                { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg', daily_male: 1200, daily_female: 1200 },
+                { keys: ['iron'], label: 'Iron', icon: 'fa-magnet', unit: 'mg', daily_male: 8, daily_female: 8 },
+                { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg', daily_male: 4700, daily_female: 4700 },
             ];
             resultsDiv.innerHTML = '<div class="nutrition-cards"></div>';
             const cards = resultsDiv.querySelector('.nutrition-cards');
@@ -1130,14 +1153,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 const fields = [
                     { keys: ['calories'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
                     { keys: ['protein'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
-                    { keys: ['total_fat'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
+                    { keys: ['total_fat'], label: 'Total Fat', icon: 'fa-bacon', unit: 'g' },
+                    { keys: ['carbohydrates'], label: 'Carbs', icon: 'fa-bread-slice', unit: 'g' },
                     { keys: ['dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
-                    { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
-                    { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+                    { keys: ['total_sugars'], label: 'Sugars', icon: 'fa-cube', unit: 'g' },
+                    { keys: ['saturated_fats'], label: 'Saturated Fat', icon: 'fa-cheese', unit: 'g' },
+                    { keys: ['trans_fats'], label: 'Trans Fat', icon: 'fa-ban', unit: 'g' },
                     { keys: ['vitamin_d'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
-                    { keys: ['vitamin_b12'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
-                    { keys: ['sodium'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
-                    { keys: ['total_sugars'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
+                    { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+                    { keys: ['iron'], label: 'Iron', icon: 'fa-magnet', unit: 'mg' },
+                    { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
                 ];
                 let html = '<div class="nutrition-cards">';
                 fields.forEach(f => {
@@ -1331,14 +1356,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 const fields = [
                     { keys: ['calories'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
                     { keys: ['protein'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
-                    { keys: ['total_fat'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
+                    { keys: ['total_fat'], label: 'Total Fat', icon: 'fa-bacon', unit: 'g' },
+                    { keys: ['carbohydrates'], label: 'Carbs', icon: 'fa-bread-slice', unit: 'g' },
                     { keys: ['dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
-                    { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
-                    { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+                    { keys: ['total_sugars'], label: 'Sugars', icon: 'fa-cube', unit: 'g' },
+                    { keys: ['saturated_fats'], label: 'Saturated Fat', icon: 'fa-cheese', unit: 'g' },
+                    { keys: ['trans_fats'], label: 'Trans Fat', icon: 'fa-ban', unit: 'g' },
                     { keys: ['vitamin_d'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
-                    { keys: ['vitamin_b12'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
-                    { keys: ['sodium'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
-                    { keys: ['total_sugars'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
+                    { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+                    { keys: ['iron'], label: 'Iron', icon: 'fa-magnet', unit: 'mg' },
+                    { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
                 ];
                 nutritionResults.innerHTML = '<div class="nutrition-cards"></div>';
                 const cards = nutritionResults.querySelector('.nutrition-cards');
@@ -1411,14 +1438,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         nutritionData: {
                             calories: Math.round((getAny(sum, ['calories']) || 0) / servings),
                             protein: Math.round((getAny(sum, ['protein']) || 0) / servings),
-                            fat: Math.round((getAny(sum, ['total_fat']) || 0) / servings),
-                            sodium: Math.round((getAny(sum, ['sodium']) || 0) / servings)
+                            calcium: Math.round((getAny(sum, ['calcium']) || 0) / servings),
+                            vitamin_d: Math.round((getAny(sum, ['vitamin_d']) || 0) / servings)
                         }
                     };
                 } catch (error) {
                     return {
                         ...recipe,
-                        nutritionData: { calories: 0, protein: 0, fat: 0, sodium: 0 }
+                        nutritionData: { calories: 0, protein: 0, calcium: 0, vitamin_d: 0 }
                     };
                 }
             })
@@ -1438,14 +1465,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     return bNutrition.protein - aNutrition.protein;
                 case 'protein-low':
                     return aNutrition.protein - bNutrition.protein;
-                case 'fat-high':
-                    return bNutrition.fat - aNutrition.fat;
-                case 'fat-low':
-                    return aNutrition.fat - bNutrition.fat;
-                case 'sodium-high':
-                    return bNutrition.sodium - aNutrition.sodium;
-                case 'sodium-low':
-                    return aNutrition.sodium - bNutrition.sodium;
+                case 'calcium-high':
+                    return bNutrition.calcium - aNutrition.calcium;
+                case 'calcium-low':
+                    return aNutrition.calcium - bNutrition.calcium;
+                case 'vitamin_d-high':
+                    return bNutrition.vitamin_d - aNutrition.vitamin_d;
+                case 'vitamin_d-low':
+                    return aNutrition.vitamin_d - bNutrition.vitamin_d;
                 default:
                     return 0;
             }
@@ -1522,13 +1549,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Add nutrition info if available from sorting
                         let nutritionInfo = '';
                         if (r.nutritionData) {
-                            // From sorting functionality
+                            // From sorting functionality - show 4 senior-friendly nutrients
                             const data = r.nutritionData;
                             nutritionInfo = `<div class="recipe-nutrition-info">
                                 <span class="nutrition-item">🔥 ${formatNutritionNumber(data.calories)} kcal</span>
                                 <span class="nutrition-item">💪 ${formatNutritionNumber(data.protein, 'g')} protein</span>
-                                <span class="nutrition-item">🥑 ${formatNutritionNumber(data.fat, 'g')} fat</span>
-                                <span class="nutrition-item">🧂 ${formatNutritionNumber(data.sodium, 'mg')} sodium</span>
+                                <span class="nutrition-item">🦴 ${formatNutritionNumber(data.calcium, 'mg')} calcium</span>
+                                <span class="nutrition-item">☀️ ${formatNutritionNumber(data.vitamin_d, 'IU')} vitamin D</span>
                             </div>`;
                         }
 
@@ -1859,8 +1886,8 @@ function getNutritionName(elementId) {
     const names = {
         'calories-current': 'Calories',
         'protein-current': 'Protein',
-        'carbohydrates-current': 'Carbohydrates',
-        'sodium-current': 'Sodium'
+        'calcium-current': 'Calcium',
+        'vitamin_d-current': 'Vitamin D'
     };
     return names[elementId] || elementId.replace('-current', '');
 }
@@ -1877,20 +1904,20 @@ function addNutritionCardTip(currentElement, severity, nutritionName, percentage
         'light': {
             'Calories': '💡 Goal reached! Maintain balanced eating',
             'Protein': '💡 Protein sufficient! Add more vegetables',
-            'Carbohydrates': '💡 Carbs on target! Choose whole grains',
-            'Sodium': '💡 Goal reached! Choose low-salt options'
+            'Calcium': '💡 Calcium on target! Keep up dairy/leafy greens',
+            'Vitamin D': '💡 Vitamin D sufficient! Great for bone health'
         },
         'warning': {
             'Calories': '⚠️ High calories - choose lighter foods',
             'Protein': '⚠️ Excess protein - reduce meat intake',
-            'Carbohydrates': '⚠️ Too many carbs - reduce starches',
-            'Sodium': '⚠️ High sodium - avoid processed foods'
+            'Calcium': '⚠️ Calcium high - balance with other nutrients',
+            'Vitamin D': '⚠️ Vitamin D high - check supplement dosage'
         },
         'severe': {
             'Calories': '🚨 Calories severely high! Adjust diet now',
             'Protein': '🚨 Protein too high! Consult nutritionist',
-            'Carbohydrates': '🚨 Carbs severely high! Reduce sugars',
-            'Sodium': '🚨 Sodium too high! Choose fresh foods'
+            'Calcium': '🚨 Calcium severely high! Check supplement intake',
+            'Vitamin D': '🚨 Vitamin D too high! Stop supplements temporarily'
         }
     };
 

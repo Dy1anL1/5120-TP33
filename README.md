@@ -19,9 +19,9 @@ A comprehensive nutrition and meal planning web application designed specificall
 - Detailed recipe information with ingredients, instructions, and nutrition facts
 
 ### Nutrition Dashboard
-- Real-time nutrition tracking for calories, protein, carbohydrates, and sodium
+- Real-time nutrition tracking for calories, protein, calcium, and vitamin D
 - Visual progress indicators and goal monitoring
-- Personalized daily nutrition recommendations
+- Personalized daily nutrition recommendations optimized for seniors (55-65+)
 - Integration with meal plans for automatic tracking
 
 ### Weekly Meal Planning

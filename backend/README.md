@@ -92,7 +92,7 @@ backend/
 - **Fuzzy Matching** - Multiple search strategies with scoring algorithm
 - **Data Source** - OpenNutrition database with 10,000+ food items
 - **Unit Conversion** - Supports cups, tablespoons, grams, ounces, etc.
-- **Conservative Adjustments** - Smart sodium value correction for data quality
+- **Simplified Nutrition Focus** - 12 core nutrients optimized for senior health (55-65+)
 
 ### Search & Filtering
 - **Senior-Friendly Design** - Optimized for users aged 55-65
@@ -208,7 +208,15 @@ POST /nutrition
     "calories": 892.4,
     "protein": 58.2,
     "total_fat": 15.7,
-    "sodium": 127.3
+    "carbohydrates": 127.3,
+    "dietary_fiber": 8.5,
+    "total_sugars": 12.1,
+    "saturated_fats": 4.2,
+    "trans_fats": 0.1,
+    "vitamin_d": 145.6,
+    "calcium": 289.3,
+    "iron": 7.8,
+    "potassium": 1245.7
   }
 }
 
