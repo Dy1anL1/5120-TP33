@@ -1894,7 +1894,7 @@ function ensureRecipeModal() {
             <!-- Nutrition Summary (Top Section) -->
             <div class="nutrition-top-section" style="margin-bottom: 1.5rem;">
                 <h3>Nutrition Information</h3>
-                <div id="nutrition-summary" class="nutri-grid">
+                <div id="nutrition-summary" class="nutrition-cards">
                     <!-- nutrition cards inserted by JS -->
                 </div>
             </div>
@@ -2027,10 +2027,18 @@ async function openRecipeModal(recipeId) {
                 sumEl.innerHTML = '';
 
                 const nutritionPairs = [
-                    { key: 'calories', value: nutrition.calories || 0, unit: 'kcal', label: 'Calories' },
-                    { key: 'protein_g', value: nutrition.protein_g || 0, unit: 'g', label: 'Protein' },
-                    { key: 'calcium_mg', value: nutrition.calcium_mg || 0, unit: 'mg', label: 'Calcium' },
-                    { key: 'vitamin_d_iu', value: nutrition.vitamin_d_iu || 0, unit: 'IU', label: 'Vitamin D' }
+                    { key: 'calories', value: nutrition.calories || 0, unit: 'kcal', label: 'Calories', icon: 'fa-fire' },
+                    { key: 'protein_g', value: nutrition.protein_g || 0, unit: 'g', label: 'Protein', icon: 'fa-drumstick-bite' },
+                    { key: 'fat_g', value: nutrition.fat_g || 0, unit: 'g', label: 'Total Fat', icon: 'fa-bacon' },
+                    { key: 'carbs_g', value: nutrition.carbs_g || 0, unit: 'g', label: 'Carbs', icon: 'fa-bread-slice' },
+                    { key: 'fiber_g', value: nutrition.fiber_g || 0, unit: 'g', label: 'Fiber', icon: 'fa-seedling' },
+                    { key: 'sugars_g', value: nutrition.sugars_g || 0, unit: 'g', label: 'Sugars', icon: 'fa-cube' },
+                    { key: 'saturated_fat_g', value: nutrition.saturated_fat_g || 0, unit: 'g', label: 'Saturated Fat', icon: 'fa-cheese' },
+                    { key: 'trans_fat_g', value: nutrition.trans_fat_g || 0, unit: 'g', label: 'Trans Fat', icon: 'fa-ban' },
+                    { key: 'vitamin_d_iu', value: nutrition.vitamin_d_iu || 0, unit: 'IU', label: 'Vitamin D', icon: 'fa-sun' },
+                    { key: 'calcium_mg', value: nutrition.calcium_mg || 0, unit: 'mg', label: 'Calcium', icon: 'fa-bone' },
+                    { key: 'iron_mg', value: nutrition.iron_mg || 0, unit: 'mg', label: 'Iron', icon: 'fa-magnet' },
+                    { key: 'potassium_mg', value: nutrition.potassium_mg || 0, unit: 'mg', label: 'Potassium', icon: 'fa-bolt' }
                 ];
 
                 nutritionPairs.forEach(p => {
@@ -2039,10 +2047,11 @@ async function openRecipeModal(recipeId) {
                     console.log(`Nutrition debug: ${p.label} = ${p.value} / ${servings} = ${perServingValue} -> ${formattedValue}`);
 
                     const card = document.createElement('div');
-                    card.className = 'card';
+                    card.className = 'nutrition-card';
                     card.innerHTML = `
-                        <div class="key">${p.label}</div>
-                        <div class="val">${formattedValue}</div>
+                        <div class="nutrition-icon"><i class="fas ${p.icon}"></i></div>
+                        <div class="nutrition-label">${p.label} (per serving)</div>
+                        <div class="nutrition-value">${formattedValue}</div>
                     `;
                     sumEl.appendChild(card);
                 });
