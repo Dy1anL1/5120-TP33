@@ -2084,6 +2084,7 @@ html {
     white-space: nowrap;
     margin-left: -50px;
     margin-right: auto;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .hero-subtitle {
@@ -2334,8 +2335,14 @@ html {
 
 /* Explore Recipes Page Styles */
 .page-header {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    padding: 60px 20px;
+    background: linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%);
+    color: white;
+    padding: 80px 2rem;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     text-align: center;
     margin-top: 110px;
 }
@@ -2343,14 +2350,15 @@ html {
 .page-title {
     font-size: 3rem;
     font-weight: 700;
-    color: #4CAF50;
+    color: white;
     margin-bottom: 20px;
     line-height: 1.2;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .page-subtitle {
     font-size: 1.2rem;
-    color: #666;
+    color: white;
     max-width: 600px;
     margin: 0 auto;
     line-height: 1.6;
@@ -2358,7 +2366,7 @@ html {
 
 .page-description {
     font-size: 1rem;
-    color: #888;
+    color: rgba(255, 255, 255, 0.9);
     margin-top: 10px;
 }
 
@@ -4545,12 +4553,13 @@ html {
     text-align: center;
     padding: 4rem 2rem;
     margin-bottom: 3rem;
+    height: 330px;
 }
 
 .seasonal-hero h1 {
     font-size: 3rem;
     margin-bottom: 1rem;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .seasonal-hero p {
@@ -4738,8 +4747,13 @@ html {
     background: linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%);
     color: white;
     text-align: center;
-    padding: 4rem 2rem;
+    padding: 80px 2rem;
     margin-bottom: 2rem;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .seasonal-hero h1 {
@@ -4747,6 +4761,7 @@ html {
     margin-bottom: 1rem;
     font-weight: 700;
     line-height: 1.2;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .seasonal-hero i {
@@ -4851,7 +4866,7 @@ html {
     z-index: 1;
 }
 
-.season-btn > * {
+.season-btn>* {
     position: relative;
     z-index: 2;
 }
@@ -5246,7 +5261,8 @@ html {
 /* Responsive Design */
 @media (max-width: 768px) {
     .seasonal-hero {
-        padding: 2.5rem 1rem;
+        padding: 60px 1rem;
+        min-height: 220px;
     }
 
     .seasonal-hero h1 {
