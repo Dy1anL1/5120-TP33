@@ -41,6 +41,13 @@ A comprehensive nutrition and meal planning web application designed specificall
 - Progress tracking and completion status
 - Smart shopping tips and optimization
 
+### Seasonal Produce Guide
+- Interactive seasonal produce calendar for all Australian states
+- Real-time filtering by state (NSW, VIC, QLD, WA, SA, TAS)
+- Season-specific produce recommendations (Southern Hemisphere calendar)
+- Smart search and categorization (fruits vs vegetables)
+- Modern, touch-friendly interface optimized for seniors
+
 ### Daily Health Recommendations
 - Personalized nutrition tips
 - Age-appropriate health guidance
@@ -94,11 +101,13 @@ A comprehensive nutrition and meal planning web application designed specificall
 │   ├── meal-planning.html     # Meal planning system
 │   ├── nutrition-dashboard.html # Nutrition tracking
 │   ├── shopping-list.html     # Shopping list generator
+│   ├── seasonal-produce.html  # Seasonal produce guide
 │   ├── daily-recommendations.html # Health tips
 │   ├── styles.css             # Main stylesheet
 │   ├── script.js              # Core JavaScript functionality
 │   ├── meal-planning.js       # Meal planning logic
 │   ├── shopping-list.js       # Shopping list functionality
+│   ├── season_food.json       # Seasonal produce data
 │   ├── config.js              # Unified configuration
 │   └── password-protection.js # Authentication system
 ├── backend/
@@ -124,6 +133,18 @@ A comprehensive nutrition and meal planning web application designed specificall
 - Prioritization of recipes with reliable nutrition data
 - Automatic filtering of problematic ingredients
 - Smart estimation fallbacks for missing data
+- 12 core nutrition fields optimized for seniors (55-65+):
+  - Calories, Protein, Total Fat, Carbohydrates
+  - Dietary Fiber, Total Sugars, Saturated Fats, Trans Fats
+  - Vitamin D, Calcium, Iron, Potassium
+
+### Seasonal Produce Features
+- Comprehensive database covering all 6 Australian states
+- Southern Hemisphere seasonal calendar (accurate for Australia)
+- Interactive state and season selection
+- Real-time search and filtering functionality
+- Senior-friendly large fonts and touch-optimized interface
+- Visual categorization of fruits vs vegetables
 
 ### Intelligent Meal Planning
 - Multi-strategy recipe selection algorithm
@@ -153,12 +174,12 @@ A comprehensive nutrition and meal planning web application designed specificall
 
 ## Recent Improvements
 
-- Unified API configuration system
-- Enhanced modal design consistency
-- Comprehensive duplicate recipe prevention
-- Advanced nutrition quality prioritization
-- Responsive container overflow handling
-- Lambda timeout issue resolution
+- **New Seasonal Produce Guide** - Complete interactive guide for Australian seasonal produce
+- **Senior-Optimized Interface** - Large fonts, high contrast, touch-friendly design
+- **Nutrition System Enhancement** - 12 core nutrition fields focused on senior health
+- **Australian Calendar Integration** - Southern Hemisphere seasonal accuracy
+- **Mobile Responsiveness** - Full optimization for all device sizes
+- **Performance Improvements** - Faster loading and smoother interactions
 
 ## Contributing
 
