@@ -67,6 +67,42 @@ function applyTitleFilter(recipes, titlePrefix) {
 }
 
 /**
+ * Apply ingredients filter to recipes
+ * Filters recipes that contain ANY of the specified ingredients
+ * Uses word boundary matching to avoid false matches (e.g., "apple" shouldn't match "applewood")
+ */
+function applyIngredientsFilter(recipes, ingredientsParam) {
+  if (!ingredientsParam) return recipes;
+
+  // Parse comma-separated ingredients list
+  const searchIngredients = ingredientsParam
+    .toLowerCase()
+    .split(',')
+    .map(ing => ing.trim())
+    .filter(ing => ing.length > 0);
+
+  if (searchIngredients.length === 0) return recipes;
+
+  return recipes.filter(recipe => {
+    if (!recipe || !Array.isArray(recipe.ingredients)) return false;
+
+    // Check if recipe contains any of the search ingredients
+    return recipe.ingredients.some(recipeIng => {
+      if (!recipeIng || typeof recipeIng !== 'string') return false;
+      const recipeIngLower = recipeIng.toLowerCase();
+
+      // Check if any search ingredient is found as a complete word
+      return searchIngredients.some(searchIng => {
+        // Create regex with word boundaries: \b ensures we match whole words
+        // For multi-word ingredients like "red cabbage", we check if it appears as a phrase
+        const regex = new RegExp(`\\b${searchIng.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        return regex.test(recipeIngLower);
+      });
+    });
+  });
+}
+
+/**
  * Apply all filters to a list of recipes
  */
 function applyAllFilters(recipes, filters = {}) {
@@ -93,6 +129,10 @@ function applyAllFilters(recipes, filters = {}) {
     filteredRecipes = applyTitleFilter(filteredRecipes, filters.title_prefix);
   }
 
+  if (filters.ingredients) {
+    filteredRecipes = applyIngredientsFilter(filteredRecipes, filters.ingredients);
+  }
+
   return filteredRecipes;
 }
 
@@ -105,7 +145,8 @@ function hasAnyFilter(params) {
     params.category ||
     params.diet_type ||
     params.allergy_filter ||
-    params.title_prefix
+    params.title_prefix ||
+    params.ingredients
   );
 }
 
@@ -140,6 +181,7 @@ module.exports = {
   applyDietTypeFilter,
   applyAllergyFilter,
   applyTitleFilter,
+  applyIngredientsFilter,
   applyAllFilters,
   hasAnyFilter,
   validateFilters

@@ -1879,35 +1879,42 @@ function ensureRecipeModal() {
     const modalHTML = `
     <div id="recipe-modal" class="modal" aria-hidden="true" style="display:none">
         <div class="modal-backdrop"></div>
-        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
+        <div class="modal-card recipe-modal-new" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
             <button class="modal-close" aria-label="Close">&times;</button>
 
-            <!-- Recipe Title -->
-            <h2 id="recipe-modal-title"></h2>
-
-            <!-- Recipe Image -->
-            <div id="recipe-modal-image" class="modal-recipe-image" style="display:none;">
-                <img id="recipe-modal-img" src="" alt="" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;">
+            <!-- Hero Image Header -->
+            <div id="recipe-modal-image" class="recipe-modal-hero">
+                <img id="recipe-modal-img" src="" alt="Recipe Image" />
+                <div class="recipe-modal-overlay">
+                    <h2 id="recipe-modal-title" class="recipe-modal-hero-title"></h2>
+                </div>
             </div>
-            <p id="recipe-brief" class="recipe-brief"></p>
 
             <!-- Nutrition Summary (Top Section) -->
-            <div class="nutrition-top-section" style="margin-bottom: 1.5rem;">
-                <h3>Nutrition Information</h3>
-                <div id="nutrition-summary" class="nutrition-cards">
+            <div class="nutrition-top-section" style="margin: 1.5rem 2rem;">
+                <h3 style="margin-bottom: 1rem; color: #333; font-size: 1.3rem;">Nutrition Information</h3>
+                <div id="nutrition-summary" class="nutrition-grid">
                     <!-- nutrition cards inserted by JS -->
                 </div>
             </div>
 
-            <!-- Ingredients and Instructions (Two Columns) -->
-            <div class="modal-cols">
-                <div class="modal-col">
-                    <h3>Ingredients</h3>
-                    <ul id="recipe-ingredients" class="ingredients-list"></ul>
+            <!-- Tabs -->
+            <div class="recipe-modal-tabs">
+                <button class="recipe-tab active" data-tab="ingredients">
+                    <i class="fas fa-list-ul"></i> Ingredients
+                </button>
+                <button class="recipe-tab" data-tab="instructions">
+                    <i class="fas fa-tasks"></i> Instructions
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="recipe-modal-content">
+                <div id="tab-ingredients" class="recipe-tab-content active">
+                    <ul id="recipe-ingredients" class="recipe-ingredients-list"></ul>
                 </div>
-                <div class="modal-col">
-                    <h3>Instructions</h3>
-                    <ol id="recipe-directions" class="directions-list"></ol>
+                <div id="tab-instructions" class="recipe-tab-content">
+                    <ol id="recipe-directions" class="recipe-instructions-list"></ol>
                 </div>
             </div>
         </div>
@@ -1934,6 +1941,22 @@ function ensureRecipeModal() {
         if (e.key === 'Escape' && m.style.display === 'block') {
             closeModal();
         }
+    });
+
+    // Add tab switching functionality
+    const tabs = m.querySelectorAll('.recipe-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const targetTab = this.dataset.tab;
+
+            // Remove active class from all tabs and contents
+            m.querySelectorAll('.recipe-tab').forEach(t => t.classList.remove('active'));
+            m.querySelectorAll('.recipe-tab-content').forEach(c => c.classList.remove('active'));
+
+            // Add active class to clicked tab and corresponding content
+            this.classList.add('active');
+            m.querySelector(`#tab-${targetTab}`).classList.add('active');
+        });
     });
 
     return m;

@@ -139,22 +139,59 @@ function ensureRecipeModal() {
     const tpl = `
     <div id="recipe-modal" class="modal" aria-hidden="true" style="display:none">
         <div class="modal-backdrop"></div>
-        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
+        <div class="modal-card recipe-modal-new" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
             <button class="modal-close" aria-label="Close">&times;</button>
-            <h2 id="recipe-modal-title"></h2>
-            <p id="recipe-brief" class="recipe-brief"></p>
-            <div class="modal-cols">
-                <div class="modal-col">
-                    <h3>Ingredients</h3>
-                    <ul id="recipe-ingredients"></ul>
-                    <h3>Instructions</h3>
-                    <ol id="recipe-directions"></ol>
+
+            <!-- Hero Image Header -->
+            <div id="recipe-modal-image" class="recipe-modal-hero">
+                <img id="recipe-modal-img" src="" alt="Recipe Image" />
+                <div class="recipe-modal-overlay">
+                    <h2 id="recipe-modal-title" class="recipe-modal-hero-title"></h2>
                 </div>
-                <div class="modal-col">
-                    <h3>Nutrition</h3>
-                    <div id="nutrition-summary"></div>
-                    <button id="add-to-dashboard" class="btn btn-primary" style="margin-top:1rem;">Add to Nutrition Dashboard</button>
-                    <button id="view-dashboard" class="btn btn-secondary" style="margin-top:0.5rem;">View Nutrition Dashboard</button>
+            </div>
+
+            <!-- Category Tag -->
+            <div id="recipe-category-tag" class="recipe-category-tag"></div>
+
+            <!-- Info Cards Row -->
+            <div class="recipe-info-cards">
+                <div class="recipe-info-card">
+                    <i class="fas fa-clock"></i>
+                    <div class="info-label">Cook Time</div>
+                    <div id="cook-time-value" class="info-value">30 mins</div>
+                </div>
+                <div class="recipe-info-card">
+                    <i class="fas fa-users"></i>
+                    <div class="info-label">Servings</div>
+                    <div id="servings-value" class="info-value">8</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="recipe-modal-tabs">
+                <button class="recipe-tab active" data-tab="ingredients">
+                    <i class="fas fa-list-ul"></i> Ingredients
+                </button>
+                <button class="recipe-tab" data-tab="instructions">
+                    <i class="fas fa-tasks"></i> Instructions
+                </button>
+                <button class="recipe-tab" data-tab="nutrition">
+                    <i class="fas fa-heartbeat"></i> Nutrition
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="recipe-modal-content">
+                <div id="tab-ingredients" class="recipe-tab-content active">
+                    <ul id="recipe-ingredients" class="recipe-ingredients-list"></ul>
+                </div>
+                <div id="tab-instructions" class="recipe-tab-content">
+                    <ol id="recipe-directions" class="recipe-instructions-list"></ol>
+                </div>
+                <div id="tab-nutrition" class="recipe-tab-content">
+                    <div id="nutrition-summary" class="nutrition-grid"></div>
+                    <button id="add-to-dashboard" class="btn btn-primary" style="margin-top:1.5rem;width:100%;">Add to Nutrition Dashboard</button>
+                    <button id="view-dashboard" class="btn btn-secondary" style="margin-top:0.75rem;width:100%;">View Nutrition Dashboard</button>
                 </div>
             </div>
         </div>
@@ -162,7 +199,25 @@ function ensureRecipeModal() {
     const host = document.createElement('div');
     host.innerHTML = tpl;
     document.body.appendChild(host.firstElementChild);
-    return document.getElementById('recipe-modal');
+
+    // Add tab switching functionality
+    const modal = document.getElementById('recipe-modal');
+    const tabs = modal.querySelectorAll('.recipe-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const targetTab = this.dataset.tab;
+
+            // Remove active class from all tabs and contents
+            modal.querySelectorAll('.recipe-tab').forEach(t => t.classList.remove('active'));
+            modal.querySelectorAll('.recipe-tab-content').forEach(c => c.classList.remove('active'));
+
+            // Add active class to clicked tab and corresponding content
+            this.classList.add('active');
+            modal.querySelector(`#tab-${targetTab}`).classList.add('active');
+        });
+    });
+
+    return modal;
 }
 
 function openModal() {
@@ -205,6 +260,43 @@ async function openRecipeModal(recipe) {
         imgContainerEl.style.display = 'block';
     } else if (imgContainerEl) {
         imgContainerEl.style.display = 'none';
+    }
+
+    // Fill info cards
+    const cookTimeEl = m.querySelector('#cook-time-value');
+    const servingsEl = m.querySelector('#servings-value');
+    const categoryTagEl = m.querySelector('#recipe-category-tag');
+
+    if (cookTimeEl) {
+        const totalTime = recipe.cooking_time || recipe.cook_time || recipe.total_time || null;
+        cookTimeEl.textContent = totalTime ? (totalTime >= 60 ? `${Math.floor(totalTime/60)} hrs ${totalTime%60 ? (totalTime%60)+' mins' : ''}` : `${totalTime} mins`) : '-';
+    }
+
+    if (servingsEl) {
+        servingsEl.textContent = recipe.servings || recipe.yield || 4;
+    }
+
+    // Show seasonal ingredients tags (if available from seasonal-produce page)
+    if (categoryTagEl) {
+        if (typeof getRecipeSeasonalIngredients === 'function') {
+            const seasonalIngs = getRecipeSeasonalIngredients(recipe);
+            if (seasonalIngs && seasonalIngs.length > 0) {
+                categoryTagEl.innerHTML = seasonalIngs.map(ing =>
+                    `<span class="seasonal-tag-item">${ing}</span>`
+                ).join('');
+                categoryTagEl.style.display = 'block';
+            } else {
+                categoryTagEl.style.display = 'none';
+            }
+        } else {
+            // Fallback to category if not on seasonal page
+            if (recipe.categories && recipe.categories.length > 0) {
+                categoryTagEl.innerHTML = `<span class="seasonal-tag-item">${recipe.categories[0]}</span>`;
+                categoryTagEl.style.display = 'block';
+            } else {
+                categoryTagEl.style.display = 'none';
+            }
+        }
     }
 
     if (ingEl) {
@@ -359,6 +451,7 @@ async function openRecipeModal(recipe) {
                 recipe_id: recipe.recipe_id,
                 title: recipe.title,
                 ingredients: recipe.ingredients || [],
+                servings: recipe.servings || recipe.yield || 4,
                 calories,
                 added_at: Date.now(),
                 day

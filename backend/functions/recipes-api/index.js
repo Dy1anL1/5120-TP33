@@ -21,7 +21,7 @@ exports.handler = async (event) => {
 
   try {
     const params = event.queryStringParameters || {};
-    const { recipe_id, title_prefix, limit, next_token, habit, category, diet_type, allergy_filter } = params;
+    const { recipe_id, title_prefix, limit, next_token, habit, category, diet_type, allergy_filter, ingredients } = params;
 
     // Validate filter parameters
     const validationErrors = validateFilters(params);

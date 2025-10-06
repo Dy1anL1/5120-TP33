@@ -45,6 +45,10 @@ A comprehensive nutrition and meal planning web application designed specificall
 - Interactive seasonal produce calendar for all Australian states
 - Real-time filtering by state (NSW, VIC, QLD, WA, SA, TAS)
 - Season-specific produce recommendations (Southern Hemisphere calendar)
+- **Intelligent Seasonal Recipe Recommendations** - Smart filtering prioritizes recipes where main ingredients are in season
+- Recipe scoring algorithm (main ingredients: 10 points, auxiliary: 1 point)
+- Beautiful recipe modal with hero images and tabbed interface
+- 2×2 grid layout for better visibility and senior-friendly card size
 - Smart search and categorization (fruits vs vegetables)
 - Modern, touch-friendly interface optimized for seniors
 
@@ -174,6 +178,10 @@ A comprehensive nutrition and meal planning web application designed specificall
 
 ## Recent Improvements
 
+- **Intelligent Seasonal Recipe Recommendations** - Smart algorithm prioritizes recipes with main seasonal ingredients (10-point scoring vs 1-point for auxiliary)
+- **Unified Recipe Modal Design** - Beautiful hero image headers with tabbed interface across all pages
+- **Improved Recipe Layout** - 2×2 grid for seasonal recipes with larger, more visible cards
+- **Unified Navigation** - Consistent navbar order across all pages following user journey flow
 - **New Seasonal Produce Guide** - Complete interactive guide for Australian seasonal produce
 - **Senior-Optimized Interface** - Large fonts, high contrast, touch-friendly design
 - **Nutrition System Enhancement** - 12 core nutrition fields focused on senior health

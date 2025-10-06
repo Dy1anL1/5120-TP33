@@ -4789,19 +4789,17 @@ html {
     width: 100%;
     height: 8px;
     border-radius: 4px;
-    background: linear-gradient(
-        to right,
-        #FFC107 0%,
-        #FFC107 16.67%,
-        #FF7043 16.67%,
-        #FF7043 41.67%,
-        #42A5F5 41.67%,
-        #42A5F5 66.67%,
-        #8BC34A 66.67%,
-        #8BC34A 91.67%,
-        #FFC107 91.67%,
-        #FFC107 100%
-    );
+    background: linear-gradient(to right,
+            #FFC107 0%,
+            #FFC107 16.67%,
+            #FF7043 16.67%,
+            #FF7043 41.67%,
+            #42A5F5 41.67%,
+            #42A5F5 66.67%,
+            #8BC34A 66.67%,
+            #8BC34A 91.67%,
+            #FFC107 91.67%,
+            #FFC107 100%);
     outline: none;
     -webkit-appearance: none;
     appearance: none;
@@ -5013,7 +5011,7 @@ html {
 
 .recipe-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
 }
 
@@ -5025,6 +5023,8 @@ html {
     transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
+    min-height: 480px;
+    height: 100%;
 }
 
 .recommended-section .recipe-card:hover {
@@ -5034,12 +5034,15 @@ html {
 
 .recipe-image {
     width: 100%;
-    height: 200px;
+    height: 150px;
+    min-height: 150px;
+    max-height: 150px;
     background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 .recipe-image img {
@@ -5054,30 +5057,50 @@ html {
 }
 
 .recipe-content {
-    padding: 1.75rem;
+    padding: 1.5rem;
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
+    min-height: 0;
 }
 
 .recipe-title {
     font-size: 1.4rem;
     font-weight: 700;
     color: #333;
-    margin: 0;
+    margin: 0 0 0.5rem 0;
     line-height: 1.3;
 }
 
-.recipe-description {
-    font-size: 1.05rem;
+.recipe-info-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.recipe-info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 1rem;
     color: #666;
-    line-height: 1.6;
-    margin: 0;
-    flex: 1;
+}
+
+.recipe-info-item i {
+    color: #4CAF50;
+    font-size: 0.9rem;
 }
 
 .recipe-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.seasonal-ingredients-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
@@ -5092,6 +5115,63 @@ html {
     border-radius: 15px;
     font-size: 0.9rem;
     font-weight: 600;
+}
+
+.recipe-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.btn-refresh,
+.btn-remove {
+    width: 100%;
+    padding: 0.9rem 1.5rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    transition: all 0.3s ease;
+}
+
+.btn-refresh {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.btn-refresh:hover {
+    background: #e0e0e0;
+    transform: translateY(-2px);
+}
+
+.btn-refresh i {
+    transition: transform 0.3s ease;
+}
+
+.btn-refresh:hover i {
+    transform: rotate(180deg);
+}
+
+.btn-remove {
+    background: white;
+    color: #e74c3c;
+    border: 2px solid #ffe5e5;
+}
+
+.btn-remove:hover {
+    background: #ffe5e5;
+    border-color: #e74c3c;
+}
+
+.btn-refresh:active,
+.btn-remove:active {
+    transform: scale(0.98);
 }
 
 .refresh-btn {
@@ -5134,9 +5214,11 @@ html {
     .seasonal-lists {
         grid-template-columns: 1fr;
     }
+}
 
+@media (max-width: 768px) {
     .recipe-grid {
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        grid-template-columns: 1fr;
     }
 }
 
@@ -5397,46 +5479,341 @@ html {
     .health-news-section {
         padding: 3rem 0;
     }
-    
+
     .news-grid {
         grid-template-columns: 1fr;
         gap: 1.5rem;
     }
-    
+
     .news-card {
         margin: 0 1rem;
     }
-    
+
     .news-image {
         padding: 1.5rem;
     }
-    
+
     .news-image i {
         font-size: 2rem;
     }
-    
+
     .news-content {
         padding: 1.2rem;
     }
-    
+
     .news-title {
         font-size: 1.2rem;
     }
-    
+
     .news-summary {
         font-size: 0.95rem;
     }
-    
+
     .news-meta {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
     }
-    
+
     .news-link {
         width: 100%;
         justify-content: center;
         padding: 1rem;
         font-size: 1.1rem;
     }
+}
+
+/* ============================================
+   New Recipe Modal Design
+   ============================================ */
+
+.recipe-modal-new {
+    max-width: 1200px !important;
+    width: 90vw !important;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 0 !important;
+}
+
+/* Hero Image with Overlay */
+.recipe-modal-hero {
+    position: relative;
+    width: 100%;
+    height: 280px;
+    overflow: hidden;
+}
+
+.recipe-modal-hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.recipe-modal-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
+    padding: 2rem;
+    color: white;
+}
+
+.recipe-modal-hero-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.recipe-modal-meta {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.recipe-modal-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+/* Category Tag */
+.recipe-category-tag {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 1.5rem 2rem 0.5rem;
+    gap: 1.2rem;
+}
+
+/* Info Cards Row */
+.recipe-info-cards {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    justify-content: space-around;
+}
+
+.recipe-info-card {
+    flex: 1;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.recipe-info-card i {
+    font-size: 1.8rem;
+    color: #4CAF50;
+}
+
+.info-label {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: 500;
+}
+
+.info-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #333;
+}
+
+/* Tabs */
+.recipe-modal-tabs {
+    display: flex;
+    border-bottom: 2px solid #e0e0e0;
+    padding: 0 2rem;
+}
+
+.recipe-tab {
+    flex: 1;
+    padding: 1rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #666;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.recipe-tab:hover {
+    color: #4CAF50;
+    background: #f8f9fa;
+}
+
+.recipe-tab.active {
+    color: #4CAF50;
+    border-bottom-color: #4CAF50;
+}
+
+.recipe-tab i {
+    font-size: 1.1rem;
+}
+
+/* Tab Content */
+.recipe-modal-content {
+    padding: 2rem;
+}
+
+.recipe-tab-content {
+    display: none;
+}
+
+.recipe-tab-content.active {
+    display: block;
+}
+
+/* Ingredients List */
+.recipe-ingredients-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.recipe-ingredients-list li {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 3px solid #4CAF50;
+    font-size: 1.05rem;
+    color: #333;
+}
+
+.recipe-ingredients-list li:before {
+    content: "\2022";
+    color: #4CAF50;
+    font-weight: bold;
+    display: inline-block;
+    width: 1em;
+    margin-left: -1em;
+}
+
+/* Instructions List */
+.recipe-instructions-list {
+    list-style: none;
+    counter-reset: step-counter;
+    padding: 0;
+    margin: 0;
+}
+
+.recipe-instructions-list li {
+    counter-increment: step-counter;
+    padding: 1rem 1rem 1rem 3.5rem;
+    margin-bottom: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    position: relative;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: #333;
+}
+
+.recipe-instructions-list li:before {
+    content: counter(step-counter);
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    background: #4CAF50;
+    color: white;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+/* Nutrition Grid */
+.nutrition-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.nutrition-grid .card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.nutrition-grid .key {
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.nutrition-grid .val {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #4CAF50;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .recipe-modal-new {
+        max-width: 95%;
+    }
+
+    .recipe-modal-hero {
+        height: 200px;
+    }
+
+    .recipe-modal-hero-title {
+        font-size: 1.5rem;
+    }
+
+    .recipe-info-cards {
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    .recipe-modal-tabs {
+        padding: 0 1rem;
+    }
+
+    .recipe-tab {
+        font-size: 0.9rem;
+        padding: 0.75rem 0.5rem;
+    }
+
+    .recipe-tab span {
+        display: none;
+    }
+
+    .recipe-modal-content {
+        padding: 1.5rem 1rem;
+    }
+}
+
+/* Seasonal Tag Items */
+.seasonal-tag-item {
+    display: inline-block;
+    padding: 0.6rem 1.1rem;
+    margin-right: 1rem;
+    margin-bottom: 0.75rem;
+    background: #e8f5e9;
+    color: #4CAF50;
+    border-radius: 18px;
+    font-size: 1.05rem;
+    font-weight: 600;
 }

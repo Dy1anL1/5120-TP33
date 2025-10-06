@@ -34,13 +34,9 @@
                     <i class="fas fa-search"></i>
                     <span>Recipes</span>
                 </a>
-                <a href="nutrition-dashboard.html" class="nav-link">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="daily-recommendations.html" class="nav-link">
-                    <i class="fas fa-heart"></i>
-                    <span>Daily Tips</span>
+                <a href="seasonal-produce.html" class="nav-link">
+                    <i class="fas fa-leaf"></i>
+                    <span>Seasonal</span>
                 </a>
                 <a href="meal-planning.html" class="nav-link">
                     <i class="fas fa-calendar-alt"></i>
@@ -50,9 +46,13 @@
                     <i class="fas fa-shopping-cart"></i>
                     <span>Shopping</span>
                 </a>
-                <a href="seasonal-produce.html" class="nav-link">
-                    <i class="fas fa-leaf"></i>
-                    <span>Seasonal</span>
+                <a href="nutrition-dashboard.html" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="daily-recommendations.html" class="nav-link">
+                    <i class="fas fa-heart"></i>
+                    <span>Daily Tips</span>
                 </a>
             </div>
             
@@ -180,26 +180,25 @@
         <!-- Recipe Modal -->
         <div id="recipe-modal" class="modal" aria-hidden="true" style="display:none">
             <div class="modal-backdrop"></div>
-            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
+            <div class="modal-card recipe-modal-new" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
                 <button class="modal-close" aria-label="Close">&times;</button>
-                
-                <!-- Recipe Image in Modal -->
-                <div id="recipe-modal-image" class="modal-recipe-image" style="display:none;">
-                    <img id="recipe-modal-img" src="" alt="" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;">
-                </div>
-                
-                <h2 id="recipe-modal-title" class="recipe-title"></h2>
 
-                <!-- Nutrition Summary (Top Section) -->
-                <div class="nutrition-top-section" style="margin-bottom: 1.5rem;">
-                    <h3>Nutrition Information</h3>
-                    <div id="nutrition-summary" class="nutri-grid">
-                        <!-- nutrition cards inserted by JS -->
+                <!-- Hero Image Header -->
+                <div id="recipe-modal-image" class="recipe-modal-hero">
+                    <img id="recipe-modal-img" src="" alt="Recipe Image" />
+                    <div class="recipe-modal-overlay">
+                        <h2 id="recipe-modal-title" class="recipe-modal-hero-title"></h2>
                     </div>
                 </div>
 
+                <!-- Nutrition Summary (Top Section) -->
+                <div class="nutrition-top-section" style="margin: 1.5rem 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: #333; font-size: 1.3rem;">Nutrition Information</h3>
+                    <div id="nutrition-summary" class="nutrition-grid"></div>
+                </div>
+
                 <!-- Action Buttons -->
-                <div class="modal-buttons" style="margin-bottom: 1.5rem; text-align: center; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
+                <div class="modal-buttons" style="margin: 0 2rem 1.5rem; text-align: center; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
                     <button id="add-to-dashboard" class="btn btn-primary">
                         Add to Nutrition Dashboard
                     </button>
@@ -209,16 +208,23 @@
                     </button>
                 </div>
 
-                <!-- Ingredients and Instructions (Two Columns) -->
-                <div class="modal-cols">
-                    <div class="modal-col">
-                        <h3>Ingredients</h3>
-                        <ul id="recipe-ingredients" class="ingredients-list"></ul>
-                    </div>
+                <!-- Tabs -->
+                <div class="recipe-modal-tabs">
+                    <button class="recipe-tab active" data-tab="ingredients">
+                        <i class="fas fa-list-ul"></i> Ingredients
+                    </button>
+                    <button class="recipe-tab" data-tab="instructions">
+                        <i class="fas fa-tasks"></i> Instructions
+                    </button>
+                </div>
 
-                    <div class="modal-col">
-                        <h3>Instructions</h3>
-                        <ol id="recipe-directions" class="directions-list"></ol>
+                <!-- Tab Content -->
+                <div class="recipe-modal-content">
+                    <div id="tab-ingredients" class="recipe-tab-content active">
+                        <ul id="recipe-ingredients" class="recipe-ingredients-list"></ul>
+                    </div>
+                    <div id="tab-instructions" class="recipe-tab-content">
+                        <ol id="recipe-directions" class="recipe-instructions-list"></ol>
                     </div>
                 </div>
             </div>
@@ -237,5 +243,27 @@
 
     <script src="config.js"></script>
     <script src="script.js"></script>
+    <script>
+        // Add tab switching functionality for recipe modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('recipe-modal');
+            if (modal) {
+                const tabs = modal.querySelectorAll('.recipe-tab');
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', function() {
+                        const targetTab = this.dataset.tab;
+
+                        // Remove active class from all tabs and contents
+                        modal.querySelectorAll('.recipe-tab').forEach(t => t.classList.remove('active'));
+                        modal.querySelectorAll('.recipe-tab-content').forEach(c => c.classList.remove('active'));
+
+                        // Add active class to clicked tab and corresponding content
+                        this.classList.add('active');
+                        modal.querySelector(`#tab-${targetTab}`).classList.add('active');
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>

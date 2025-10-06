@@ -33,6 +33,7 @@ backend/
 - `GET /recipes?category={category}` - Filter by meal type
 - `GET /recipes?diet_type={diet}` - Filter by dietary preferences
 - `GET /recipes?allergy_filter={allergy}` - Filter by allergies
+- `GET /recipes?ingredients={ingredient1,ingredient2}` - Filter by seasonal ingredients (word-boundary matching)
 
 ### Nutrition API
 **Base URL**: `https://api.silverspoon.com/nutrition`
@@ -96,6 +97,7 @@ backend/
 
 ### Search & Filtering
 - **Senior-Friendly Design** - Optimized for users aged 55-65
+- **Seasonal Ingredient Filtering** - Word-boundary regex matching prevents false positives (e.g., "apple" won't match "applewood")
 - **Dietary Restrictions** - Vegetarian, vegan, keto, low-sodium, etc.
 - **Allergy Management** - Comprehensive allergen filtering
 - **Performance Optimized** - DynamoDB GSI queries with efficient indexing
