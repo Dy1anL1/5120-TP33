@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Seasonal Fruits & Vegetables - Silver Spoon Society</title>
+    <title>Seasonal Ingredients Recommender - Silver Spoon Society</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="password-protection.js"></script>
@@ -61,120 +61,84 @@
     <!-- Main Content -->
     <main class="main-content seasonal-main">
         <!-- Hero Section -->
-        <section class="seasonal-hero">
-            <h1><i class="fas fa-leaf"></i> Seasonal Produce</h1>
-            <p>Fresh fruits and vegetables for every season</p>
+        <section class="hero">
+            <h1><i class="fas fa-leaf"></i> Seasonal Ingredients Recommender</h1>
+            <p>Discover what's fresh in your area and find perfect seasonal recipes</p>
         </section>
 
-        <!-- State Selector -->
-        <div class="state-selector">
-            <button class="state-btn active" data-state="NSW">
-                <i class="fas fa-map-marker-alt"></i>
-                NSW
-            </button>
-            <button class="state-btn" data-state="VIC">
-                <i class="fas fa-map-marker-alt"></i>
-                VIC
-            </button>
-            <button class="state-btn" data-state="QLD">
-                <i class="fas fa-map-marker-alt"></i>
-                QLD
-            </button>
-            <button class="state-btn" data-state="WA">
-                <i class="fas fa-map-marker-alt"></i>
-                WA
-            </button>
-            <button class="state-btn" data-state="SA">
-                <i class="fas fa-map-marker-alt"></i>
-                SA
-            </button>
-            <button class="state-btn" data-state="TAS">
-                <i class="fas fa-map-marker-alt"></i>
-                TAS
-            </button>
-        </div>
+        <!-- Selector Section -->
+        <section class="selector-section">
+            <!-- Step 1: State Selector -->
+            <div class="state-selector-container">
+                <label for="stateSelect" class="selector-label">
+                    <span class="step-number">Step 1</span>
+                    <span class="step-title">Select Your State</span>
+                </label>
+                <select id="stateSelect" class="state-dropdown" aria-label="Select your state">
+                    <option value="VIC">Victoria (VIC)</option>
+                    <option value="NSW">New South Wales (NSW)</option>
+                    <option value="QLD">Queensland (QLD)</option>
+                    <option value="SA">South Australia (SA)</option>
+                    <option value="WA">Western Australia (WA)</option>
+                    <option value="TAS">Tasmania (TAS)</option>
+                </select>
+            </div>
 
-        <!-- Season Selector -->
-        <div class="season-selector">
-            <button class="season-btn active" data-season="spring">
-                <div class="season-icon spring-icon">
+            <!-- Step 2: Season Display and Slider -->
+            <div class="season-selector-container">
+                <div class="selector-label">
+                    <span class="step-number">Step 2</span>
+                    <span class="step-title">Current Season</span>
+                </div>
+                <button id="currentSeasonBtn" class="season-display-btn" aria-label="Current season">
                     <i class="fas fa-seedling"></i>
-                </div>
-                <div class="season-info">
-                    <span class="season-name">Spring</span>
-                    <span class="season-desc">Sep - Nov</span>
-                </div>
-            </button>
-            <button class="season-btn" data-season="summer">
-                <div class="season-icon summer-icon">
-                    <i class="fas fa-sun"></i>
-                </div>
-                <div class="season-info">
-                    <span class="season-name">Summer</span>
-                    <span class="season-desc">Dec - Feb</span>
-                </div>
-            </button>
-            <button class="season-btn" data-season="autumn">
-                <div class="season-icon autumn-icon">
-                    <i class="fas fa-leaf"></i>
-                </div>
-                <div class="season-info">
-                    <span class="season-name">Autumn</span>
-                    <span class="season-desc">Mar - May</span>
-                </div>
-            </button>
-            <button class="season-btn" data-season="winter">
-                <div class="season-icon winter-icon">
-                    <i class="fas fa-snowflake"></i>
-                </div>
-                <div class="season-info">
-                    <span class="season-name">Winter</span>
-                    <span class="season-desc">Jun - Aug</span>
-                </div>
-            </button>
-        </div>
-
-        <!-- Dynamic Content -->
-        <div class="produce-content">
-            <div class="content-header">
-                <h2 id="content-title">NSW Spring Produce</h2>
-                <p id="content-description">Fresh seasonal produce available in New South Wales during spring season.</p>
-            </div>
-
-            <!-- Search Box -->
-            <div class="search-container">
-                <input type="text" id="produce-search" placeholder="Search for fruits and vegetables..." class="search-input">
-                <i class="fas fa-search search-icon"></i>
-            </div>
-
-            <!-- Type Filter -->
-            <div class="type-filter">
-                <button class="type-btn active" data-type="all">
-                    <i class="fas fa-th"></i>
-                    All
+                    <span>Spring</span>
                 </button>
-                <button class="type-btn" data-type="fruits">
+                <div class="season-slider-wrapper">
+                    <input
+                        type="range"
+                        id="seasonRange"
+                        class="season-slider"
+                        min="1"
+                        max="12"
+                        step="1"
+                        aria-label="Select season by month"
+                    />
+                    <div class="season-labels">
+                        <span class="season-label">Summer</span>
+                        <span class="season-label">Autumn</span>
+                        <span class="season-label">Winter</span>
+                        <span class="season-label">Spring</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seasonal Lists Section -->
+        <section class="seasonal-lists">
+            <!-- Seasonal Fruits Card -->
+            <div class="list-card fruits-card">
+                <h3 class="list-card-title">
                     <i class="fas fa-apple-alt"></i>
-                    Fruits
-                </button>
-                <button class="type-btn" data-type="vegetables">
+                    <span>Seasonal Fruits</span>
+                </h3>
+                <ul id="fruitsList" class="ingredient-list" role="list">
+                    <!-- Dynamically populated -->
+                </ul>
+            </div>
+
+            <!-- Seasonal Vegetables Card -->
+            <div class="list-card vegetables-card">
+                <h3 class="list-card-title">
                     <i class="fas fa-carrot"></i>
-                    Vegetables
-                </button>
+                    <span>Seasonal Vegetables</span>
+                </h3>
+                <ul id="vegetablesList" class="ingredient-list" role="list">
+                    <!-- Dynamically populated -->
+                </ul>
             </div>
+        </section>
 
-            <!-- Produce Grid -->
-            <div class="produce-grid" id="produce-grid">
-                <!-- Dynamic content will be populated here -->
-            </div>
-
-            <!-- No Results Message -->
-            <div class="no-results" id="no-results" style="display: none;">
-                <i class="fas fa-search"></i>
-                <h3>No produce found</h3>
-                <p>Try adjusting your search or filter options.</p>
-            </div>
-        </div>
     </main>
 
     <!-- Footer -->
@@ -187,220 +151,200 @@
         </div>
     </footer>
 
+    <!-- JavaScript Logic -->
     <script>
-        // Seasonal produce functionality
+        // Global state variables
         let seasonalData = {};
-        let currentState = 'NSW';
-        let currentSeason = 'spring';
-        let currentType = 'all';
+        let currentState = 'VIC'; // Default to Victoria
+        let currentSeason = '';
+        let currentMonth = new Date().getMonth() + 1; // 1-12
 
+        // Season configuration (Southern Hemisphere - Australia)
+        const SEASON_CONFIG = {
+            spring: { months: [9, 10, 11], name: 'Spring', icon: 'fa-seedling', label: 'Spring' },
+            summer: { months: [12, 1, 2], name: 'Summer', icon: 'fa-sun', label: 'Summer' },
+            autumn: { months: [3, 4, 5], name: 'Autumn', icon: 'fa-leaf', label: 'Autumn' },
+            winter: { months: [6, 7, 8], name: 'Winter', icon: 'fa-snowflake', label: 'Winter' }
+        };
+
+        // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            loadSeasonalData();
-            initializeEventListeners();
+            initializePage();
         });
 
-        // Load seasonal data from JSON file
+        // Initialize page
+        async function initializePage() {
+            await loadSeasonalData();
+            detectCurrentSeason();
+            initializeEventListeners();
+
+            // Set default state in dropdown
+            const stateSelect = document.getElementById('stateSelect');
+            if (stateSelect) {
+                stateSelect.value = currentState; // Set to VIC
+            }
+
+            updateAllContent();
+        }
+
+        // Load seasonal data from JSON
         async function loadSeasonalData() {
             try {
                 const response = await fetch('season_food.json');
                 seasonalData = await response.json();
-                updateContent();
             } catch (error) {
                 console.error('Error loading seasonal data:', error);
-                showError('Failed to load seasonal produce data');
+                showError('Failed to load seasonal data');
             }
+        }
+
+        // Removed - no longer loading recipes data for recommended section
+
+        // Detect current season based on month
+        function detectCurrentSeason() {
+            for (const [seasonKey, config] of Object.entries(SEASON_CONFIG)) {
+                if (config.months.includes(currentMonth)) {
+                    currentSeason = seasonKey;
+                    break;
+                }
+            }
+
+            // Update slider position
+            const slider = document.getElementById('seasonRange');
+            slider.value = currentMonth;
+            updateSeasonButton();
+        }
+
+        // Get season from month number
+        function getSeasonFromMonth(month) {
+            for (const [seasonKey, config] of Object.entries(SEASON_CONFIG)) {
+                if (config.months.includes(month)) {
+                    return seasonKey;
+                }
+            }
+            return 'spring';
         }
 
         // Initialize all event listeners
         function initializeEventListeners() {
-            // State selector
-            const stateBtns = document.querySelectorAll('.state-btn');
-            stateBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    stateBtns.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    currentState = this.getAttribute('data-state');
-                    updateContent();
-                });
+            // State dropdown
+            const stateSelect = document.getElementById('stateSelect');
+            stateSelect.addEventListener('change', function() {
+                currentState = this.value;
+                updateAllContent();
             });
 
-            // Season selector
-            const seasonBtns = document.querySelectorAll('.season-btn');
-            seasonBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    seasonBtns.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    currentSeason = this.getAttribute('data-season');
-                    updateContent();
-                });
+            // Season slider
+            const seasonSlider = document.getElementById('seasonRange');
+            seasonSlider.addEventListener('input', function() {
+                currentMonth = parseInt(this.value);
+                currentSeason = getSeasonFromMonth(currentMonth);
+                updateSeasonButton();
+                updateAllContent();
             });
-
-            // Type filter
-            const typeBtns = document.querySelectorAll('.type-btn');
-            typeBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    typeBtns.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    currentType = this.getAttribute('data-type');
-                    updateContent();
-                });
-            });
-
-            // Search functionality
-            const searchInput = document.getElementById('produce-search');
-            searchInput.addEventListener('input', debounce(updateContent, 300));
 
             // Mobile menu toggle
             const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
             const navLinks = document.querySelector('.nav-links');
             if (mobileMenuBtn && navLinks) {
                 mobileMenuBtn.addEventListener('click', function() {
+                    const isExpanded = this.getAttribute('aria-expanded') === 'true';
+                    this.setAttribute('aria-expanded', !isExpanded);
                     navLinks.classList.toggle('show');
                 });
             }
         }
 
-        // Update content based on current selections
-        function updateContent() {
-            updateTitle();
-            renderProduce();
+        // Update season button display
+        function updateSeasonButton() {
+            const btn = document.getElementById('currentSeasonBtn');
+            const config = SEASON_CONFIG[currentSeason];
+
+            btn.innerHTML = `
+                <i class="fas ${config.icon}"></i>
+                <span>${config.name}</span>
+            `;
+
+            // Update button class for styling
+            btn.className = `season-display-btn season-${currentSeason}`;
         }
 
-        // Update page title and description
-        function updateTitle() {
-            const title = document.getElementById('content-title');
-            const description = document.getElementById('content-description');
-
-            const seasonName = currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1);
-            const seasonMonths = getSeasonMonths(currentSeason);
-            title.textContent = `${currentState} ${seasonName} Produce`;
-            description.textContent = `Fresh seasonal produce available in ${getStateName(currentState)} during ${seasonName.toLowerCase()} (${seasonMonths}).`;
+        // Update all content
+        function updateAllContent() {
+            renderFruitsList();
+            renderVegetablesList();
         }
 
-        // Get season months for Australia (Southern Hemisphere)
-        function getSeasonMonths(season) {
-            const seasonMonths = {
-                'spring': 'Sep - Nov',
-                'summer': 'Dec - Feb',
-                'autumn': 'Mar - May',
-                'winter': 'Jun - Aug'
-            };
-            return seasonMonths[season] || '';
-        }
+        // Render fruits list
+        function renderFruitsList() {
+            const fruitsList = document.getElementById('fruitsList');
 
-        // Render produce grid
-        function renderProduce() {
-            const grid = document.getElementById('produce-grid');
-            const noResults = document.getElementById('no-results');
-            const searchTerm = document.getElementById('produce-search').value.toLowerCase();
-
-            if (!seasonalData[currentState]) {
-                showError('Data not available for selected state');
+            if (!currentState || !seasonalData[currentState]) {
+                fruitsList.innerHTML = '<li class="empty-message">Please select a state to see seasonal fruits</li>';
                 return;
             }
 
-            let allProduce = [];
-
-            // Collect produce from current state
             const stateData = seasonalData[currentState];
+            const fruits = stateData.fruits || {};
 
-            // Add fruits if needed
-            if (currentType === 'all' || currentType === 'fruits') {
-                Object.entries(stateData.fruits || {}).forEach(([name, seasons]) => {
-                    if (seasons.includes(currentSeason)) {
-                        allProduce.push({ name, type: 'fruit', seasons });
-                    }
-                });
-            }
+            let fruitsHTML = '';
+            for (const [fruitName, seasons] of Object.entries(fruits)) {
+                const isInSeason = seasons.includes(currentSeason);
+                const statusClass = isInSeason ? 'in-season' : 'not-in-season';
+                const statusText = isInSeason ? 'In Season!' : 'Not in season';
 
-            // Add vegetables if needed
-            if (currentType === 'all' || currentType === 'vegetables') {
-                Object.entries(stateData.vegetables || {}).forEach(([name, seasons]) => {
-                    if (seasons.includes(currentSeason)) {
-                        allProduce.push({ name, type: 'vegetable', seasons });
-                    }
-                });
-            }
-
-            // Filter by search term
-            if (searchTerm) {
-                allProduce = allProduce.filter(item =>
-                    item.name.toLowerCase().includes(searchTerm)
-                );
-            }
-
-            // Sort alphabetically
-            allProduce.sort((a, b) => a.name.localeCompare(b.name));
-
-            // Render results
-            if (allProduce.length === 0) {
-                grid.style.display = 'none';
-                noResults.style.display = 'block';
-            } else {
-                grid.style.display = 'grid';
-                noResults.style.display = 'none';
-                grid.innerHTML = allProduce.map(item => createProduceCard(item)).join('');
-            }
-        }
-
-        // Create individual produce card
-        function createProduceCard(item) {
-            const icon = item.type === 'fruit' ? 'fa-apple-alt' : 'fa-carrot';
-            const typeClass = item.type === 'fruit' ? 'fruit-card' : 'vegetable-card';
-
-            return `
-                <div class="produce-card ${typeClass}">
-                    <div class="produce-icon">
-                        <i class="fas ${icon}"></i>
-                    </div>
-                    <div class="produce-info">
-                        <h3 class="produce-name">${item.name}</h3>
-                        <span class="produce-type">${item.type}</span>
-                        <div class="produce-seasons">
-                            ${item.seasons.map(season => `
-                                <span class="season-tag ${season === currentSeason ? 'current' : ''}">${season}</span>
-                            `).join('')}
+                fruitsHTML += `
+                    <li class="ingredient-row" role="listitem">
+                        <span class="ingredient-icon"><i class="fas fa-apple-alt"></i></span>
+                        <span class="ingredient-name">${capitalizeFirst(fruitName)}</span>
+                        <div class="status-bar ${statusClass}" aria-label="${statusText}">
+                            ${statusText}
                         </div>
-                    </div>
-                </div>
-            `;
+                    </li>
+                `;
+            }
+
+            fruitsList.innerHTML = fruitsHTML || '<li class="empty-message">No fruits data available</li>';
         }
 
-        // Get full state name
-        function getStateName(code) {
-            const stateNames = {
-                'NSW': 'New South Wales',
-                'VIC': 'Victoria',
-                'QLD': 'Queensland',
-                'WA': 'Western Australia',
-                'SA': 'South Australia',
-                'TAS': 'Tasmania'
-            };
-            return stateNames[code] || code;
+        // Render vegetables list
+        function renderVegetablesList() {
+            const vegetablesList = document.getElementById('vegetablesList');
+
+            if (!currentState || !seasonalData[currentState]) {
+                vegetablesList.innerHTML = '<li class="empty-message">Please select a state to see seasonal vegetables</li>';
+                return;
+            }
+
+            const stateData = seasonalData[currentState];
+            const vegetables = stateData.vegetables || {};
+
+            let vegetablesHTML = '';
+            for (const [vegName, seasons] of Object.entries(vegetables)) {
+                const isInSeason = seasons.includes(currentSeason);
+                const statusClass = isInSeason ? 'in-season' : 'not-in-season';
+                const statusText = isInSeason ? 'In Season!' : 'Not in season';
+
+                vegetablesHTML += `
+                    <li class="ingredient-row" role="listitem">
+                        <span class="ingredient-icon"><i class="fas fa-carrot"></i></span>
+                        <span class="ingredient-name">${capitalizeFirst(vegName)}</span>
+                        <div class="status-bar ${statusClass}" aria-label="${statusText}">
+                            ${statusText}
+                        </div>
+                    </li>
+                `;
+            }
+
+            vegetablesList.innerHTML = vegetablesHTML || '<li class="empty-message">No vegetables data available</li>';
         }
+
+        // Render recommended recipes
+        // Removed - Recommended recipes functionality deleted
 
         // Show error message
         function showError(message) {
-            const grid = document.getElementById('produce-grid');
-            grid.innerHTML = `
-                <div class="error-message">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <p>${message}</p>
-                </div>
-            `;
-        }
-
-        // Debounce function for search
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
+            console.error(message);
         }
     </script>
     <script src="config.js"></script>
