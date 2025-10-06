@@ -5273,3 +5273,170 @@ html {
         padding: 0.9rem 1.25rem;
     }
 }
+
+/* Health News Section Styles */
+.health-news-section {
+    padding: 4rem 0;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.news-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.news-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.news-image {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    padding: 2rem;
+    text-align: center;
+    color: #fff;
+}
+
+.news-image i {
+    font-size: 2.5rem;
+    opacity: 0.9;
+}
+
+.news-content {
+    padding: 1.5rem;
+}
+
+.news-category {
+    display: inline-block;
+    background: #e8f5e8;
+    color: #2e7d32;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.news-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 0.8rem;
+    line-height: 1.4;
+}
+
+.news-summary {
+    color: #6c757d;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 1.2rem;
+}
+
+.news-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.news-date {
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.news-source {
+    color: #4CAF50;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.news-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #4CAF50;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0.8rem 1.2rem;
+    border: 2px solid #4CAF50;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background: transparent;
+}
+
+.news-link:hover {
+    background: #4CAF50;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.news-link i {
+    font-size: 0.9rem;
+}
+
+/* Responsive Design for News Section */
+@media (max-width: 768px) {
+    .health-news-section {
+        padding: 3rem 0;
+    }
+    
+    .news-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .news-card {
+        margin: 0 1rem;
+    }
+    
+    .news-image {
+        padding: 1.5rem;
+    }
+    
+    .news-image i {
+        font-size: 2rem;
+    }
+    
+    .news-content {
+        padding: 1.2rem;
+    }
+    
+    .news-title {
+        font-size: 1.2rem;
+    }
+    
+    .news-summary {
+        font-size: 0.95rem;
+    }
+    
+    .news-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .news-link {
+        width: 100%;
+        justify-content: center;
+        padding: 1rem;
+        font-size: 1.1rem;
+    }
+}
