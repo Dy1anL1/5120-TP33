@@ -1507,6 +1507,58 @@ document.addEventListener('DOMContentLoaded', function () {
     let lastQuery = {};
     let displayedRecipeIds = new Set(); // Track displayed recipes to avoid duplicates
 
+    // Seasonal data cache (preloaded for performance)
+    let seasonalData = null;
+    let currentSeason = '';
+
+    // Preload seasonal data on page load
+    async function loadSeasonalData() {
+        try {
+            const response = await fetch('season_food.json');
+            seasonalData = await response.json();
+
+            // Detect current season based on month (Southern Hemisphere - Australia)
+            const month = new Date().getMonth() + 1;
+            if ([12, 1, 2].includes(month)) currentSeason = 'summer';
+            else if ([3, 4, 5].includes(month)) currentSeason = 'autumn';
+            else if ([6, 7, 8].includes(month)) currentSeason = 'winter';
+            else if ([9, 10, 11].includes(month)) currentSeason = 'spring';
+
+            // Update hint text
+            const seasonHint = document.getElementById('current-season-hint');
+            if (seasonHint) {
+                const seasonEmoji = { spring: '🌸', summer: '☀️', autumn: '🍂', winter: '❄️' };
+                seasonHint.textContent = `(Fresh ingredients in season now - ${seasonEmoji[currentSeason]} ${currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1)})`;
+            }
+        } catch (error) {
+            console.error('Failed to load seasonal data:', error);
+        }
+    }
+
+    // Check if recipe contains seasonal ingredients
+    function isSeasonalRecipe(recipe) {
+        if (!seasonalData || !currentSeason || !recipe.ingredients) return false;
+
+        const ingredients = recipe.ingredients.map(ing =>
+            (typeof ing === 'string' ? ing : ing.ingredient || '').toLowerCase()
+        );
+
+        // Check all states for seasonal ingredients (more permissive)
+        for (const state of Object.values(seasonalData)) {
+            const allSeasonalItems = { ...state.fruits, ...state.vegetables };
+
+            for (const [itemName, seasons] of Object.entries(allSeasonalItems)) {
+                if (seasons.includes(currentSeason)) {
+                    // Check if this seasonal item appears in recipe ingredients
+                    if (ingredients.some(ing => ing.includes(itemName.toLowerCase()))) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     // Sort recipes by nutrition values
     async function sortRecipesByNutrition(recipes, sortBy) {
         if (sortBy === 'default' || !recipes.length) return recipes;
@@ -1591,9 +1643,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const diet_type = dietTypeSelect ? dietTypeSelect.value : '';
         const allergy_filter = allergyFilterSelect ? allergyFilterSelect.value : '';
         const sortBy = sortBySelect ? sortBySelect.value : 'default';
+        const seasonalFilter = document.getElementById('seasonal-filter')?.checked || false;
+
         if (reset) {
             nextToken = null;
-            lastQuery = { keyword, category, diet_type, allergy_filter, sortBy };
+            lastQuery = { keyword, category, diet_type, allergy_filter, sortBy, seasonalFilter };
             displayedRecipeIds.clear(); // Clear displayed recipes on new search
         }
         if (cardsContainer && reset) cardsContainer.innerHTML = createLoadingHTML('Loading Recipes', 'Finding the best recipes for you');
@@ -1616,6 +1670,11 @@ document.addEventListener('DOMContentLoaded', function () {
             // Strict category match: only show recipes whose categories exactly match the selected category
             if (category && category !== 'all') {
                 filteredItems = filteredItems.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
+            }
+
+            // Apply seasonal filter (client-side, no API call)
+            if (seasonalFilter && seasonalData) {
+                filteredItems = filteredItems.filter(r => isSeasonalRecipe(r));
             }
 
             // Apply sorting by nutrition values or default quality sorting
@@ -1676,7 +1735,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         const cookingTimeHtml = cookingTime ? `<span class="recipe-info-item"><i class="fas fa-clock"></i> Time: ${cookingTime}</span>` : '';
                         const difficultyHtml = difficulty ? `<span class="recipe-info-item"><i class="fas fa-chart-bar"></i> Difficulty: ${difficulty}</span>` : '';
 
+                        // Check if recipe is seasonal and filter is active
+                        const isSeasonal = seasonalFilter && isSeasonalRecipe(r);
+                        const seasonalBadge = isSeasonal ? `<div class="seasonal-badge"><i class="fas fa-leaf"></i> Seasonal</div>` : '';
+
                         card.innerHTML = `
+                            ${seasonalBadge}
                             ${imageHtml}
                             <div class="recipe-content">
                                 <div class="recipe-title">${r.title || ''}</div>
@@ -1791,6 +1855,12 @@ document.addEventListener('DOMContentLoaded', function () {
             if (e.key === 'Enter') updateRecipes(true);
         });
     }
+
+    // Load seasonal data on page load (async, no blocking)
+    if (document.getElementById('seasonal-filter')) {
+        loadSeasonalData().catch(err => console.error('Failed to load seasonal data:', err));
+    }
+
     // Optionally: fetch once on page load
     updateRecipes(true);
 });

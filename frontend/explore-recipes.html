@@ -141,7 +141,20 @@
                             </select>
                         </div>
                     </div>
-                    
+
+                    <div class="filter-group seasonal-filter-group">
+                        <label class="seasonal-checkbox-label">
+                            <input type="checkbox" id="seasonal-filter" class="seasonal-checkbox">
+                            <span class="seasonal-checkbox-text">
+                                <i class="fas fa-leaf"></i>
+                                Show only seasonal recipes
+                            </span>
+                            <span class="seasonal-checkbox-hint" id="current-season-hint">
+                                (Fresh ingredients in season now)
+                            </span>
+                        </label>
+                    </div>
+
                     <div class="filter-group">
                         <label for="sort-by">Sort By</label>
                         <select id="sort-by" class="filter-select">
@@ -156,7 +169,7 @@
                             <option value="vitamin_d-low">Vitamin D (Low to High)</option>
                         </select>
                     </div>
-                    
+
                     <button class="btn btn-primary apply-filters-btn">
                         <i class="fas fa-filter"></i>
                         <span>Apply Filters</span>
