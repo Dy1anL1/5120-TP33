@@ -317,7 +317,9 @@ const questionnaireSteps = [
                 ],
                 validation: {
                     minSelected: 2,
-                    message: "Please select at least 2 meal types"
+                    message: "Please select at least 2 meal types",
+                    warnThreshold: 5,
+                    warningMessage: "Warning: Selecting many meal types may result in daily calories exceeding your recommended intake. Consider selecting 3-4 main meal types (breakfast, lunch, dinner) for balanced nutrition."
                 }
             }
         ]
@@ -764,6 +766,7 @@ function validateField(event) {
 
     let isValid = true;
     let errorMessage = '';
+    let warningMessage = '';
 
     // Required field validation
     if (question.required) {
@@ -775,6 +778,13 @@ function validateField(event) {
                 if (value.length < question.validation.minSelected) {
                     isValid = false;
                     errorMessage = question.validation.message;
+                }
+            }
+
+            // Check for warning threshold (too many selections)
+            if (isValid && question.validation && question.validation.warnThreshold) {
+                if (value.length >= question.validation.warnThreshold) {
+                    warningMessage = question.validation.warningMessage;
                 }
             }
 
@@ -812,13 +822,22 @@ function validateField(event) {
     if (errorElement) {
         if (isValid) {
             errorElement.style.display = 'none';
+            errorElement.classList.remove('warning');
             if (inputElement) {
                 inputElement.classList.remove('error');
                 inputElement.classList.add('success');
             }
+
+            // Show warning if exists
+            if (warningMessage) {
+                errorElement.textContent = warningMessage;
+                errorElement.style.display = 'block';
+                errorElement.classList.add('warning');
+            }
         } else {
             errorElement.textContent = errorMessage;
             errorElement.style.display = 'block';
+            errorElement.classList.remove('warning');
             if (inputElement) {
                 inputElement.classList.add('error');
                 inputElement.classList.remove('success');
