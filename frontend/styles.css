@@ -4736,7 +4736,7 @@ html {
 .season-display-btn {
     width: 100%;
     padding: 1.5rem 2rem;
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     font-weight: 700;
     color: white;
     background: linear-gradient(135deg, #4CAF50, #8BC34A);
@@ -4744,6 +4744,7 @@ html {
     border-radius: 16px;
     cursor: default;
     display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
     gap: 1rem;
@@ -4751,8 +4752,28 @@ html {
     transition: all 0.3s ease;
 }
 
+.season-display-btn .season-month-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 .season-display-btn i {
+    font-size: 2rem;
+}
+
+.month-display-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+}
+
+.month-text {
     font-size: 1.6rem;
+    font-weight: 700;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .season-display-btn.season-spring {
@@ -4835,15 +4856,43 @@ html {
 
 .season-labels {
     display: flex;
-    justify-content: space-between;
+    position: relative;
+    height: 2rem;
     padding: 0 0.5rem;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .season-label {
     font-size: 1rem;
     font-weight: 600;
     color: #666;
+    position: absolute;
+    top: 0.5rem;
+    transform: translateX(-50%);
+    white-space: nowrap;
 }
+
+.season-label:nth-child(1) {
+    /* Summer - Yellow segment center (0% to 16.67%) */
+    left: calc(0.5rem + 8.33%);
+}
+
+.season-label:nth-child(2) {
+    /* Autumn - Orange segment center (16.67% to 41.67%) */
+    left: calc(0.5rem + 29.17%);
+}
+
+.season-label:nth-child(3) {
+    /* Winter - Blue segment center (41.67% to 66.67%) */
+    left: calc(0.5rem + 54.17%);
+}
+
+.season-label:nth-child(4) {
+    /* Spring - Green segment center (66.67% to 91.67%) */
+    left: calc(0.5rem + 79.17%);
+}
+
 
 /* Seasonal Lists Section */
 .seasonal-lists {

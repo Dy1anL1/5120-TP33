@@ -94,6 +94,9 @@
                 <button id="currentSeasonBtn" class="season-display-btn" aria-label="Current season">
                     <i class="fas fa-seedling"></i>
                     <span>Spring</span>
+                    <div class="month-display-content">
+                        <span class="month-text" id="monthText">October</span>
+                    </div>
                 </button>
                 <div class="season-slider-wrapper">
                     <input
@@ -181,6 +184,12 @@
             autumn: { months: [3, 4, 5], name: 'Autumn', icon: 'fa-leaf', label: 'Autumn' },
             winter: { months: [6, 7, 8], name: 'Winter', icon: 'fa-snowflake', label: 'Winter' }
         };
+
+        // Month names
+        const MONTH_NAMES = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -274,15 +283,20 @@
         function updateSeasonButton() {
             const btn = document.getElementById('currentSeasonBtn');
             const config = SEASON_CONFIG[currentSeason];
+            const monthText = MONTH_NAMES[currentMonth - 1];
 
             btn.innerHTML = `
                 <i class="fas ${config.icon}"></i>
-                <span>${config.name}</span>
+                <div class="season-month-row">
+                    <span>${config.name}</span>
+                    <span class="month-text">${monthText}</span>
+                </div>
             `;
 
             // Update button class for styling
             btn.className = `season-display-btn season-${currentSeason}`;
         }
+
 
         // Update all content
         function updateAllContent() {
