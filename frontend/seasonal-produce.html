@@ -129,6 +129,10 @@
                 <ul id="fruitsList" class="ingredient-list" role="list">
                     <!-- Dynamically populated -->
                 </ul>
+                <button id="loadMoreFruits" class="load-more-btn" style="display: none;">
+                    <i class="fas fa-chevron-down"></i>
+                    <span>Load More Fruits</span>
+                </button>
             </div>
 
             <!-- Seasonal Vegetables Card -->
@@ -140,6 +144,10 @@
                 <ul id="vegetablesList" class="ingredient-list" role="list">
                     <!-- Dynamically populated -->
                 </ul>
+                <button id="loadMoreVegetables" class="load-more-btn" style="display: none;">
+                    <i class="fas fa-chevron-down"></i>
+                    <span>Load More Vegetables</span>
+                </button>
             </div>
         </section>
 
@@ -176,6 +184,9 @@
         let currentState = 'VIC'; // Default to Victoria
         let currentSeason = '';
         let currentMonth = new Date().getMonth() + 1; // 1-12
+        let showAllFruits = false; // Track if showing all fruits
+        let showAllVegetables = false; // Track if showing all vegetables
+        const INITIAL_DISPLAY_COUNT = 3; // Initial number of items to display
 
         // Season configuration (Southern Hemisphere - Australia)
         const SEASON_CONFIG = {
@@ -255,6 +266,8 @@
             const stateSelect = document.getElementById('stateSelect');
             stateSelect.addEventListener('change', function() {
                 currentState = this.value;
+                showAllFruits = false;
+                showAllVegetables = false;
                 updateAllContent();
             });
 
@@ -263,8 +276,24 @@
             seasonSlider.addEventListener('input', function() {
                 currentMonth = parseInt(this.value);
                 currentSeason = getSeasonFromMonth(currentMonth);
+                showAllFruits = false;
+                showAllVegetables = false;
                 updateSeasonButton();
                 updateAllContent();
+            });
+
+            // Load More Fruits button
+            const loadMoreFruitsBtn = document.getElementById('loadMoreFruits');
+            loadMoreFruitsBtn.addEventListener('click', function() {
+                showAllFruits = !showAllFruits;
+                renderFruitsList();
+            });
+
+            // Load More Vegetables button
+            const loadMoreVegetablesBtn = document.getElementById('loadMoreVegetables');
+            loadMoreVegetablesBtn.addEventListener('click', function() {
+                showAllVegetables = !showAllVegetables;
+                renderVegetablesList();
             });
 
             // Mobile menu toggle
@@ -610,65 +639,123 @@
         // Render fruits list
         function renderFruitsList() {
             const fruitsList = document.getElementById('fruitsList');
+            const loadMoreBtn = document.getElementById('loadMoreFruits');
 
             if (!currentState || !seasonalData[currentState]) {
                 fruitsList.innerHTML = '<li class="empty-message">Please select a state to see seasonal fruits</li>';
+                loadMoreBtn.style.display = 'none';
                 return;
             }
 
             const stateData = seasonalData[currentState];
             const fruits = stateData.fruits || {};
 
-            let fruitsHTML = '';
+            // Filter only in-season fruits
+            const inSeasonFruits = [];
             for (const [fruitName, seasons] of Object.entries(fruits)) {
                 const isInSeason = seasons.includes(currentSeason);
-                const statusClass = isInSeason ? 'in-season' : 'not-in-season';
-                const statusText = isInSeason ? 'In Season!' : 'Not in season';
+                if (isInSeason) {
+                    inSeasonFruits.push(fruitName);
+                }
+            }
 
+            // Determine how many to show
+            const displayCount = showAllFruits ? inSeasonFruits.length : INITIAL_DISPLAY_COUNT;
+            const fruitsToShow = inSeasonFruits.slice(0, displayCount);
+
+            let fruitsHTML = '';
+            for (const fruitName of fruitsToShow) {
                 fruitsHTML += `
                     <li class="ingredient-row" role="listitem">
                         <span class="ingredient-icon"><i class="fas fa-apple-alt"></i></span>
                         <span class="ingredient-name">${capitalizeFirst(fruitName)}</span>
-                        <div class="status-bar ${statusClass}" aria-label="${statusText}">
-                            ${statusText}
+                        <div class="status-bar in-season" aria-label="In Season!">
+                            In Season!
                         </div>
                     </li>
                 `;
             }
 
             fruitsList.innerHTML = fruitsHTML || '<li class="empty-message">No fruits data available</li>';
+
+            // Show/hide Load More button
+            if (inSeasonFruits.length > INITIAL_DISPLAY_COUNT) {
+                loadMoreBtn.style.display = 'block';
+                if (showAllFruits) {
+                    loadMoreBtn.innerHTML = `
+                        <i class="fas fa-chevron-up"></i>
+                        <span>Show Less</span>
+                    `;
+                } else {
+                    loadMoreBtn.innerHTML = `
+                        <i class="fas fa-chevron-down"></i>
+                        <span>Load More Fruits (${inSeasonFruits.length - INITIAL_DISPLAY_COUNT} more)</span>
+                    `;
+                }
+            } else {
+                loadMoreBtn.style.display = 'none';
+            }
         }
 
         // Render vegetables list
         function renderVegetablesList() {
             const vegetablesList = document.getElementById('vegetablesList');
+            const loadMoreBtn = document.getElementById('loadMoreVegetables');
 
             if (!currentState || !seasonalData[currentState]) {
                 vegetablesList.innerHTML = '<li class="empty-message">Please select a state to see seasonal vegetables</li>';
+                loadMoreBtn.style.display = 'none';
                 return;
             }
 
             const stateData = seasonalData[currentState];
             const vegetables = stateData.vegetables || {};
 
-            let vegetablesHTML = '';
+            // Filter only in-season vegetables
+            const inSeasonVegetables = [];
             for (const [vegName, seasons] of Object.entries(vegetables)) {
                 const isInSeason = seasons.includes(currentSeason);
-                const statusClass = isInSeason ? 'in-season' : 'not-in-season';
-                const statusText = isInSeason ? 'In Season!' : 'Not in season';
+                if (isInSeason) {
+                    inSeasonVegetables.push(vegName);
+                }
+            }
 
+            // Determine how many to show
+            const displayCount = showAllVegetables ? inSeasonVegetables.length : INITIAL_DISPLAY_COUNT;
+            const vegetablesToShow = inSeasonVegetables.slice(0, displayCount);
+
+            let vegetablesHTML = '';
+            for (const vegName of vegetablesToShow) {
                 vegetablesHTML += `
                     <li class="ingredient-row" role="listitem">
                         <span class="ingredient-icon"><i class="fas fa-carrot"></i></span>
                         <span class="ingredient-name">${capitalizeFirst(vegName)}</span>
-                        <div class="status-bar ${statusClass}" aria-label="${statusText}">
-                            ${statusText}
+                        <div class="status-bar in-season" aria-label="In Season!">
+                            In Season!
                         </div>
                     </li>
                 `;
             }
 
             vegetablesList.innerHTML = vegetablesHTML || '<li class="empty-message">No vegetables data available</li>';
+
+            // Show/hide Load More button
+            if (inSeasonVegetables.length > INITIAL_DISPLAY_COUNT) {
+                loadMoreBtn.style.display = 'block';
+                if (showAllVegetables) {
+                    loadMoreBtn.innerHTML = `
+                        <i class="fas fa-chevron-up"></i>
+                        <span>Show Less</span>
+                    `;
+                } else {
+                    loadMoreBtn.innerHTML = `
+                        <i class="fas fa-chevron-down"></i>
+                        <span>Load More Vegetables (${inSeasonVegetables.length - INITIAL_DISPLAY_COUNT} more)</span>
+                    `;
+                }
+            } else {
+                loadMoreBtn.style.display = 'none';
+            }
         }
 
         // Render recommended recipes

@@ -1574,6 +1574,17 @@ document.addEventListener('DOMContentLoaded', function () {
         return sorted;
     }
 
+    // Helper function to create loading animation HTML
+    function createLoadingHTML(message, subtext = '') {
+        return `
+            <div class="recipe-loading-container">
+                <div class="recipe-loading-spinner"></div>
+                <div class="recipe-loading-text">${message}</div>
+                ${subtext ? `<div class="recipe-loading-subtext">${subtext}</div>` : ''}
+            </div>
+        `;
+    }
+
     async function updateRecipes(reset = true) {
         const keyword = searchInput ? searchInput.value.trim() : '';
         const category = recipeCategorySelect ? recipeCategorySelect.value : '';
@@ -1585,7 +1596,7 @@ document.addEventListener('DOMContentLoaded', function () {
             lastQuery = { keyword, category, diet_type, allergy_filter, sortBy };
             displayedRecipeIds.clear(); // Clear displayed recipes on new search
         }
-        if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading...</div>';
+        if (cardsContainer && reset) cardsContainer.innerHTML = createLoadingHTML('Loading Recipes', 'Finding the best recipes for you');
         try {
             const { items = [], next_token } = await fetchRecipes({ keyword, category, diet_type, allergy_filter, nextToken: reset ? null : nextToken });
             let filteredItems = items;
@@ -1609,11 +1620,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Apply sorting by nutrition values or default quality sorting
             if (sortBy !== 'default') {
-                if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition data for sorting...</div>';
+                if (cardsContainer && reset) cardsContainer.innerHTML = createLoadingHTML('Analyzing Nutrition', 'Calculating nutritional values for each recipe');
                 filteredItems = await sortRecipesByNutrition(filteredItems, sortBy);
             } else {
                 // For default sorting, prioritize recipes with better nutrition data quality
-                if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Analyzing recipe quality...</div>';
+                if (cardsContainer && reset) cardsContainer.innerHTML = createLoadingHTML('Analyzing Recipes', 'Sorting by quality and nutritional value');
                 filteredItems = sortRecipesByNutritionQuality(filteredItems);
             }
             if (cardsContainer) {
@@ -1626,7 +1637,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         displayedRecipeIds.add(r.recipe_id);
 
                         const card = document.createElement('div');
-                        card.className = 'recipe-card';
+                        // Use different card class based on whether nutrition data is present
+                        card.className = r.nutritionData ? 'recipe-card recipe-card-with-nutrition' : 'recipe-card';
                         card.tabIndex = 0;
                         card.style.cursor = 'pointer';
                         card.setAttribute('data-id', r.recipe_id || r.id || '');

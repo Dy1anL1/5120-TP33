@@ -2518,7 +2518,12 @@ html {
 
 /* Specific height for explore-recipes page cards */
 .recipe-cards-container .recipe-card {
-    height: 550px;
+    height: 600px;
+}
+
+/* Taller height for explore-recipes cards with nutrition info */
+.recipe-cards-container .recipe-card-with-nutrition {
+    height: 850px;
 }
 
 /* Specific height for meal-planning page cards */
@@ -4952,6 +4957,44 @@ html {
     gap: 1rem;
 }
 
+.load-more-btn {
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.load-more-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.load-more-btn:active {
+    transform: translateY(0);
+}
+
+.load-more-btn i {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.load-more-btn:hover i {
+    transform: translateY(3px);
+}
+
 .ingredient-row {
     display: flex;
     align-items: center;
@@ -5862,4 +5905,64 @@ html {
     border-radius: 18px;
     font-size: 1.05rem;
     font-weight: 600;
+}
+
+/* Recipe Loading Animation */
+.recipe-loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    min-height: 400px;
+    grid-column: 1 / -1; /* Span all grid columns */
+    width: 100%;
+}
+
+.recipe-loading-spinner {
+    width: 80px;
+    height: 80px;
+    border: 6px solid #f0f0f0;
+    border-top: 6px solid #4CAF50;
+    border-radius: 50%;
+    animation: recipeSpinner 1s linear infinite;
+    margin-bottom: 2rem;
+}
+
+@keyframes recipeSpinner {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.recipe-loading-text {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #4CAF50;
+    margin-bottom: 0.5rem;
+    animation: pulseFade 1.5s ease-in-out infinite;
+}
+
+.recipe-loading-subtext {
+    font-size: 1.1rem;
+    color: #888;
+    text-align: center;
+    max-width: 400px;
+}
+
+@keyframes pulseFade {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Loading dots animation */
+.recipe-loading-text::after {
+    content: '';
+    animation: loadingDots 1.5s steps(4, end) infinite;
+}
+
+@keyframes loadingDots {
+    0%, 20% { content: ''; }
+    40% { content: '.'; }
+    60% { content: '..'; }
+    80%, 100% { content: '...'; }
 }
