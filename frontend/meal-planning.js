@@ -408,8 +408,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     await loadUserPreferences();
     renderCurrentStep();
 
-    // Always show the Weekly Summary (even with placeholder data)
-    await generateWeeklySummary();
+    // Always show the Weekly Summary (pass weeklyPlan if loaded)
+    await generateWeeklySummary(weeklyPlan);
 });
 
 // Load saved user preferences from localStorage
