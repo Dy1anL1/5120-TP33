@@ -2615,13 +2615,6 @@ html {
     background: rgba(255, 255, 255, 1);
 }
 
-.recipe-actions {
-    margin-top: auto;
-    padding-top: 0.75rem;
-    display: flex;
-    justify-content: flex-end;
-}
-
 .dashboard-link-btn {
     background: #4CAF50;
     color: white;
@@ -5122,6 +5115,7 @@ html {
     flex-direction: column;
     gap: 0.75rem;
     margin-top: 1rem;
+    width: 100%;
 }
 
 .btn-refresh,
@@ -5138,11 +5132,13 @@ html {
     justify-content: center;
     gap: 0.6rem;
     transition: all 0.3s ease;
+    box-sizing: border-box;
 }
 
 .btn-refresh {
     background: #f0f0f0;
     color: #333;
+    border: 2px solid transparent;
 }
 
 .btn-refresh:hover {
