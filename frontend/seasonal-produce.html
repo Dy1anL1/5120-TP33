@@ -160,6 +160,16 @@
                 </h3>
                 <p class="recommended-subtitle">Perfect recipes using ingredients that are in season now</p>
             </div>
+
+            <!-- Loading Spinner -->
+            <div id="recipesLoadingSpinner" class="recipes-loading-container" style="display: none;">
+                <div class="loading-spinner-content">
+                    <div class="spinner"></div>
+                    <p class="loading-text">Loading seasonal recipes...</p>
+                    <p class="loading-subtext">Finding recipes with fresh ingredients</p>
+                </div>
+            </div>
+
             <div id="recipeCards" class="recipe-grid" role="list">
                 <!-- Recipe cards will be dynamically populated -->
             </div>
@@ -341,15 +351,19 @@
         // Load recommended recipes based on seasonal ingredients
         async function loadRecommendedRecipes() {
             const recipeCardsContainer = document.getElementById('recipeCards');
+            const loadingSpinner = document.getElementById('recipesLoadingSpinner');
 
-            // Show loading state
-            recipeCardsContainer.innerHTML = '<p class="loading-message">Loading seasonal recipes...</p>';
+            // Show loading spinner and hide recipe cards
+            loadingSpinner.style.display = 'flex';
+            recipeCardsContainer.style.display = 'none';
 
             try {
                 // Get current in-season ingredients
                 const inSeasonIngredients = getInSeasonIngredients();
 
                 if (inSeasonIngredients.length === 0) {
+                    loadingSpinner.style.display = 'none';
+                    recipeCardsContainer.style.display = 'grid';
                     recipeCardsContainer.innerHTML = '<p class="empty-message">No seasonal ingredients available for the selected state and season.</p>';
                     return;
                 }
@@ -373,9 +387,15 @@
                 console.log(`Filtered to ${allFetchedRecipes.length} highly seasonal recipes`);
 
                 if (allFetchedRecipes.length === 0) {
+                    loadingSpinner.style.display = 'none';
+                    recipeCardsContainer.style.display = 'grid';
                     recipeCardsContainer.innerHTML = '<p class="empty-message">No recipes found with enough seasonal ingredients. Try a different season or state.</p>';
                     return;
                 }
+
+                // Hide loading spinner and show recipe cards
+                loadingSpinner.style.display = 'none';
+                recipeCardsContainer.style.display = 'grid';
 
                 // Reset displayed recipe IDs and render initial 4 recipes
                 displayedRecipeIds.clear();
@@ -383,6 +403,8 @@
 
             } catch (error) {
                 console.error('Error loading recommended recipes:', error);
+                loadingSpinner.style.display = 'none';
+                recipeCardsContainer.style.display = 'grid';
                 recipeCardsContainer.innerHTML = '<p class="error-message">Failed to load recipes. Please try again later.</p>';
             }
         }

@@ -6083,3 +6083,43 @@ html {
 .seasonal-badge i {
     font-size: 1rem;
 }
+
+/* Seasonal Page - Recipes Loading Container */
+.recipes-loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    width: 100%;
+    padding: 3rem 1rem;
+}
+
+.loading-spinner-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.loading-spinner-content .spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #4CAF50;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+.loading-spinner-content .loading-text {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.loading-spinner-content .loading-subtext {
+    font-size: 1rem;
+    color: #7f8c8d;
+    margin: 0;
+}
