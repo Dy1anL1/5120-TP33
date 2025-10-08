@@ -236,6 +236,35 @@ async function calculateNutrition(ingredients, servings = 1) {
 const questionnaireSteps = [
     {
         step: 1,
+        title: "Privacy & Data Protection",
+        type: "info",
+        questions: [
+            {
+                id: "privacy_acknowledgment",
+                type: "info",
+                content: `
+                    <div style="line-height: 1.8; font-size: 1.1rem;">
+                        <p style="margin-bottom: 1.5rem;"><strong>Your Privacy Matters</strong></p>
+                        <p style="margin-bottom: 1rem;">We value your privacy and are committed to protecting your personal information. Before we begin, please understand how your data is handled:</p>
+
+                        <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                            <li style="margin-bottom: 0.8rem;"><strong>Local Storage Only:</strong> All information you provide is stored locally on your device. Nothing is uploaded to any server.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>No Commercial Use:</strong> Your personal information will never be used for commercial purposes or marketing.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>No Third-Party Sharing:</strong> We do not share your data with any third parties.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>Educational Purpose:</strong> This meal planner is designed to help you create personalized, healthy meal plans.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>Your Control:</strong> You can clear your data at any time through your browser settings.</li>
+                        </ul>
+
+                        <p style="margin-top: 1.5rem; padding: 1rem; background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 4px;">
+                            <strong>By clicking "Next", you acknowledge that you have read and understood this privacy notice and consent to the local storage of your preferences on your device.</strong>
+                        </p>
+                    </div>
+                `
+            }
+        ]
+    },
+    {
+        step: 2,
         title: "Personal Information",
         questions: [
             {
@@ -281,7 +310,7 @@ const questionnaireSteps = [
         ]
     },
     {
-        step: 2,
+        step: 3,
         title: "Dietary Preferences",
         questions: [
             {
@@ -325,7 +354,7 @@ const questionnaireSteps = [
         ]
     },
     {
-        step: 3,
+        step: 4,
         title: "Allergies & Food Restrictions",
         questions: [
             {
@@ -358,7 +387,7 @@ const questionnaireSteps = [
         ]
     },
     {
-        step: 4,
+        step: 5,
         title: "Nutrition Goals",
         questions: [
             {
@@ -596,6 +625,14 @@ function renderQuestion(question) {
                     ` : ''}
                     <div class="input-hint">${getQuestionHint(question)}</div>
                     <div id="${question.id}-error" class="validation-message error-message" style="display:none;"></div>
+                </div>
+            `;
+
+        case 'info':
+            // For informational/privacy notice steps
+            return `
+                <div class="question-group info-content">
+                    ${question.content || ''}
                 </div>
             `;
 
@@ -862,9 +899,19 @@ function validateCurrentStep() {
     const stepData = questionnaireSteps.find(s => s.step === currentStep);
     if (!stepData) return false;
 
+    // Skip validation for info-type steps (like privacy notice)
+    if (stepData.type === 'info') {
+        return true;
+    }
+
     let isValid = true;
 
     for (const question of stepData.questions) {
+        // Skip validation for info-type questions
+        if (question.type === 'info') {
+            continue;
+        }
+
         const inputElement = document.getElementById(question.id);
         const fieldValid = validateField({ target: { id: question.id, value: inputElement ? inputElement.value : '' } });
         if (!fieldValid) {
@@ -1965,7 +2012,7 @@ function ensureRecipeModal() {
     // Add tab switching functionality
     const tabs = m.querySelectorAll('.recipe-tab');
     tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
+        tab.addEventListener('click', function () {
             const targetTab = this.dataset.tab;
 
             // Remove active class from all tabs and contents
@@ -1991,6 +2038,14 @@ function openModal() {
 // Open recipe modal and fetch recipe details
 async function openRecipeModal(recipeId) {
     try {
+        // Show modal immediately with loading state
+        const m = ensureRecipeModal();
+        m.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+
+        const titleEl = m.querySelector('#recipe-modal-title');
+        if (titleEl) titleEl.textContent = 'Loading...';
+
         // Fetch recipe details
         const response = await fetch(`${API_CONFIG.RECIPES_API}?recipe_id=${recipeId}`);
         if (!response.ok) {
@@ -1999,14 +2054,14 @@ async function openRecipeModal(recipeId) {
 
         const recipe = await response.json();
 
-        const m = ensureRecipeModal();
-        const titleEl = m.querySelector('#recipe-modal-title');
+        // Get DOM elements
         const ingEl = m.querySelector('#recipe-ingredients');
         const dirEl = m.querySelector('#recipe-directions');
         const sumEl = m.querySelector('#nutrition-summary');
         const imgContainerEl = m.querySelector('#recipe-modal-image');
         const imgEl = m.querySelector('#recipe-modal-img');
 
+        // Update title
         if (titleEl) titleEl.textContent = recipe.title || '';
 
         // Handle recipe image in modal
@@ -2059,6 +2114,8 @@ async function openRecipeModal(recipeId) {
 
         // Show nutrition info (per serving) - use consistent nutrition data
         if (sumEl) {
+            sumEl.innerHTML = '<div style="text-align: center; padding: 1rem; color: #999;">Loading nutrition data...</div>';
+
             console.log('Getting consistent nutrition for modal:', recipe.title);
             const nutrition = await getConsistentNutrition(recipe);
 

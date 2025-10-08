@@ -235,6 +235,34 @@ h6 {
     margin-bottom: 2rem;
 }
 
+/* Info content styling for privacy notice and informational steps */
+.question-group.info-content {
+    background: #f8f9fa;
+    padding: 2rem;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    margin-bottom: 1.5rem;
+}
+
+.question-group.info-content ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.question-group.info-content li {
+    padding-left: 1.5rem;
+    position: relative;
+}
+
+.question-group.info-content li::before {
+    content: "\2713";
+    position: absolute;
+    left: 0;
+    color: #4caf50;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
 .question-label {
     display: block;
     font-weight: 600;
