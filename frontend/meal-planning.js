@@ -192,26 +192,29 @@ async function calculateNutrition(ingredients, servings = 1) {
 
         const sum = data.summary_100g_sum;
         // NOTE: Backend returns TOTAL recipe nutrition in summary_100g_sum
-        // Store the total values - do NOT divide by servings here
-        // Servings division should be done at display time
+        // Divide by servings to get per-serving nutrition
+        const servingDivisor = servings || 1;
+
         const nutrition = {
-            calories: Math.round(sum.calories || 0),
-            protein_g: Math.round(sum.protein || 0),
-            carbs_g: Math.round(sum.carbohydrates || 0),
-            fat_g: Math.round(sum.total_fat || 0),
-            fiber_g: Math.round(sum.dietary_fiber || 0),
-            sugars_g: Math.round(sum.total_sugars || 0),
-            saturated_fat_g: Math.round(sum.saturated_fats || 0),
-            trans_fat_g: Math.round(sum.trans_fats || 0),
-            vitamin_d_iu: Math.round(sum.vitamin_d || 0),
-            calcium_mg: Math.round(sum.calcium || 0),
-            iron_mg: Math.round(sum.iron || 0),
-            potassium_mg: Math.round(sum.potassium || 0),
+            calories: Math.round((sum.calories || 0) / servingDivisor),
+            protein_g: Math.round((sum.protein || 0) / servingDivisor),
+            carbs_g: Math.round((sum.carbohydrates || 0) / servingDivisor),
+            fat_g: Math.round((sum.total_fat || 0) / servingDivisor),
+            fiber_g: Math.round((sum.dietary_fiber || 0) / servingDivisor),
+            sugars_g: Math.round((sum.total_sugars || 0) / servingDivisor),
+            saturated_fat_g: Math.round((sum.saturated_fats || 0) / servingDivisor),
+            trans_fat_g: Math.round((sum.trans_fats || 0) / servingDivisor),
+            vitamin_d_iu: Math.round((sum.vitamin_d || 0) / servingDivisor),
+            calcium_mg: Math.round((sum.calcium || 0) / servingDivisor),
+            iron_mg: Math.round((sum.iron || 0) / servingDivisor),
+            potassium_mg: Math.round((sum.potassium || 0) / servingDivisor),
             // Keep backward compatibility
-            protein: Math.round(sum.protein || 0),
-            carbs: Math.round(sum.carbohydrates || 0),
-            fat: Math.round(sum.total_fat || 0)
+            protein: Math.round((sum.protein || 0) / servingDivisor),
+            carbs: Math.round((sum.carbohydrates || 0) / servingDivisor),
+            fat: Math.round((sum.total_fat || 0) / servingDivisor)
         };
+
+        console.log(`calculateNutrition - Final nutrition (per serving):`, nutrition);
 
         // Cache the result
         nutritionCache.set(cacheKey, nutrition);
@@ -1096,10 +1099,17 @@ async function generateDayMealsWithProgress(day, selectedMealTypes, baseStep, to
                 selectedRecipeIds.add(recipe.recipe_id);
                 console.log(`Selected recipe for ${day} ${mealType}: ${recipe.title} (ID: ${recipe.recipe_id})`);
 
-                // Calculate nutrition for this recipe
+                // Calculate nutrition for this recipe (per serving)
                 console.log(`Calculating nutrition for ${recipe.title} (${mealType} for ${day})...`);
-                const nutrition = await calculateNutrition(recipe.ingredients || [], 1); // Get total recipe nutrition
-                console.log(`Nutrition calculated for ${recipe.title}:`, nutrition);
+                console.log(`Recipe servings field:`, recipe.servings, `Recipe yield field:`, recipe.yield);
+                let recipeServings = parseInt(recipe.servings) || parseInt(recipe.yield) || 4;
+                // Ensure servings is reasonable (between 1 and 20)
+                if (recipeServings < 1 || recipeServings > 20) {
+                    console.warn(`Unusual servings value ${recipeServings}, defaulting to 4`);
+                    recipeServings = 4;
+                }
+                const nutrition = await calculateNutrition(recipe.ingredients || [], recipeServings); // Per serving nutrition
+                console.log(`Nutrition calculated for ${recipe.title} (${recipeServings} servings):`, nutrition);
                 recipe.nutrition = nutrition; // Add nutrition data to recipe
                 meals[mealType] = recipe;
             } else {
@@ -2283,6 +2293,169 @@ async function generateWeeklySummary(weeklyPlan) {
     `;
 }
 
+// Add Meal Plan to Dashboard
+function addMealPlanToDashboard() {
+    // Check if meal plan exists
+    if (!weeklyPlan || !weeklyPlan.plan || Object.keys(weeklyPlan.plan).length === 0) {
+        showSeniorFriendlyAlert(
+            'No Meal Plan Found',
+            'Please generate a meal plan first before adding to dashboard.',
+            'warning'
+        );
+        return;
+    }
+
+    // Check if already has a plan in dashboard
+    const existingPlan = localStorage.getItem('weeklyMealPlanForDashboard');
+
+    if (existingPlan) {
+        // Show update confirmation
+        const existingData = JSON.parse(existingPlan);
+        const existingDate = new Date(existingData.createdAt);
+        const newStartDate = new Date();
+        const newEndDate = new Date();
+        newEndDate.setDate(newEndDate.getDate() + 6);
+
+        showSeniorFriendlyConfirm(
+            'Update Meal Plan?',
+            `You already have a meal plan in the dashboard.
+
+Current plan: ${existingDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })} - ${new Date(existingDate.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })}
+New plan: ${newStartDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })} - ${newEndDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })}
+
+Replace with new plan?`,
+            () => saveMealPlanToDashboard(),
+            'Replace',
+            'Cancel'
+        );
+    } else {
+        // Show add confirmation
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + 6);
+
+        showSeniorFriendlyConfirm(
+            'Add Meal Plan to Dashboard?',
+            `This will save your 7-day meal plan to the dashboard for easy tracking.
+
+Plan dates: ${startDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })}
+
+Continue?`,
+            () => saveMealPlanToDashboard(),
+            'Yes, Add',
+            'Cancel'
+        );
+    }
+}
+
+function saveMealPlanToDashboard() {
+    const planData = {
+        mealPlan: weeklyPlan.plan,
+        createdAt: Date.now(),
+        preferences: weeklyPlan.preferences
+    };
+
+    localStorage.setItem('weeklyMealPlanForDashboard', JSON.stringify(planData));
+
+    showSeniorFriendlySuccess(
+        'Meal Plan Added Successfully!',
+        'Your 7-day meal plan is now in the dashboard.',
+        () => {
+            window.location.href = 'nutrition-dashboard.html';
+        }
+    );
+}
+
+// Senior-friendly alert functions
+function showSeniorFriendlyAlert(title, message, type = 'info') {
+    const iconMap = {
+        'warning': 'fa-exclamation-triangle',
+        'error': 'fa-times-circle',
+        'info': 'fa-info-circle'
+    };
+
+    const colorMap = {
+        'warning': '#ff9800',
+        'error': '#f44336',
+        'info': '#2196F3'
+    };
+
+    const overlay = document.createElement('div');
+    overlay.className = 'senior-dialog-overlay';
+    overlay.innerHTML = `
+        <div class="senior-dialog">
+            <div class="senior-dialog-icon" style="color: ${colorMap[type]}">
+                <i class="fas ${iconMap[type]}"></i>
+            </div>
+            <h2 class="senior-dialog-title">${title}</h2>
+            <p class="senior-dialog-message">${message}</p>
+            <div class="senior-dialog-actions">
+                <button class="btn btn-primary btn-large" onclick="this.closest('.senior-dialog-overlay').remove()">
+                    OK
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function showSeniorFriendlyConfirm(title, message, onConfirm, confirmText = 'Yes', cancelText = 'Cancel') {
+    const overlay = document.createElement('div');
+    overlay.className = 'senior-dialog-overlay';
+    overlay.innerHTML = `
+        <div class="senior-dialog">
+            <div class="senior-dialog-icon" style="color: #ff9800">
+                <i class="fas fa-question-circle"></i>
+            </div>
+            <h2 class="senior-dialog-title">${title}</h2>
+            <p class="senior-dialog-message">${message.replace(/\n/g, '<br>')}</p>
+            <div class="senior-dialog-actions">
+                <button class="btn btn-primary btn-large senior-confirm-btn">
+                    ${confirmText}
+                </button>
+                <button class="btn btn-outline btn-large senior-cancel-btn">
+                    ${cancelText}
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('.senior-confirm-btn').onclick = () => {
+        overlay.remove();
+        onConfirm();
+    };
+
+    overlay.querySelector('.senior-cancel-btn').onclick = () => {
+        overlay.remove();
+    };
+}
+
+function showSeniorFriendlySuccess(title, message, onContinue) {
+    const overlay = document.createElement('div');
+    overlay.className = 'senior-dialog-overlay';
+    overlay.innerHTML = `
+        <div class="senior-dialog">
+            <div class="senior-dialog-icon" style="color: #4CAF50">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2 class="senior-dialog-title">${title}</h2>
+            <p class="senior-dialog-message">${message}</p>
+            <div class="senior-dialog-actions">
+                <button class="btn btn-success btn-large">
+                    <i class="fas fa-chart-line"></i> View in Dashboard
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('.btn-success').onclick = () => {
+        overlay.remove();
+        if (onContinue) onContinue();
+    };
+}
+
 // Export functions for HTML onclick handlers
 window.goToPreviousStep = goToPreviousStep;
 window.goToNextStep = goToNextStep;
@@ -2291,3 +2464,4 @@ window.regeneratePlan = regeneratePlan;
 window.updatePreferences = updatePreferences;
 window.openRecipeModal = openRecipeModal;
 window.printMealPlan = printMealPlan;
+window.addMealPlanToDashboard = addMealPlanToDashboard;

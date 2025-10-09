@@ -31,29 +31,30 @@ function formatNutritionNumber(value, unit = '') {
 }
 
 // ====== Compact Nutrition Goals (10 key nutrients for dashboard) ======
+// Based on Australian/New Zealand NRV standards
 const NUTRIENT_GOALS = {
     female_51: {
-        calories_kcal: 1800,
-        protein_g: 46,
-        carbohydrate_g: 130,
+        calories_kcal: 2100,
+        protein_g: 60,
+        carbohydrate_g: 350,
         total_fat_pct_range: '20-35',
-        fiber_g: 22.4,
-        calcium_mg: 1200,
-        potassium_mg: 4700,
-        sodium_mg: 2300,
-        vitaminD_IU: 600,
+        fiber_g: 25,
+        calcium_mg: 1300,
+        potassium_mg: 2800,
+        sodium_mg: 2000,
+        vitaminD_IU: 400,
         vitaminB12_mcg: 2.4
     },
     male_51: {
-        calories_kcal: 2200,
-        protein_g: 56,
-        carbohydrate_g: 130,
+        calories_kcal: 2600,
+        protein_g: 70,
+        carbohydrate_g: 375,
         total_fat_pct_range: '20-35',
-        fiber_g: 28,
-        calcium_mg: 1200,
-        potassium_mg: 4700,
-        sodium_mg: 2300,
-        vitaminD_IU: 600,
+        fiber_g: 30,
+        calcium_mg: 1000,
+        potassium_mg: 3800,
+        sodium_mg: 2000,
+        vitaminD_IU: 400,
         vitaminB12_mcg: 2.4
     }
 };
@@ -571,6 +572,13 @@ async function renderDashboardNutrition() {
     // Progress bar
     const progressFill = document.querySelector('.progress-fill');
     let allIngredients = [];
+
+    // Set goal values from NUTRIENT_GOALS (default to male_51)
+    const userGoals = NUTRIENT_GOALS.male_51;
+    if (caloriesGoal) caloriesGoal.textContent = userGoals.calories_kcal;
+    if (proteinGoal) proteinGoal.textContent = userGoals.protein_g;
+    if (calciumGoal) calciumGoal.textContent = userGoals.calcium_mg;
+    if (vitaminDGoal) vitaminDGoal.textContent = userGoals.vitaminD_IU;
 
     try {
         // Read dashboard from localStorage
@@ -1209,6 +1217,38 @@ document.addEventListener('DOMContentLoaded', function () {
                     icon.className = 'fas fa-bars';
                 }
             }
+        });
+    }
+
+    // Dashboard Tab Switching
+    const dashboardTabs = document.querySelectorAll('.dashboard-tab');
+    const dashboardTabPanels = document.querySelectorAll('.dashboard-tab-panel');
+
+    if (dashboardTabs.length > 0) {
+        dashboardTabs.forEach(tab => {
+            tab.addEventListener('click', function () {
+                const targetTab = this.getAttribute('data-tab');
+
+                // Remove active class from all tabs
+                dashboardTabs.forEach(t => t.classList.remove('active'));
+
+                // Remove active class from all panels
+                dashboardTabPanels.forEach(p => p.classList.remove('active'));
+
+                // Add active class to clicked tab
+                this.classList.add('active');
+
+                // Add active class to corresponding panel
+                const targetPanel = document.getElementById(targetTab);
+                if (targetPanel) {
+                    targetPanel.classList.add('active');
+
+                    // If switching to weekly plan tab, load the meal plan
+                    if (targetTab === 'weekly-plan') {
+                        loadWeeklyMealPlan();
+                    }
+                }
+            });
         });
     }
 
@@ -2239,3 +2279,162 @@ function clearAllNutritionAlerts() {
 // Make functions available globally
 window.closeNutritionAlert = closeNutritionAlert;
 window.clearAllNutritionAlerts = clearAllNutritionAlerts;
+
+// Weekly Meal Plan Functions
+function loadWeeklyMealPlan() {
+    const weeklyPlanContent = document.getElementById('weekly-plan-content');
+    if (!weeklyPlanContent) return;
+
+    // Get meal plan from localStorage
+    const mealPlanData = localStorage.getItem('weeklyMealPlanForDashboard');
+
+    if (!mealPlanData) {
+        // Show empty state
+        weeklyPlanContent.innerHTML = `
+            <div class="weekly-plan-empty">
+                <div class="empty-icon">
+                    <i class="fas fa-calendar-times"></i>
+                </div>
+                <h3>No Meal Plan Yet</h3>
+                <p>Create a 7-day meal plan to see it here!</p>
+                <a href="meal-planning.html" class="btn btn-primary btn-large">
+                    <i class="fas fa-utensils"></i> Go to Meal Planning
+                </a>
+            </div>
+        `;
+        return;
+    }
+
+    try {
+        const planData = JSON.parse(mealPlanData);
+        const { mealPlan, createdAt, preferences } = planData;
+
+        // Calculate days ago
+        const daysAgo = Math.floor((Date.now() - createdAt) / (1000 * 60 * 60 * 24));
+        const isOutdated = daysAgo > 7;
+
+        // Render meal plan
+        let html = `
+            <div class="weekly-plan-header">
+                <div class="plan-info">
+                    <h3><i class="fas fa-calendar-week"></i> Your 7-Day Meal Plan</h3>
+                    <div class="plan-meta">
+                        <span class="plan-date">
+                            <i class="fas fa-calendar"></i>
+                            Created: ${new Date(createdAt).toLocaleDateString('en-AU', {
+                                year: 'numeric', month: 'long', day: 'numeric'
+                            })}
+                        </span>
+                        <span class="plan-updated ${isOutdated ? 'outdated' : ''}">
+                            <i class="fas fa-clock"></i>
+                            ${daysAgo === 0 ? 'Just now' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`}
+                        </span>
+                    </div>
+                </div>
+                ${isOutdated ? `
+                    <div class="plan-outdated-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Your meal plan may be outdated
+                        <a href="meal-planning.html" class="btn btn-secondary btn-small">
+                            Create New Plan
+                        </a>
+                    </div>
+                ` : ''}
+            </div>
+
+            <div class="weekly-plan-days">
+        `;
+
+        // Get today's date for highlighting
+        const today = new Date();
+        const startDate = new Date(createdAt);
+
+        // Render each day
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        days.forEach((dayName, index) => {
+            const dayMealsObj = mealPlan[dayName] || {};
+            const dayDate = new Date(startDate);
+            dayDate.setDate(startDate.getDate() + index);
+
+            const isToday = dayDate.toDateString() === today.toDateString();
+
+            // Convert meals object to array
+            const dayMeals = Object.entries(dayMealsObj).map(([mealType, recipe]) => ({
+                meal_type: mealType,
+                ...recipe
+            }));
+
+            // Calculate total nutrition for the day
+            let totalCalories = 0;
+            let totalProtein = 0;
+            let totalCalcium = 0;
+            let totalVitaminD = 0;
+
+            dayMeals.forEach(meal => {
+                if (meal.nutrition) {
+                    totalCalories += meal.nutrition.calories || 0;
+                    totalProtein += meal.nutrition.protein || meal.nutrition.protein_g || 0;
+                    totalCalcium += meal.nutrition.calcium_mg || meal.nutrition.calcium || 0;
+                    totalVitaminD += meal.nutrition.vitamin_d_iu || meal.nutrition.vitamin_d || 0;
+                }
+            });
+
+            html += `
+                <div class="weekly-day-card ${isToday ? 'today' : ''}">
+                    <div class="day-header">
+                        <h4>
+                            ${dayName}
+                            ${isToday ? '<span class="today-badge">Today</span>' : ''}
+                        </h4>
+                        <span class="day-date">${dayDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })}</span>
+                    </div>
+
+                    <div class="day-meals">
+                        ${dayMeals.length > 0 ? dayMeals.map(meal => `
+                            <div class="day-meal-item">
+                                <span class="meal-type-badge">${meal.meal_type}</span>
+                                <span class="meal-title">${meal.title}</span>
+                                <span class="meal-calories">${meal.nutrition?.calories ? Math.round(meal.nutrition.calories) + ' kcal' : ''}</span>
+                            </div>
+                        `).join('') : '<p class="no-meals">No meals planned</p>'}
+                    </div>
+
+                    <div class="day-nutrition-summary">
+                        <div class="nutrition-item">
+                            <i class="fas fa-fire"></i>
+                            <span>${Math.round(totalCalories)} kcal</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <i class="fas fa-drumstick-bite"></i>
+                            <span>${Math.round(totalProtein)}g protein</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <i class="fas fa-bone"></i>
+                            <span>${Math.round(totalCalcium)}mg calcium</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <i class="fas fa-sun"></i>
+                            <span>${totalVitaminD.toFixed(1)}IU vit D</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+            </div>
+        `;
+
+        weeklyPlanContent.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading weekly meal plan:', error);
+        weeklyPlanContent.innerHTML = `
+            <div class="weekly-plan-error">
+                <i class="fas fa-exclamation-circle"></i>
+                <p>Error loading meal plan. Please try creating a new one.</p>
+                <a href="meal-planning.html" class="btn btn-primary">Go to Meal Planning</a>
+            </div>
+        `;
+    }
+}

@@ -228,11 +228,29 @@
             <div class="section-container">
                 <div class="goals-container">
                     <div class="goals-header">
-                        <h2><i class="fas fa-bullseye"></i> Today's Goals</h2>
+                        <h2><i class="fas fa-bullseye"></i> Nutrition Dashboard</h2>
                     </div>
 
-                    <!-- Left: goals-list, Right: meals-added-section -->
-                    <div class="goals-row">
+                    <!-- Tab Navigation -->
+                    <div class="dashboard-tabs">
+                        <button class="dashboard-tab active" data-tab="daily-tracking">
+                            <i class="fas fa-calendar-day"></i> Daily Tracking
+                        </button>
+                        <button class="dashboard-tab" data-tab="weekly-plan">
+                            <i class="fas fa-calendar-week"></i> Weekly Meal Plan
+                        </button>
+                    </div>
+
+                    <!-- Tab Content Container -->
+                    <div class="dashboard-tab-content">
+                        <!-- Tab 1: Daily Tracking -->
+                        <div id="daily-tracking" class="dashboard-tab-panel active">
+                            <div class="tab-panel-header">
+                                <h3><i class="fas fa-bullseye"></i> Today's Goals</h3>
+                            </div>
+
+                            <!-- Left: goals-list, Right: meals-added-section -->
+                            <div class="goals-row">
                         <div class="goals-list">
                             <section>
                                 <div class="section-container">
@@ -257,6 +275,18 @@
                             </div>
                         </aside>
                     </div>
+                        </div>
+                        <!-- End Tab 1: Daily Tracking -->
+
+                        <!-- Tab 2: Weekly Meal Plan -->
+                        <div id="weekly-plan" class="dashboard-tab-panel">
+                            <div id="weekly-plan-content">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        <!-- End Tab 2: Weekly Meal Plan -->
+                    </div>
+                    <!-- End Tab Content Container -->
                 </div>
 
                 <!-- Today's Health Tip (moved outside goals-container) -->
