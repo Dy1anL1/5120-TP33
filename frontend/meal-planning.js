@@ -17,8 +17,26 @@ let lastNutritionRequest = 0;
 const NUTRITION_REQUEST_DELAY = 100; // 100ms delay between requests
 
 // Get consistent nutrition data (same logic as modal)
-async function getConsistentNutrition(recipe) {
+async function getConsistentNutrition(recipe, options = {}) {
     let nutrition = recipe.nutrition;
+    if (nutrition && nutrition._perServing !== true) {
+        // Legacy or total nutrition data -- force recalculation for consistency
+        nutrition = null;
+    }
+    const fallbackNutrition = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sugars_g: 0, saturated_fat_g: 0, trans_fat_g: 0, vitamin_d_iu: 0, calcium_mg: 0, iron_mg: 0, potassium_mg: 0 };
+
+    const parseServings = (value) => {
+        if (value == null) return null;
+        const num = parseInt(value, 10);
+        return Number.isFinite(num) && num > 0 ? num : null;
+    };
+
+    // Determine servings to normalize totals (default to recipe metadata or override)
+    const effectiveServings =
+        parseServings(options.servings) ||
+        parseServings(recipe.servings) ||
+        parseServings(recipe.yield) ||
+        1;
 
     // If no meaningful nutrition data (all zeros except maybe sodium), calculate it from ingredients
     const hasValidNutrition = nutrition && (
@@ -30,14 +48,26 @@ async function getConsistentNutrition(recipe) {
 
     if (!hasValidNutrition && recipe.ingredients) {
         try {
-            nutrition = await calculateNutrition(recipe.ingredients, 1);
+            nutrition = await calculateNutrition(recipe.ingredients, effectiveServings);
         } catch (error) {
             console.error('Error calculating nutrition:', error);
-            nutrition = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sugars_g: 0, saturated_fat_g: 0, trans_fat_g: 0, vitamin_d_iu: 0, calcium_mg: 0, iron_mg: 0, potassium_mg: 0 };
+            nutrition = { ...fallbackNutrition };
         }
     }
 
-    return nutrition || { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sugars_g: 0, saturated_fat_g: 0, trans_fat_g: 0, vitamin_d_iu: 0, calcium_mg: 0, iron_mg: 0, potassium_mg: 0 };
+    const result = nutrition || { ...fallbackNutrition };
+    // Tag result as per-serving for future checks
+    if (result && result._perServing !== true) {
+        result._perServing = true;
+        result.servings_used = effectiveServings;
+    }
+
+    // Cache back onto recipe for reuse
+    if (recipe) {
+        recipe.nutrition = result;
+    }
+
+    return result;
 }
 
 
@@ -183,6 +213,10 @@ async function calculateNutrition(ingredients, servings = 1) {
 
         const data = await response.json();
 
+        console.log('[NUTRITION API] Full response:', data);
+        console.log('[NUTRITION API] Ingredients sent:', normalized);
+        console.log('[NUTRITION API] Servings parameter:', servings);
+
         if (!data.summary_100g_sum || Object.keys(data.summary_100g_sum).length === 0) {
             console.warn('No nutrition data found in API response');
             // If backend didn't provide any data, it means ingredients couldn't be matched
@@ -191,9 +225,12 @@ async function calculateNutrition(ingredients, servings = 1) {
         }
 
         const sum = data.summary_100g_sum;
+        console.log('[NUTRITION API] summary_100g_sum data:', sum);
+
         // NOTE: Backend returns TOTAL recipe nutrition in summary_100g_sum
         // Divide by servings to get per-serving nutrition
         const servingDivisor = servings || 1;
+        console.log('[NUTRITION API] Will divide by servings:', servingDivisor);
 
         const nutrition = {
             calories: Math.round((sum.calories || 0) / servingDivisor),
@@ -204,14 +241,16 @@ async function calculateNutrition(ingredients, servings = 1) {
             sugars_g: Math.round((sum.total_sugars || 0) / servingDivisor),
             saturated_fat_g: Math.round((sum.saturated_fats || 0) / servingDivisor),
             trans_fat_g: Math.round((sum.trans_fats || 0) / servingDivisor),
-            vitamin_d_iu: Math.round((sum.vitamin_d || 0) / servingDivisor),
+            vitamin_d_iu: Math.round((sum.vitamin_d_iu || sum.vitamin_d || 0) / servingDivisor),
             calcium_mg: Math.round((sum.calcium || 0) / servingDivisor),
             iron_mg: Math.round((sum.iron || 0) / servingDivisor),
             potassium_mg: Math.round((sum.potassium || 0) / servingDivisor),
             // Keep backward compatibility
             protein: Math.round((sum.protein || 0) / servingDivisor),
             carbs: Math.round((sum.carbohydrates || 0) / servingDivisor),
-            fat: Math.round((sum.total_fat || 0) / servingDivisor)
+            fat: Math.round((sum.total_fat || 0) / servingDivisor),
+            _perServing: true,
+            servings_used: servingDivisor
         };
 
         console.log(`calculateNutrition - Final nutrition (per serving):`, nutrition);
@@ -1816,15 +1855,17 @@ async function renderLargeRecipeCard(mealType, recipe) {
         `;
     }
 
+    const servingsCandidate = parseInt(recipe.servings, 10) || parseInt(recipe.yield, 10);
+    const servings = (Number.isFinite(servingsCandidate) && servingsCandidate > 0) ? servingsCandidate : 4;
+
     // Use consistent nutrition data (same logic as modal)
-    const nutrition = await getConsistentNutrition(recipe);
-    const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+    const nutrition = await getConsistentNutrition(recipe, { servings });
 
     const nutritionInfo = `<div class="recipe-nutrition-info">
-        <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)}</span>
-        <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber((nutrition.protein_g || 0) / servings, 'g')}</span>
-        <span class="nutrition-item"><strong>Calcium:</strong> ${formatNutritionNumber((nutrition.calcium_mg || 0) / servings, 'mg')}</span>
-        <span class="nutrition-item"><strong>Vitamin D:</strong> ${formatNutritionNumber((nutrition.vitamin_d_iu || 0) / servings, 'IU')}</span>
+        <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber(nutrition.calories || 0, 'kcal')} per serving</span>
+        <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber(nutrition.protein_g || 0, 'g')} per serving</span>
+        <span class="nutrition-item"><strong>Calcium:</strong> ${formatNutritionNumber(nutrition.calcium_mg || 0, 'mg')} per serving</span>
+        <span class="nutrition-item"><strong>Vitamin D:</strong> ${formatNutritionNumber(nutrition.vitamin_d_iu || 0, 'IU')} per serving</span>
     </div>`;
 
     // Image handling (same as explore-recipes)
@@ -1860,14 +1901,16 @@ async function renderMealCard(mealType, recipe) {
         `;
     }
 
+    const servingsCandidate = parseInt(recipe.servings, 10) || parseInt(recipe.yield, 10);
+    const servings = (Number.isFinite(servingsCandidate) && servingsCandidate > 0) ? servingsCandidate : 4;
+
     // Use consistent nutrition data (same logic as modal)
-    const nutrition = await getConsistentNutrition(recipe);
-    const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+    const nutrition = await getConsistentNutrition(recipe, { servings });
     const nutritionInfo = `<div class="recipe-nutrition-info">
-        <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)}</span>
-        <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber((nutrition.protein_g || 0) / servings, 'g')}</span>
-        <span class="nutrition-item"><strong>Calcium:</strong> ${formatNutritionNumber((nutrition.calcium_mg || 0) / servings, 'mg')}</span>
-        <span class="nutrition-item"><strong>Vitamin D:</strong> ${formatNutritionNumber((nutrition.vitamin_d_iu || 0) / servings, 'IU')}</span>
+        <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber(nutrition.calories || 0, 'kcal')} per serving</span>
+        <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber(nutrition.protein_g || 0, 'g')} per serving</span>
+        <span class="nutrition-item"><strong>Calcium:</strong> ${formatNutritionNumber(nutrition.calcium_mg || 0, 'mg')} per serving</span>
+        <span class="nutrition-item"><strong>Vitamin D:</strong> ${formatNutritionNumber(nutrition.vitamin_d_iu || 0, 'IU')} per serving</span>
     </div>`;
 
     // Image handling (same as explore-recipes)
@@ -2126,12 +2169,14 @@ async function openRecipeModal(recipeId) {
         if (sumEl) {
             sumEl.innerHTML = '<div style="text-align: center; padding: 1rem; color: #999;">Loading nutrition data...</div>';
 
-            console.log('Getting consistent nutrition for modal:', recipe.title);
-            const nutrition = await getConsistentNutrition(recipe);
+            const servingsCandidate = parseInt(recipe.servings, 10) || parseInt(recipe.yield, 10);
+            const servings = (Number.isFinite(servingsCandidate) && servingsCandidate > 0) ? servingsCandidate : 4;
+
+            console.log('Getting consistent nutrition for modal:', recipe.title, 'servings:', servings);
+            const nutrition = await getConsistentNutrition(recipe, { servings });
 
             if (nutrition) {
                 console.log('Recipe nutrition data:', nutrition);
-                const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
                 console.log('Recipe servings:', servings);
                 sumEl.innerHTML = '';
 
@@ -2151,9 +2196,8 @@ async function openRecipeModal(recipeId) {
                 ];
 
                 nutritionPairs.forEach(p => {
-                    const perServingValue = p.value / servings;
-                    const formattedValue = formatNutritionNumber(perServingValue, p.unit);
-                    console.log(`Nutrition debug: ${p.label} = ${p.value} / ${servings} = ${perServingValue} -> ${formattedValue}`);
+                    const formattedValue = formatNutritionNumber(p.value, p.unit);
+                    console.log(`Nutrition debug: ${p.label} per serving = ${formattedValue}`);
 
                     const card = document.createElement('div');
                     card.className = 'nutrition-card';
@@ -2229,7 +2273,7 @@ async function generateWeeklySummary(weeklyPlan) {
     let totalSodium = 0;
     let totalMeals = 0;
 
-    // Calculate totals from all meals (convert to per-serving values)
+    // Calculate totals from all meals (values already per serving)
     // Use async processing for consistent nutrition data
     // Get the actual meal types the user selected
     const selectedMealTypes = weeklyPlan.preferences?.meal_preferences || ['breakfast', 'lunch', 'dinner'];
@@ -2240,14 +2284,14 @@ async function generateWeeklySummary(weeklyPlan) {
             if (recipe) {
                 try {
                     // Use consistent nutrition data (same logic as cards and modal)
-                    const nutrition = await getConsistentNutrition(recipe);
-                    const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+                    const rawServings = Number(recipe.servings) || Number(recipe.yield);
+                    const servings = (Number.isFinite(rawServings) && rawServings > 0) ? rawServings : 4;
+                    const nutrition = await getConsistentNutrition(recipe, { servings });
 
-                    // Convert total recipe nutrition to per-serving values
-                    totalCalories += (nutrition.calories || 0) / servings;
-                    totalProtein += (nutrition.protein_g || 0) / servings;
-                    totalCarbs += (nutrition.carbs_g || 0) / servings;
-                    totalSodium += (nutrition.sodium_mg || 0) / servings;
+                    totalCalories += nutrition.calories || 0;
+                    totalProtein += nutrition.protein_g || 0;
+                    totalCarbs += nutrition.carbs_g || 0;
+                    totalSodium += nutrition.sodium_mg || 0;
                     totalMeals++;
                 } catch (error) {
                     console.error(`Error getting nutrition for ${recipe.title}:`, error);

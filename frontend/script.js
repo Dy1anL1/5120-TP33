@@ -213,7 +213,7 @@ function ensureRecipeModal() {
     const modal = document.getElementById('recipe-modal');
     const tabs = modal.querySelectorAll('.recipe-tab');
     tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
+        tab.addEventListener('click', function () {
             const targetTab = this.dataset.tab;
 
             // Remove active class from all tabs and contents
@@ -283,7 +283,7 @@ async function openRecipeModal(recipe, source = 'explore') {
 
     if (cookTimeEl) {
         const totalTime = recipe.cooking_time || recipe.cook_time || recipe.total_time || null;
-        cookTimeEl.textContent = totalTime ? (totalTime >= 60 ? `${Math.floor(totalTime/60)} hrs ${totalTime%60 ? (totalTime%60)+' mins' : ''}` : `${totalTime} mins`) : '-';
+        cookTimeEl.textContent = totalTime ? (totalTime >= 60 ? `${Math.floor(totalTime / 60)} hrs ${totalTime % 60 ? (totalTime % 60) + ' mins' : ''}` : `${totalTime} mins`) : '-';
     }
 
     if (servingsEl) {
@@ -1066,7 +1066,9 @@ if (window.location.pathname.includes('nutrition-dashboard')) {
 async function fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit = 10, nextToken = null }, retryCount = 0) {
     const maxRetries = 2;
     const params = new URLSearchParams();
-    if (keyword) params.append('title_prefix', keyword);
+    // DON'T use title_prefix - it doesn't work properly
+    // We'll filter client-side instead
+    // if (keyword) params.append('title_prefix', keyword);
     if (category && category !== 'all') params.append('category', category);
     if (habit && habit !== 'all') params.append('habit', habit);
     if (diet_type && diet_type !== 'all') params.append('diet_type', diet_type);
@@ -1646,7 +1648,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             calories: Math.round((getAny(sum, ['calories']) || 0) / servings),
                             protein: Math.round((getAny(sum, ['protein']) || 0) / servings),
                             calcium: Math.round((getAny(sum, ['calcium']) || 0) / servings),
-                            vitamin_d: Math.round((getAny(sum, ['vitamin_d']) || 0) / servings)
+                            vitamin_d: Math.round((getAny(sum, ['vitamin_d_iu', 'vitamin_d']) || 0) / servings)
                         }
                     };
                 } catch (error) {
@@ -1716,6 +1718,17 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const { items = [], next_token } = await fetchRecipes({ keyword, category, diet_type, allergy_filter, nextToken: reset ? null : nextToken });
             let filteredItems = items;
+
+            // Client-side keyword filtering (because title_prefix API doesn't work)
+            if (keyword && keyword.trim()) {
+                const searchLower = keyword.toLowerCase().trim();
+                filteredItems = filteredItems.filter(r => {
+                    const title = (r.title || '').toLowerCase();
+                    const description = (r.description || '').toLowerCase();
+                    const ingredients = Array.isArray(r.ingredients) ? r.ingredients.join(' ').toLowerCase() : '';
+                    return title.includes(searchLower) || description.includes(searchLower) || ingredients.includes(searchLower);
+                });
+            }
 
             // Remove duplicates and already displayed recipes
             const originalCount = filteredItems.length;
@@ -2033,16 +2046,16 @@ function renderMealsAddedList() {
 
         // Render recipes in this source group
         Object.values(groupedRecipes).forEach(group => {
-        const li = document.createElement('li');
-        li.className = 'meal-item';
-        li.dataset.recipeId = group.recipe_id;
-        li.dataset.day = group.day;
+            const li = document.createElement('li');
+            li.className = 'meal-item';
+            li.dataset.recipeId = group.recipe_id;
+            li.dataset.day = group.day;
 
-        const count = group.entries.length;
-        const displayTitle = count > 1 ? `${group.title} ×${count}` : group.title;
-        const totalKcal = group.totalCalories > 0 ? `${group.totalCalories.toFixed(0)} kcal` : '-';
+            const count = group.entries.length;
+            const displayTitle = count > 1 ? `${group.title} ×${count}` : group.title;
+            const totalKcal = group.totalCalories > 0 ? `${group.totalCalories.toFixed(0)} kcal` : '-';
 
-        li.innerHTML = `
+            li.innerHTML = `
       <div class="meal-left">
         <div class="meal-name">${displayTitle}</div>
         <div class="meal-meta">Added today</div>
@@ -2322,8 +2335,8 @@ function loadWeeklyMealPlan() {
                         <span class="plan-date">
                             <i class="fas fa-calendar"></i>
                             Created: ${new Date(createdAt).toLocaleDateString('en-AU', {
-                                year: 'numeric', month: 'long', day: 'numeric'
-                            })}
+            year: 'numeric', month: 'long', day: 'numeric'
+        })}
                         </span>
                         <span class="plan-updated ${isOutdated ? 'outdated' : ''}">
                             <i class="fas fa-clock"></i>
