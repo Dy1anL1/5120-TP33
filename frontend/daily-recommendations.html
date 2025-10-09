@@ -103,6 +103,15 @@
             </div>
         </section>
 
+        <!-- Personalized Daily Tips -->
+        <section id="daily-tips" aria-label="Daily Health Tips">
+            <div class="section-container">
+                <div class="tips-loading" role="status">
+                    <span class="tips-loading-text">Loading personalized tips…</span>
+                </div>
+            </div>
+        </section>
+
         <!-- Daily Recommendations Grid -->
         <section class="recommendations-section">
             <div class="section-container">
@@ -458,5 +467,56 @@
 
     <script src="config.js"></script>
     <script src="script.js"></script>
+    <script type="module">
+        import { loadHealthTips, getUserProfile, filterTips, pickDailyTips, renderTips } from './health-tips.js';
+
+        const tipsSection = document.getElementById('daily-tips');
+
+        if (tipsSection) {
+            (async () => {
+                try {
+                    const allTips = await loadHealthTips();
+                    const profile = getUserProfile();
+                    const filtered = filterTips(allTips, profile);
+                    const usingFallback = allTips.length > 0 && allTips.every(tip => tip._fallback);
+
+                    let note;
+                    let sourceTips = filtered;
+                    let desiredCount = 3;
+
+                    if (filtered.length === 0 && !usingFallback) {
+                        const generalTips = allTips.filter(
+                            tip => tip.type === 'lifestyle' || String(tip.category || '').toLowerCase() === 'balanced_diet'
+                        );
+                        note = 'No personalized tips found. Showing general tips.';
+                        sourceTips = generalTips.length ? generalTips : allTips;
+                        desiredCount = Math.min(2, Math.max(1, sourceTips.length));
+                    } else if (usingFallback) {
+                        note = 'Unable to load personalized tips. Showing a default reminder.';
+                        sourceTips = allTips;
+                        desiredCount = Math.min(1, sourceTips.length);
+                    }
+
+                    if (!sourceTips.length) {
+                        sourceTips = allTips;
+                    }
+
+                    const picked = pickDailyTips(sourceTips, desiredCount, profile);
+                    renderTips(picked, tipsSection, {
+                        title: 'Personalized Daily Tips',
+                        subtitle: 'Tailored suggestions based on your questionnaire responses',
+                        note
+                    });
+                } catch (error) {
+                    console.error('[daily-tips] Failed to initialize tips:', error);
+                    renderTips([], tipsSection, {
+                        title: 'Personalized Daily Tips',
+                        subtitle: 'Tailored suggestions based on your questionnaire responses',
+                        note: 'Tips are temporarily unavailable. Please try again later.'
+                    });
+                }
+            })();
+        }
+    </script>
 </body>
 </html>

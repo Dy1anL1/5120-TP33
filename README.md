@@ -177,8 +177,11 @@ A comprehensive nutrition and meal planning web application designed specificall
 - Session-based authentication with automatic timeout
 
 ## Recent Improvements
-
-- **Intelligent Seasonal Recipe Recommendations** - Smart algorithm prioritizes recipes with main seasonal ingredients (10-point scoring vs 1-point for auxiliary)
+ 
+  - **Per-Serving Nutrition Consistency** - Meal planner cards, modals, and the dashboard now display the same reconciled per-serving values, with legacy totals automatically re-normalised.
+  - **Smarter Nutrition Matching** - Backend parsing adds ingredient-specific density, synonym mapping, and safety clamps to prevent unrealistic values and improve match accuracy.
+  
+  - **Intelligent Seasonal Recipe Recommendations** - Smart algorithm prioritizes recipes with main seasonal ingredients (10-point scoring vs 1-point for auxiliary)
 - **Unified Recipe Modal Design** - Beautiful hero image headers with tabbed interface across all pages
 - **Improved Recipe Layout** - 2×2 grid for seasonal recipes with larger, more visible cards
 - **Unified Navigation** - Consistent navbar order across all pages following user journey flow

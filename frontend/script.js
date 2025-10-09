@@ -1578,7 +1578,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Preload seasonal data on page load
     async function loadSeasonalData() {
         try {
-            const response = await fetch('season_food.json');
+            const response = await fetch('data/season_food.json');
             seasonalData = await response.json();
 
             // Detect current season based on month (Southern Hemisphere - Australia)

@@ -95,6 +95,13 @@ backend/
 - **Unit Conversion** - Supports cups, tablespoons, grams, ounces, etc.
 - **Simplified Nutrition Focus** - 12 core nutrients optimized for senior health (55-65+)
 
+## Recent Improvements
+
+- **Density-Aware Conversions** - Liquids now use ingredient-specific densities and expanded unit handling (pinch, dash, sticks, pieces) for realistic gram estimates.
+- **Synonym & Noise Normalisation** - Common regional ingredient names map to shared search terms and directive words are stripped to improve matching quality.
+- **Safety Guards** - Negligible “to taste” items are ignored, oversized quantities are clamped, and canonical nutrient aliases (e.g., vitamin_d_ug → IU) prevent double counting.
+- **Per-Serving Alignment** - Nutrition API responses tag per-serving calculations so the frontend can display consistent values across modals, cards, and dashboards.
+
 ### Search & Filtering
 - **Senior-Friendly Design** - Optimized for users aged 55-65
 - **Seasonal Ingredient Filtering** - Word-boundary regex matching prevents false positives (e.g., "apple" won't match "applewood")

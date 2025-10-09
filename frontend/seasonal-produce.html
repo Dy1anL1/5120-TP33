@@ -235,7 +235,7 @@
         // Load seasonal data from JSON
         async function loadSeasonalData() {
             try {
-                const response = await fetch('season_food.json');
+                const response = await fetch('data/season_food.json');
                 seasonalData = await response.json();
             } catch (error) {
                 console.error('Error loading seasonal data:', error);
