@@ -190,9 +190,17 @@ function ensureRecipeModal() {
                 </div>
                 <div id="tab-nutrition" class="recipe-tab-content">
                     <div id="nutrition-summary" class="nutrition-grid"></div>
-                    <button id="add-to-dashboard" class="btn btn-primary" style="margin-top:1.5rem;width:100%;">Add to Nutrition Dashboard</button>
-                    <button id="view-dashboard" class="btn btn-secondary" style="margin-top:0.75rem;width:100%;">View Nutrition Dashboard</button>
                 </div>
+            </div>
+
+            <!-- Fixed Footer Buttons -->
+            <div class="recipe-modal-footer">
+                <button id="add-to-dashboard" class="btn btn-primary">
+                    <i class="fas fa-plus-circle"></i> Add to Dashboard
+                </button>
+                <button id="view-dashboard" class="btn btn-secondary">
+                    <i class="fas fa-chart-line"></i> View Dashboard
+                </button>
             </div>
         </div>
     </div>`;
@@ -242,8 +250,13 @@ document.addEventListener('click', (e) => {
 });
 
 // Open recipe modal and fetch nutrition summary
-async function openRecipeModal(recipe) {
+async function openRecipeModal(recipe, source = 'explore') {
     const m = ensureRecipeModal();
+
+    // Store nutritionData at modal level for access by Add to Dashboard button
+    m._nutritionData = null;
+    m._source = source;
+
     const titleEl = m.querySelector('#recipe-modal-title');
     const ingEl = m.querySelector('#recipe-ingredients');
     const dirEl = m.querySelector('#recipe-directions');
@@ -386,6 +399,11 @@ async function openRecipeModal(recipe) {
                         const labelForValidation = p.label.charAt(0).toUpperCase() + p.label.slice(1);
                         const adjustedValue = adjustNutritionValue(perServingValue, labelForValidation);
 
+                        // Store calories in modal for Add to Dashboard
+                        if (p.label === 'calories') {
+                            m._nutritionData = { calories: adjustedValue };
+                        }
+
                         const card = document.createElement('div'); card.className = 'card';
 
                         // Show indicator if value was adjusted
@@ -438,15 +456,12 @@ async function openRecipeModal(recipe) {
                 return;
             }
 
-            // Get nutrition summary, use calories if available, otherwise null
+            // Get nutrition data from stored modal data
             let calories = null;
-            const sumEl = m.querySelector('#nutrition-summary');
-            if (sumEl) {
-                const calCard = sumEl.querySelector('.card .key')?.textContent?.toLowerCase() === 'calories'
-                    ? sumEl.querySelector('.card .val')?.textContent
-                    : null;
-                if (calCard && !isNaN(Number(calCard))) calories = Number(calCard);
+            if (m._nutritionData && m._nutritionData.calories) {
+                calories = m._nutritionData.calories;
             }
+
             addToDashboard({
                 recipe_id: recipe.recipe_id,
                 title: recipe.title,
@@ -454,7 +469,8 @@ async function openRecipeModal(recipe) {
                 servings: recipe.servings || recipe.yield || 4,
                 calories,
                 added_at: Date.now(),
-                day
+                day,
+                source: m._source || source
             });
 
             // Update button text with new count for this recipe
@@ -504,7 +520,8 @@ function addToDashboard(item) {
     // Add unique identifier to each dashboard entry
     const uniqueItem = {
         ...item,
-        dashboard_entry_id: Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+        dashboard_entry_id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        source: item.source || 'explore' // Default to 'explore' for backward compatibility
     };
     list.push(uniqueItem);
     writeDashboard(list);
@@ -534,7 +551,12 @@ function clearAllMealsForDay(day) {
 async function renderDashboardNutrition() {
     const dashDiv = document.getElementById('dashboard-nutrition');
     if (!dashDiv) return;
-    dashDiv.innerHTML = '<div style="text-align:center;color:#888;">Loading dashboard nutrition...</div>';
+    dashDiv.innerHTML = `
+        <div class="dashboard-loading">
+            <div class="spinner"></div>
+            <div class="loading-text">Loading nutrition data...</div>
+        </div>
+    `;
     // Main card hooks
     const caloriesCurrent = document.getElementById('calories-current');
     const caloriesGoal = document.getElementById('calories-goal');
@@ -1909,27 +1931,68 @@ function renderMealsAddedList() {
         }
     }
 
-    // Group recipes by recipe_id and title
-    const groupedRecipes = {};
+    // Group recipes by source first, then by recipe_id and title
+    const sourceGroups = {
+        explore: [],
+        seasonal: [],
+        planning: []
+    };
+
     todays.forEach(item => {
-        const key = `${item.recipe_id}_${item.title}`;
-        if (!groupedRecipes[key]) {
-            groupedRecipes[key] = {
-                recipe_id: item.recipe_id,
-                title: item.title,
-                day: item.day,
-                entries: [],
-                totalCalories: 0
-            };
-        }
-        groupedRecipes[key].entries.push(item);
-        if (typeof item.calories === 'number' && !Number.isNaN(item.calories)) {
-            groupedRecipes[key].totalCalories += item.calories;
-        }
+        const source = item.source || 'explore';
+        if (!sourceGroups[source]) sourceGroups[source] = [];
+        sourceGroups[source].push(item);
     });
 
-    // Render grouped recipes
-    Object.values(groupedRecipes).forEach(group => {
+    // Define source display config
+    const sourceConfig = {
+        explore: { title: 'Explore Recipes', icon: 'fa-search', color: '#3498db' },
+        seasonal: { title: 'Seasonal Recipes', icon: 'fa-leaf', color: '#27ae60' },
+        planning: { title: 'Meal Planning', icon: 'fa-calendar-alt', color: '#e67e22' }
+    };
+
+    // Render each source group
+    Object.keys(sourceGroups).forEach(sourceKey => {
+        const sourceItems = sourceGroups[sourceKey];
+        if (sourceItems.length === 0) return;
+
+        const config = sourceConfig[sourceKey];
+
+        // Group recipes within this source by recipe_id and title
+        const groupedRecipes = {};
+        let sourceTotalCalories = 0;
+
+        sourceItems.forEach(item => {
+            const key = `${item.recipe_id}_${item.title}`;
+            if (!groupedRecipes[key]) {
+                groupedRecipes[key] = {
+                    recipe_id: item.recipe_id,
+                    title: item.title,
+                    day: item.day,
+                    source: item.source,
+                    entries: [],
+                    totalCalories: 0
+                };
+            }
+            groupedRecipes[key].entries.push(item);
+            if (typeof item.calories === 'number' && !Number.isNaN(item.calories)) {
+                groupedRecipes[key].totalCalories += item.calories;
+                sourceTotalCalories += item.calories;
+            }
+        });
+
+        // Create source group header
+        const sourceHeader = document.createElement('li');
+        sourceHeader.className = 'source-group-header';
+        sourceHeader.innerHTML = `
+            <i class="fas ${config.icon}" style="color: ${config.color}"></i>
+            <strong>${config.title}</strong>
+            <span class="source-summary">(${sourceItems.length} items, ${sourceTotalCalories.toFixed(0)} kcal)</span>
+        `;
+        ul.appendChild(sourceHeader);
+
+        // Render recipes in this source group
+        Object.values(groupedRecipes).forEach(group => {
         const li = document.createElement('li');
         li.className = 'meal-item';
         li.dataset.recipeId = group.recipe_id;
@@ -1957,9 +2020,10 @@ function renderMealsAddedList() {
       </div>
     `;
 
-        // Store entries data for deletion
-        li._entries = group.entries;
-        ul.appendChild(li);
+            // Store entries data for deletion
+            li._entries = group.entries;
+            ul.appendChild(li);
+        });
     });
 
     // Bind add/remove events
@@ -1979,7 +2043,8 @@ function renderMealsAddedList() {
                 ingredients: template.ingredients || [],
                 calories: template.calories,
                 added_at: Date.now(),
-                day: template.day
+                day: template.day,
+                source: template.source || 'explore'
             });
 
             renderMealsAddedList(); // refresh list

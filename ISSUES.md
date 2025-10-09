@@ -344,3 +344,26 @@
   - Provide clear indication when recipes are excluded due to allergies
 - **Benefits**: Improves user safety and personalization of meal plans
 - **Priority**: Medium-High (safety feature)
+
+## Dashboard to Shopping List Quick Add
+
+- **Feature**: Add "Add to Shopping List" button in Nutrition Dashboard for quick ingredient addition to Custom Shopping List
+- **Current Behavior**:
+  - Dashboard tracks recipes users have eaten (nutrition tracking)
+  - Shopping List manages recipes users plan to cook (shopping planning)
+  - These two systems are completely independent
+- **Proposed Enhancement**:
+  - Add shopping cart icon button next to each recipe in Dashboard's "Today's Meals Added" list
+  - When clicked, recipe ingredients are automatically added to Shopping List's Custom List
+  - Provides convenient connection: "I ate this and liked it → I want to buy ingredients to cook it myself"
+- **Implementation**:
+  - Add `fa-shopping-cart` icon button alongside existing + and delete buttons in meal items
+  - Create function to extract recipe ingredients and add to Custom List in localStorage
+  - Show confirmation toast when ingredients are added
+  - Handle duplicate ingredients intelligently (merge quantities if same item exists)
+- **User Benefits**:
+  - Quick workflow for recreating enjoyed recipes
+  - No need to manually search for recipe again in Shopping List
+  - Especially helpful for seniors who want simplified workflows
+- **Design Consideration**: Keep systems independent - users must actively click to add (no automatic sync)
+- **Priority**: Low (nice-to-have feature for improved user workflow)
