@@ -468,54 +468,108 @@
     <script src="config.js"></script>
     <script src="script.js"></script>
     <script type="module">
-        import { loadHealthTips, getUserProfile, filterTips, pickDailyTips, renderTips } from './health-tips.js';
+        import {
+            loadHealthTips,
+            getUserProfile,
+            filterTips,
+            pickDailyTips,
+            renderTips,
+            getRefreshCounter,
+            incrementRefreshCounter,
+            resetRefreshCounter
+        } from './health-tips.js';
 
         const tipsSection = document.getElementById('daily-tips');
 
-        if (tipsSection) {
-            (async () => {
-                try {
-                    const allTips = await loadHealthTips();
-                    const profile = getUserProfile();
-                    const filtered = filterTips(allTips, profile);
-                    const usingFallback = allTips.length > 0 && allTips.every(tip => tip._fallback);
+        async function buildTipsSection(refreshCounterOverride) {
+            if (!tipsSection) return;
 
-                    let note;
-                    let sourceTips = filtered;
-                    let desiredCount = 4;
+            tipsSection.innerHTML = `
+                <div class="section-container">
+                    <div class="tips-loading" role="status">
+                        <span class="tips-loading-text">Loading personalized tips…</span>
+                    </div>
+                </div>
+            `;
 
-                    if (filtered.length === 0 && !usingFallback) {
-                        const generalTips = allTips.filter(
-                            tip => tip.type === 'lifestyle' || String(tip.category || '').toLowerCase() === 'balanced_diet'
-                        );
-                        note = 'No personalized tips found. Showing general tips.';
-                        sourceTips = generalTips.length ? generalTips : allTips;
-                        desiredCount = Math.min(3, Math.max(2, sourceTips.length));
-                    } else if (usingFallback) {
-                        note = 'Unable to load personalized tips. Showing a default reminder.';
-                        sourceTips = allTips;
-                        desiredCount = Math.min(2, sourceTips.length);
-                    }
+            try {
+                const [allTips, profile] = await Promise.all([
+                    loadHealthTips(),
+                    Promise.resolve(getUserProfile())
+                ]);
 
-                    if (!sourceTips.length) {
-                        sourceTips = allTips;
-                    }
+                const filtered = filterTips(allTips, profile);
+                const usingFallback = allTips.length > 0 && allTips.every(tip => tip._fallback);
 
-                    const picked = pickDailyTips(sourceTips, desiredCount, profile);
-                    renderTips(picked, tipsSection, {
-                        title: 'Personalized Daily Tips',
-                        subtitle: 'Tailored suggestions based on your questionnaire responses',
-                        note
-                    });
-                } catch (error) {
-                    console.error('[daily-tips] Failed to initialize tips:', error);
-                    renderTips([], tipsSection, {
-                        title: 'Personalized Daily Tips',
-                        subtitle: 'Tailored suggestions based on your questionnaire responses',
-                        note: 'Tips are temporarily unavailable. Please try again later.'
-                    });
+                let note;
+                let sourceTips = filtered;
+                let desiredCount = 4;
+
+                if (filtered.length === 0 && !usingFallback) {
+                    const generalTips = allTips.filter(
+                        tip => tip.type === 'lifestyle' || String(tip.category || '').toLowerCase() === 'balanced_diet'
+                    );
+                    note = 'No personalized tips found. Showing general tips.';
+                    sourceTips = generalTips.length ? generalTips : allTips;
+                    desiredCount = Math.min(3, Math.max(2, sourceTips.length));
+                } else if (usingFallback) {
+                    note = 'Unable to load personalized tips. Showing a default reminder.';
+                    sourceTips = allTips;
+                    desiredCount = Math.min(2, sourceTips.length);
                 }
-            })();
+
+                if (!sourceTips.length) {
+                    sourceTips = allTips;
+                }
+
+                const refreshCounter = Number.isFinite(refreshCounterOverride)
+                    ? refreshCounterOverride
+                    : getRefreshCounter();
+
+                const picked = pickDailyTips(sourceTips, desiredCount, profile, refreshCounter);
+                renderTips(picked, tipsSection, {
+                    title: 'Personalized Daily Tips',
+                    subtitle: 'Tailored suggestions based on your questionnaire responses',
+                    note,
+                    refreshable: true
+                });
+
+                attachRefreshHandler(profile);
+            } catch (error) {
+                console.error('[daily-tips] Failed to initialize tips:', error);
+                renderTips([], tipsSection, {
+                    title: 'Personalized Daily Tips',
+                    subtitle: 'Tailored suggestions based on your questionnaire responses',
+                    note: 'Tips are temporarily unavailable. Please try again later.'
+                });
+            }
+        }
+
+        function attachRefreshHandler(profile) {
+            const refreshBtn = tipsSection.querySelector('.tips-refresh-btn');
+            if (!refreshBtn) return;
+
+            refreshBtn.addEventListener('click', () => {
+                refreshBtn.disabled = true;
+                const counter = incrementRefreshCounter();
+                buildTipsSection(counter).finally(() => {
+                    refreshBtn.disabled = false;
+                });
+            });
+        }
+
+        if (tipsSection) {
+            const currentDate = dateKey();
+            const storedDate = sessionStorage.getItem('dailyTipsDate');
+            if (storedDate !== currentDate) {
+                resetRefreshCounter();
+                sessionStorage.setItem('dailyTipsDate', currentDate);
+            }
+            buildTipsSection();
+        }
+
+        function dateKey() {
+            return new Date().toISOString().slice(0, 10);
         }
     </script>
 </body>

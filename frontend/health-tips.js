@@ -18,6 +18,35 @@ const DEFAULT_PROFILE = {
 };
 
 const dateKey = () => new Date().toISOString().slice(0, 10);
+const REFRESH_STORAGE_KEY = "dailyTipsRefreshCounter";
+
+export function getRefreshCounter() {
+  try {
+    const raw = sessionStorage.getItem(REFRESH_STORAGE_KEY);
+    const parsed = raw == null ? 0 : parseInt(raw, 10);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function incrementRefreshCounter() {
+  try {
+    const next = getRefreshCounter() + 1;
+    sessionStorage.setItem(REFRESH_STORAGE_KEY, String(next));
+    return next;
+  } catch {
+    return 0;
+  }
+}
+
+export function resetRefreshCounter() {
+  try {
+    sessionStorage.removeItem(REFRESH_STORAGE_KEY);
+  } catch {
+    /* noop */
+  }
+}
 
 export async function loadHealthTips() {
   try {
@@ -82,9 +111,9 @@ export function filterTips(tips, profile) {
   });
 }
 
-export function pickDailyTips(tips, desiredCount = 4, profile = {}) {
+export function pickDailyTips(tips, desiredCount = 4, profile = {}, refreshCounter = 0) {
   if (!Array.isArray(tips) || tips.length === 0) return [];
-  const uniqueSeed = `${dateKey()}|${profile.user_signature || profile.user_id || "guest"}`;
+  const uniqueSeed = `${dateKey()}|${profile.user_signature || profile.user_id || "guest"}|${refreshCounter}`;
   const seed = hashString(uniqueSeed);
 
   const shuffled = shuffleWithSeed(tips, seed);
@@ -131,6 +160,15 @@ export function renderTips(tips, container, options = {}) {
     subtitle.className = "section-subtitle";
     subtitle.textContent = options.subtitle;
     headingWrap.appendChild(subtitle);
+  }
+
+  if (options.refreshable) {
+    const refreshBtn = document.createElement("button");
+    refreshBtn.type = "button";
+    refreshBtn.className = "tips-refresh-btn";
+    refreshBtn.innerHTML = `<i class="fas fa-sync-alt" aria-hidden="true"></i><span>Refresh tips</span>`;
+    refreshBtn.setAttribute("aria-label", "Refresh tips");
+    headingWrap.appendChild(refreshBtn);
   }
 
   wrapper.appendChild(headingWrap);
