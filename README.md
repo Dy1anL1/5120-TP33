@@ -1,213 +1,128 @@
 # Silver Spoon Society
 
-A comprehensive nutrition and meal planning web application designed specifically for adults aged 55-65, promoting healthy eating habits and supporting senior wellness.
+Silver Spoon Society is a holistic nutrition and wellness companion tailored for adults aged 55–65. The application blends healthy recipe discovery, personalized meal planning, smart shopping, and daily health guidance in a single, senior-friendly experience.
 
-## Features
+## Table of Contents
+1. [Key Features](#key-features)  
+2. [Architecture Overview](#architecture-overview)  
+3. [Getting Started](#getting-started)  
+4. [Project Structure](#project-structure)  
+5. [Personalization & Data Flow](#personalization--data-flow)  
+6. [Recent Enhancements](#recent-enhancements)  
+7. [Contributing Guidelines](#contributing-guidelines)  
+8. [License](#license)  
+9. [Support](#support)
 
-### Home Dashboard
-- Personalized welcome interface
-- Quick access to all major features
-- Health tips and nutritional guidance
+## Key Features
+
+### Home Hub
+- Warm welcome panel with quick navigation to every major module.
+- Rotating health reminders curated for senior lifestyles.
 
 ### Recipe Explorer
-- Browse over 1,000+ curated healthy recipes
-- Advanced filtering by:
-  - Dietary preferences (vegetarian, vegan, keto, kosher, etc.)
-  - Meal types (breakfast, lunch, dinner, snacks)
-  - Allergies and restrictions
-- Smart search functionality with auto-suggestions
-- Detailed recipe information with ingredients, instructions, and nutrition facts
+- 1,000+ curated recipes with detailed nutrition and instructions.
+- Advanced filtering by diet, allergies, meal type, and seasonal availability.
+- Ranked search with adaptive suggestion prompts.
 
 ### Nutrition Dashboard
-- Real-time nutrition tracking for calories, protein, calcium, and vitamin D
-- Visual progress indicators and goal monitoring
-- Personalized daily nutrition recommendations optimized for seniors (55-65+)
-- Integration with meal plans for automatic tracking
+- Real-time tracking of calories, macronutrients, and senior-critical micronutrients.
+- Visual goal progress aligned with Australian/New Zealand NRV guidelines.
+- Automatic synchronization with meal plans and dashboard saves.
 
 ### Weekly Meal Planning
-- Intelligent meal plan generation based on personal preferences
-- Comprehensive questionnaire system covering:
-  - Dietary preferences and restrictions
-  - Allergies and health conditions
-  - Cooking skills and meal preferences
-  - Caloric needs assessment
-- Automated nutrition calculation for planned meals
-- Duplicate recipe prevention for variety
+- Questionnaire-driven plan generator capturing diet, allergies, activity level, and meal preferences.
+- Intelligent de-duplication, nutrition validation, and multi-day summaries.
+- Export to shopping list and dashboard with per-serving nutrition preserved.
 
-### Smart Shopping List
-- Automatic generation from meal plans
-- Organized by grocery store categories (produce, dairy, meat, etc.)
-- Custom item addition with categorization
-- Progress tracking and completion status
-- Smart shopping tips and optimization
+### Shopping List Assistant
+- Aggregates plan ingredients by grocery category for easy trips.
+- Allows manual items, completion tracking, and smart tips.
 
 ### Seasonal Produce Guide
-- Interactive seasonal produce calendar for all Australian states
-- Real-time filtering by state (NSW, VIC, QLD, WA, SA, TAS)
-- Season-specific produce recommendations (Southern Hemisphere calendar)
-- **Intelligent Seasonal Recipe Recommendations** - Smart filtering prioritizes recipes where main ingredients are in season
-- Recipe scoring algorithm (main ingredients: 10 points, auxiliary: 1 point)
-- Beautiful recipe modal with hero images and tabbed interface
-- 2×2 grid layout for better visibility and senior-friendly card size
-- Smart search and categorization (fruits vs vegetables)
-- Modern, touch-friendly interface optimized for seniors
+- State-specific (AU) seasonal data with dynamic filtering.
+- Highlights recipes aligned with in-season ingredients.
+- Accessible card layout with large imagery and typography.
 
 ### Daily Health Recommendations
-- Personalized nutrition tips
-- Age-appropriate health guidance
-- Seasonal eating recommendations
-- Wellness best practices for seniors
+- Personalized tip engine drawing from curated tip data sets.
+- Filters tips by diet type, allergies, meal preferences, and rotates suggestions daily.
+- “Refresh tips” control for same-day variety with guaranteed general advice.
 
-## Technical Architecture
+## Architecture Overview
 
 ### Frontend
-- **Technology**: Vanilla JavaScript, HTML5, CSS3
-- **Design**: Mobile-responsive, senior-friendly interface
-- **Features**:
-  - Password protection system
-  - Local storage for preferences and meal plans
-  - Progressive loading with progress indicators
-  - Accessible design with large fonts and clear contrast
+- Vanilla JavaScript, HTML5, CSS3—no frameworks for maximum compatibility.
+- Accessibility and senior-friendly design principles (large touch targets, high contrast, readable typography).
+- Modules for shared config (`frontend/config.js`), plan logic (`frontend/meal-planning.js`), and tip personalization (`frontend/health-tips.js`).
 
-### Backend
-- **Platform**: AWS Serverless Architecture
-- **Services**:
-  - AWS Lambda functions for recipe and nutrition APIs
-  - Amazon DynamoDB for recipe storage
-  - API Gateway for REST endpoints
-- **Features**:
-  - Advanced nutrition calculation with external API integration
-  - Intelligent recipe filtering and ranking
-  - Duplicate prevention algorithms
-  - Fallback estimation systems
-
-### APIs
-- **Recipe API**: `https://97xkjqjeuc.execute-api.ap-southeast-2.amazonaws.com/prod/recipes`
-- **Nutrition API**: `https://0brixnxwq3.execute-api.ap-southeast-2.amazonaws.com/prod/match`
+### Backend (AWS Serverless)
+- **recipes-api** – DynamoDB-backed recipe search and filter endpoints.
+- **nutrition-match-api** – Ingredient parsing, density-aware conversions, synonym normalization, and per-serving calculations.
+- **foods-api** – Food database lookups and nutrition metadata.
+- Deployed via Lambda + API Gateway; data stored in DynamoDB tables (`Recipes`, `Foods_v2`).
 
 ## Getting Started
 
 ### Prerequisites
-- Modern web browser (Chrome, Firefox, Safari, Edge)
-- Internet connection for recipe and nutrition data
+- Modern browser (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+).
+- Network access for live recipe/nutrition APIs.
 
-### Installation
-1. Clone the repository
-2. Navigate to the `frontend` directory
-3. Open `home.html` in your web browser
-4. Enter password: `tp33`
+### Quick Start
+1. Clone the repository.  
+2. Open `frontend/home.html` in a browser (local file or static host).  
+3. Enter the demo password `tp33` when prompted.  
+4. Explore additional modules (Meal Planning, Seasonal Produce, Daily Tips, etc.).
 
-### Project Structure
+### Local Development Notes
+- Personalization data stores in `localStorage` under keys managed by `API_CONFIG.STORAGE_KEYS`.  
+- `frontend/data/` contains JSON data assets used across pages (e.g., seasonal produce, health tips).  
+- For backend development, refer to `backend/README.md` for Lambda deployment and scripts.
+
+## Project Structure
+
 ```
-├── frontend/
-│   ├── home.html              # Main landing page
-│   ├── explore-recipes.html   # Recipe browsing interface
-│   ├── meal-planning.html     # Meal planning system
-│   ├── nutrition-dashboard.html # Nutrition tracking
-│   ├── shopping-list.html     # Shopping list generator
-│   ├── seasonal-produce.html  # Seasonal produce guide
-│   ├── daily-recommendations.html # Health tips
-│   ├── styles.css             # Main stylesheet
-│   ├── script.js              # Core JavaScript functionality
-│   ├── meal-planning.js       # Meal planning logic
-│   ├── shopping-list.js       # Shopping list functionality
-│   ├── season_food.json       # Seasonal produce data
-│   ├── config.js              # Unified configuration
-│   └── password-protection.js # Authentication system
-├── backend/
-│   └── functions/             # AWS Lambda functions
-└── data/                      # Recipe datasets
+frontend/
+  data/
+    health_tips.json       # Curated tip repository (diet, allergy, meal-type metadata)
+    season_food.json       # Australian seasonal produce dataset
+  scripts/
+    (see backend/scripts for server utilities)
+  *.html                   # Page templates (home, recipes, meal planning, tips, etc.)
+  styles.css               # Shared styling
+  script.js                # Core UI behaviours (navigation, widgets)
+  meal-planning.js         # Questionnaire, plan generation, nutrition sync
+  health-tips.js           # Daily tip filtering, selection, rendering
+backend/
+  functions/               # Lambda services (recipes, foods, nutrition match)
+  scripts/                 # Data loaders / maintenance helpers
+  README.md                # Backend setup instructions
 ```
 
-## Target Audience
+## Personalization & Data Flow
+1. **Questionnaire Inputs** → stored in `localStorage` (`mealPlanPreferences`).  
+2. **Meal Planning** → fetches recipes via `recipes-api`, calculates nutrition through `nutrition-match-api`, updates dashboard and shopping list.  
+3. **Daily Tips** → loads `data/health_tips.json`, filters by diet/allergies/meal preferences, uses date + refresh counter for stable randomness, and renders accessible cards.  
+4. **Dashboard Export** → cached meal plans saved under `weeklyMealPlanForDashboard` for cross-page availability.
 
-**Primary Users**: Adults aged 55-65 seeking to maintain healthy eating habits
+## Recent Enhancements
+- **Daily Tip Refresh**: new “refresh tips” control with smart seeding, ensures one general tip and a nutrition-focused recommendation each cycle.
+- **Data Consolidation**: all front-end JSON assets relocated to `frontend/data/` for clarity; module fetch paths updated accordingly.
+- **Tip Styling Upgrade**: redesigned “Personalized Daily Tips” cards with higher contrast, accessible buttons, and larger typography.
+- **Per-Serving Alignment**: entire stack (meal planner, modal, dashboard) uses consistent per-serving nutrition, preventing double-counting.
+- **Backend Matching Improvements**: density-aware conversions, synonym normalization, allergy guards, and nutrient alias consolidation reduce false matches and outliers.
 
-**Key Benefits**:
-- Simplified nutrition tracking
-- Age-appropriate recipe recommendations
-- Senior-friendly interface design
-- Comprehensive meal planning assistance
-- Health-conscious ingredient selection
-
-## Key Features Implementation
-
-### Nutrition Quality System
-- Advanced recipe scoring based on ingredient quality
-- Prioritization of recipes with reliable nutrition data
-- Automatic filtering of problematic ingredients
-- Smart estimation fallbacks for missing data
-- 12 core nutrition fields optimized for seniors (55-65+):
-  - Calories, Protein, Total Fat, Carbohydrates
-  - Dietary Fiber, Total Sugars, Saturated Fats, Trans Fats
-  - Vitamin D, Calcium, Iron, Potassium
-
-### Seasonal Produce Features
-- Comprehensive database covering all 6 Australian states
-- Southern Hemisphere seasonal calendar (accurate for Australia)
-- Interactive state and season selection
-- Real-time search and filtering functionality
-- Senior-friendly large fonts and touch-optimized interface
-- Visual categorization of fruits vs vegetables
-
-### Intelligent Meal Planning
-- Multi-strategy recipe selection algorithm
-- Personalized preference integration
-- Variety assurance through duplicate prevention
-- Progress tracking with detailed feedback
-
-### Responsive Design
-- Mobile-optimized interface
-- Large, accessible buttons and text
-- High contrast design for better visibility
-- Touch-friendly interaction elements
-
-## Browser Compatibility
-
-- Chrome (90+)
-- Firefox (88+)
-- Safari (14+)
-- Edge (90+)
-
-## Security & Privacy
-
-- Client-side password protection
-- Local storage for personal data
-- No personal information transmitted to servers
-- Session-based authentication with automatic timeout
-
-## Recent Improvements
- 
-  - **Per-Serving Nutrition Consistency** - Meal planner cards, modals, and the dashboard now display the same reconciled per-serving values, with legacy totals automatically re-normalised.
-  - **Smarter Nutrition Matching** - Backend parsing adds ingredient-specific density, synonym mapping, and safety clamps to prevent unrealistic values and improve match accuracy.
-  
-  - **Intelligent Seasonal Recipe Recommendations** - Smart algorithm prioritizes recipes with main seasonal ingredients (10-point scoring vs 1-point for auxiliary)
-- **Unified Recipe Modal Design** - Beautiful hero image headers with tabbed interface across all pages
-- **Improved Recipe Layout** - 2×2 grid for seasonal recipes with larger, more visible cards
-- **Unified Navigation** - Consistent navbar order across all pages following user journey flow
-- **New Seasonal Produce Guide** - Complete interactive guide for Australian seasonal produce
-- **Senior-Optimized Interface** - Large fonts, high contrast, touch-friendly design
-- **Nutrition System Enhancement** - 12 core nutrition fields focused on senior health
-- **Australian Calendar Integration** - Southern Hemisphere seasonal accuracy
-- **Mobile Responsiveness** - Full optimization for all device sizes
-- **Performance Improvements** - Faster loading and smoother interactions
-
-## Contributing
-
-This project is designed for senior wellness and healthy eating promotion. Contributions should focus on:
-- Accessibility improvements
-- Senior-friendly feature enhancements
-- Nutrition accuracy and validation
-- User experience optimization
+## Contributing Guidelines
+We welcome contributions that improve accessibility, senior friendliness, nutrition accuracy, or user experience. Before submitting a change:
+1. Open an issue describing the enhancement or bug fix.  
+2. Follow existing code style (vanilla JS, semantic HTML, descriptive CSS classes).  
+3. Provide manual testing notes (e.g., browsers used, questionnaire scenarios).  
+4. Ensure no sensitive credentials or PII appear in commits.
 
 ## License
-
-This project is developed for educational and wellness purposes, focusing on supporting healthy eating habits for senior adults.
+This project is provided for educational and wellness support purposes. Commercial reuse requires explicit permission from the project owners.
 
 ## Support
+For questions, issues, or feature requests, use the repository issue tracker or consult `ISSUES.md` for common tasks and roadmap items.
 
-For technical issues or feature requests, please refer to the `ISSUES.md` file for known issues and planned improvements.
-
----
-
-**"Supporting healthy eating habits for a better life"**
+---  
+**Supporting healthy eating habits for a better life.**

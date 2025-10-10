@@ -290,11 +290,12 @@ const questionnaireSteps = [
                         <p style="margin-bottom: 1rem;">We value your privacy and are committed to protecting your personal information. Before we begin, please understand how your data is handled:</p>
 
                         <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem;">
-                            <li style="margin-bottom: 0.8rem;"><strong>Local Storage Only:</strong> All information you provide is stored locally on your device. Nothing is uploaded to any server.</li>
-                            <li style="margin-bottom: 0.8rem;"><strong>No Commercial Use:</strong> Your personal information will never be used for commercial purposes or marketing.</li>
-                            <li style="margin-bottom: 0.8rem;"><strong>No Third-Party Sharing:</strong> We do not share your data with any third parties.</li>
-                            <li style="margin-bottom: 0.8rem;"><strong>Educational Purpose:</strong> This meal planner is designed to help you create personalized, healthy meal plans.</li>
-                            <li style="margin-bottom: 0.8rem;"><strong>Your Control:</strong> You can clear your data at any time through your browser settings.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>Local Storage Only:</strong> All information you provide is stored <strong>locally on your device</strong>. Nothing is uploaded to any server.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>No Commercial Use:</strong> Your personal information will <strong>never be used for commercial purposes or marketing</strong>.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>No Third-Party Sharing:</strong> We do <strong>not share your data</strong> with any third parties.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>Educational Purpose:</strong> This meal planner is designed to help you create <strong>personalized, healthy meal plans</strong>.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>Personalized Experience:</strong> Your preferences will be used to customize your <strong>meal plans</strong> and <strong>daily health tips</strong> throughout the application, including the <strong>Daily Tips page</strong>.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>Your Control:</strong> You can <strong>clear your data at any time</strong> through your browser settings.</li>
                         </ul>
 
                         <p style="margin-top: 1.5rem; padding: 1rem; background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 4px;">
@@ -439,9 +440,9 @@ const questionnaireSteps = [
                 required: true,
                 options: [
                     { value: "", text: "Select your daily energy needs" },
-                    { value: "1200-1500", text: "1200-1500 calories (Lower energy needs)" },
-                    { value: "1500-1800", text: "1500-1800 calories (Medium energy needs)" },
-                    { value: "1800-2200", text: "1800-2200 calories (High energy needs)" }
+                    { value: "1800-2100", text: "1800-2100 calories (Lower energy needs)" },
+                    { value: "2100-2400", text: "2100-2400 calories (Medium energy needs)" },
+                    { value: "2400-2600", text: "2400-2600 calories (High energy needs)" }
                 ]
             }/*,
             {
@@ -566,11 +567,30 @@ function renderCurrentStep() {
     updateStepIndicator();
 
     const content = document.getElementById('questionnaire-content');
+    const renderedQuestions = stepData.questions.map(question => renderQuestion(question)).join('');
+
+    // Check if step 5 and gender is male/female (all questions are auto-skipped)
+    const isStep5Skipped = currentStep === 5 && (userPreferences.gender === 'male' || userPreferences.gender === 'female');
+
     content.innerHTML = `
         <div class="questionnaire-header">
             <h2>Step ${currentStep}: ${stepData.title}</h2>
         </div>
-        ${stepData.questions.map(question => renderQuestion(question)).join('')}
+        ${isStep5Skipped ? `
+            <div class="step-skipped-notice">
+                <div class="notice-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="notice-content">
+                    <h3>This step has been automatically completed</h3>
+                    <p>Based on your gender selection, we have automatically set your daily calorie target to align with nutritional guidelines for ${userPreferences.gender === 'male' ? 'males' : 'females'} aged 51+.</p>
+                    <p class="notice-detail">
+                        <strong>Your daily calorie target:</strong> ${userPreferences.calorie_target || 'Not set'} calories
+                    </p>
+                    <p class="notice-footer">You can proceed to the next step to complete your profile.</p>
+                </div>
+            </div>
+        ` : renderedQuestions}
     `;
 
     // Add event listeners
@@ -733,10 +753,10 @@ function handleInputChange(event) {
 function handleGenderChange(gender) {
     if (gender === 'male') {
         // Auto-set male calorie target (typically higher needs)
-        userPreferences.calorie_target = '1800-2200';
+        userPreferences.calorie_target = '2400-2600';
     } else if (gender === 'female') {
         // Auto-set female calorie target (typically moderate needs)
-        userPreferences.calorie_target = '1500-1800';
+        userPreferences.calorie_target = '2100-2400';
     } else {
         // For 'other' or 'prefer_not_to_say', clear auto-selection to allow manual choice
         if (gender === 'other' || gender === 'prefer_not_to_say') {
