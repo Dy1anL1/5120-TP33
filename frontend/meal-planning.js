@@ -389,9 +389,9 @@ const questionnaireSteps = [
                 ],
                 validation: {
                     minSelected: 2,
+                    maxSelected: 4,
                     message: "Please select at least 2 meal types",
-                    warnThreshold: 5,
-                    warningMessage: "Warning: Selecting many meal types may result in daily calories exceeding your recommended intake. Consider selecting 3-4 main meal types (breakfast, lunch, dinner) for balanced nutrition."
+                    maxMessage: "You can select a maximum of 4 meal types for balanced daily nutrition"
                 }
             }
         ]
@@ -722,11 +722,46 @@ function addEventListeners() {
     document.querySelectorAll('.form-input').forEach(input => {
         input.addEventListener('change', handleInputChange);
         input.addEventListener('blur', validateField);
+
+        // Prevent decimal point input for age field
+        if (input.id === 'age') {
+            input.addEventListener('keypress', (e) => {
+                // Prevent decimal point (.) and minus sign (-)
+                if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                    e.preventDefault();
+                }
+            });
+
+            // Also prevent pasting decimal values
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                // Only allow digits
+                const digitsOnly = pastedText.replace(/[^0-9]/g, '');
+                if (digitsOnly) {
+                    input.value = digitsOnly;
+                    handleInputChange({ target: input });
+                }
+            });
+        }
     });
 
-    // Checkbox options
+    // Checkbox options - listen to both checkbox change and wrapper click
+    document.querySelectorAll('.checkbox-option input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', handleCheckboxChange);
+    });
+
+    // Also listen to clicks on the wrapper div (for clicking empty space)
     document.querySelectorAll('.checkbox-option').forEach(option => {
-        option.addEventListener('click', handleCheckboxClick);
+        option.addEventListener('click', (event) => {
+            // Only handle if clicking on the div itself or empty space, not on checkbox or label
+            if (event.target === option || event.target.classList.contains('checkbox-option')) {
+                const checkbox = option.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.click(); // This will trigger the change event
+                }
+            }
+        });
     });
 }
 
@@ -823,15 +858,34 @@ function filterAllergiesBasedOnDietTypes(allergiesQuestion) {
     return filteredQuestion;
 }
 
-// Handle checkbox clicks
-function handleCheckboxClick(event) {
-    const option = event.currentTarget;
+// Handle checkbox change events
+function handleCheckboxChange(event) {
+    const checkbox = event.target;
+    const option = checkbox.closest('.checkbox-option');
     const questionId = option.dataset.questionId;
     const value = option.dataset.value;
-    const checkbox = option.querySelector('input[type="checkbox"]');
 
-    // Toggle checkbox
-    checkbox.checked = !checkbox.checked;
+    // Find question to check for maxSelected validation
+    const question = findQuestionById(questionId);
+    const maxSelected = question?.validation?.maxSelected;
+
+    // Check if trying to select when already at max
+    if (checkbox.checked && maxSelected) {
+        const currentSelections = userPreferences[questionId] || [];
+        if (currentSelections.length >= maxSelected && !currentSelections.includes(value)) {
+            // Prevent selection - uncheck and show error
+            checkbox.checked = false;
+            const errorElement = document.getElementById(`${questionId}-error`);
+            if (errorElement) {
+                errorElement.textContent = question.validation.maxMessage || `Maximum ${maxSelected} selections allowed`;
+                errorElement.style.display = 'block';
+                errorElement.classList.remove('warning');
+            }
+            return;
+        }
+    }
+
+    // Update visual state
     option.classList.toggle('selected', checkbox.checked);
 
     // Update preferences
@@ -880,10 +934,11 @@ function validateField(event) {
                 }
             }
 
-            // Check for warning threshold (too many selections)
-            if (isValid && question.validation && question.validation.warnThreshold) {
-                if (value.length >= question.validation.warnThreshold) {
-                    warningMessage = question.validation.warningMessage;
+            // Check for maximum selections
+            if (isValid && question.validation && question.validation.maxSelected) {
+                if (value.length > question.validation.maxSelected) {
+                    isValid = false;
+                    errorMessage = question.validation.maxMessage || `Maximum ${question.validation.maxSelected} selections allowed`;
                 }
             }
 
@@ -899,10 +954,16 @@ function validateField(event) {
     if (isValid && rawValue && question.validation) {
         // Integer validation (check first, as it has priority)
         if (question.validation.integerOnly) {
-            const numValue = parseFloat(rawValue);
-            if (!Number.isInteger(numValue)) {
+            // Check if input contains decimal point
+            if (rawValue.includes('.')) {
                 isValid = false;
-                errorMessage = question.validation.integerMessage || "Please enter a number with no decimal";
+                errorMessage = question.validation.integerMessage || "Please enter a whole number with no decimal point";
+            } else {
+                const numValue = parseFloat(rawValue);
+                if (!Number.isInteger(numValue)) {
+                    isValid = false;
+                    errorMessage = question.validation.integerMessage || "Please enter a whole number with no decimal";
+                }
             }
         }
 
