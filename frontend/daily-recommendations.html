@@ -482,7 +482,7 @@
 
                     let note;
                     let sourceTips = filtered;
-                    let desiredCount = 3;
+                    let desiredCount = 4;
 
                     if (filtered.length === 0 && !usingFallback) {
                         const generalTips = allTips.filter(
@@ -490,11 +490,11 @@
                         );
                         note = 'No personalized tips found. Showing general tips.';
                         sourceTips = generalTips.length ? generalTips : allTips;
-                        desiredCount = Math.min(2, Math.max(1, sourceTips.length));
+                        desiredCount = Math.min(3, Math.max(2, sourceTips.length));
                     } else if (usingFallback) {
                         note = 'Unable to load personalized tips. Showing a default reminder.';
                         sourceTips = allTips;
-                        desiredCount = Math.min(1, sourceTips.length);
+                        desiredCount = Math.min(2, sourceTips.length);
                     }
 
                     if (!sourceTips.length) {

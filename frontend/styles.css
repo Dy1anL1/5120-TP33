@@ -6826,9 +6826,70 @@ html {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.5rem;
+    font-size: 1.8rem;
     color: #ffffff;
     flex-shrink: 0;
+}
+
+.tip-card[data-category="hydration"] .tip-icon {
+    background: #2196F3;
+}
+
+.tip-card[data-category="calcium"] .tip-icon {
+    background: #9C27B0;
+}
+
+.tip-card[data-category="fiber"] .tip-icon {
+    background: #4CAF50;
+}
+
+.tip-card[data-category="protein"] .tip-icon {
+    background: #FF5722;
+}
+
+.tip-card[data-category="heart_health"] .tip-icon {
+    background: #E91E63;
+}
+
+.tip-card[data-category="vitaminD"] .tip-icon,
+.tip-card[data-category="vitamind"] .tip-icon {
+    background: #FFC107;
+}
+
+.tip-card[data-category="antioxidants"] .tip-icon {
+    background: #8BC34A;
+}
+
+.tip-card[data-category="potassium"] .tip-icon {
+    background: #FF9800;
+}
+
+.tip-card[data-category="iron"] .tip-icon {
+    background: #795548;
+}
+
+.tip-card[data-category="balanced_diet"] .tip-icon {
+    background: #009688;
+}
+
+.tip-card[data-category="mental_health"] .tip-icon {
+    background: #673AB7;
+}
+
+.tip-card[data-category="wellness"] .tip-icon {
+    background: #00BCD4;
+}
+
+.tip-card[data-category="hygiene"] .tip-icon {
+    background: #03A9F4;
+}
+
+.tip-card[data-category="metabolism"] .tip-icon {
+    background: #FF5722;
+}
+
+.tip-card[data-category="general"] .tip-icon {
+    background: #607D8B;
 }
 
 .tip-category {

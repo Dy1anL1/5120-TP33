@@ -82,29 +82,35 @@ export function filterTips(tips, profile) {
   });
 }
 
-export function pickDailyTips(tips, desiredCount = 3, profile = {}) {
+export function pickDailyTips(tips, desiredCount = 4, profile = {}) {
   if (!Array.isArray(tips) || tips.length === 0) return [];
   const uniqueSeed = `${dateKey()}|${profile.user_signature || profile.user_id || "guest"}`;
   const seed = hashString(uniqueSeed);
 
   const shuffled = shuffleWithSeed(tips, seed);
-  const nutrition = shuffled.filter(t => t.type === "nutrition");
-  const lifestyle = shuffled.filter(t => t.type !== "nutrition");
+  const generalTips = shuffled.filter(t => toKey(t.category) === "general");
+  const nutrition = shuffled.filter(t => t.type === "nutrition" && toKey(t.category) !== "general");
+  const lifestyle = shuffled.filter(t => t.type !== "nutrition" && toKey(t.category) !== "general");
 
-  const availableCount = shuffled.length >= 3 ? Math.min(desiredCount, shuffled.length) : Math.min(2, shuffled.length);
+  const maxRequested = desiredCount || 4;
+  const minCount = shuffled.length >= 4 ? maxRequested : Math.min(Math.max(2, shuffled.length), maxRequested);
   const selection = [];
 
-  if (nutrition.length > 0) {
+  if (generalTips.length > 0) {
+    selection.push(generalTips.shift());
+  }
+
+  if (selection.length < minCount && nutrition.length > 0) {
     selection.push(nutrition.shift());
   }
 
-  const pool = [...nutrition, ...lifestyle];
+  const pool = [...generalTips, ...nutrition, ...lifestyle];
   for (const tip of pool) {
-    if (selection.length >= availableCount) break;
+    if (selection.length >= minCount) break;
     if (!selection.includes(tip)) selection.push(tip);
   }
 
-  return selection.slice(0, availableCount);
+  return selection.slice(0, minCount);
 }
 
 export function renderTips(tips, container, options = {}) {
@@ -153,6 +159,7 @@ export function renderTips(tips, container, options = {}) {
     const card = document.createElement("article");
     card.className = "tip-card";
     card.setAttribute("data-tip-index", String(index));
+    card.setAttribute("data-category", toKey(tip.category || "general"));
     card.setAttribute("aria-label", `${capitalize(tip.category || "tip")} recommendation`);
 
     const badge = document.createElement("span");
@@ -162,7 +169,7 @@ export function renderTips(tips, container, options = {}) {
 
     const icon = document.createElement("span");
     icon.className = "tip-icon";
-    icon.textContent = tip.type === "nutrition" ? "🥦" : "🌤";
+    icon.innerHTML = getCategoryIcon(tip.category || "general");
     icon.setAttribute("aria-hidden", "true");
 
     const header = document.createElement("div");
@@ -173,7 +180,7 @@ export function renderTips(tips, container, options = {}) {
     textWrapper.className = "tip-text";
     const fullText = tip.text || "Stay healthy and keep moving!";
     const isLong = fullText.length > 180;
-    textWrapper.textContent = isLong ? `${fullText.slice(0, 180)}…` : fullText;
+    textWrapper.textContent = isLong ? `${fullText.slice(0, 180)}...` : fullText;
     textWrapper.dataset.fullText = fullText;
     textWrapper.dataset.collapsed = String(isLong);
 
@@ -188,7 +195,7 @@ export function renderTips(tips, container, options = {}) {
       toggle.addEventListener("click", () => {
         const expanded = toggle.getAttribute("aria-expanded") === "true";
         if (expanded) {
-          textWrapper.textContent = `${fullText.slice(0, 180)}…`;
+          textWrapper.textContent = `${fullText.slice(0, 180)}...`;
           toggle.textContent = "Read more";
         } else {
           textWrapper.textContent = fullText;
@@ -244,4 +251,26 @@ function shuffleWithSeed(items, seed) {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+function getCategoryIcon(category) {
+  const iconMap = {
+    hydration: '<i class="fas fa-tint"></i>',
+    calcium: '<i class="fas fa-bone"></i>',
+    fiber: '<i class="fas fa-seedling"></i>',
+    protein: '<i class="fas fa-drumstick-bite"></i>',
+    heart_health: '<i class="fas fa-heartbeat"></i>',
+    vitaminD: '<i class="fas fa-sun"></i>',
+    antioxidants: '<i class="fas fa-apple-alt"></i>',
+    potassium: '<i class="fas fa-carrot"></i>',
+    iron: '<i class="fas fa-bacon"></i>',
+    balanced_diet: '<i class="fas fa-balance-scale"></i>',
+    mental_health: '<i class="fas fa-brain"></i>',
+    wellness: '<i class="fas fa-spa"></i>',
+    hygiene: '<i class="fas fa-hand-sparkles"></i>',
+    metabolism: '<i class="fas fa-fire"></i>',
+    general: '<i class="fas fa-info-circle"></i>'
+  };
+
+  return iconMap[category] || iconMap.general;
 }
