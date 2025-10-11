@@ -1735,7 +1735,7 @@ h6 {
 }
 
 .modal-close:hover {
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: rgb(24, 255, 3);
 }
 
 /* Meal-planning recipe modal font size adjustments */
@@ -2796,7 +2796,7 @@ html {
 
 /* Specific height for explore-recipes page cards */
 .recipe-cards-container .recipe-card {
-    height: 600px;
+    height: 500px;
 }
 
 /* Taller height for explore-recipes cards with nutrition info */

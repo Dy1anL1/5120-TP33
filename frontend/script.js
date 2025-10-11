@@ -1875,6 +1875,19 @@ document.addEventListener('DOMContentLoaded', function () {
             displayedRecipeIds.clear(); // Clear displayed recipes on new search
         }
         if (cardsContainer && reset) cardsContainer.innerHTML = createLoadingHTML('Loading Recipes', 'Finding the best recipes for you');
+        let inlineLoader = null;
+        const removeInlineLoader = () => {
+            if (inlineLoader && inlineLoader.parentNode) {
+                inlineLoader.parentNode.removeChild(inlineLoader);
+                inlineLoader = null;
+            }
+        };
+        if (!reset && cardsContainer) {
+            inlineLoader = document.createElement('div');
+            inlineLoader.className = 'recipe-inline-loader';
+            inlineLoader.innerHTML = createLoadingHTML('Loading more recipes', 'Fetching additional recipes for you...');
+            cardsContainer.appendChild(inlineLoader);
+        }
         try {
             // Smart fetch: increase limit for keyword search to get more results for filtering
             const hasKeyword = keyword && keyword.trim();
@@ -2059,6 +2072,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 }
             }
+            removeInlineLoader();
             nextToken = next_token || null;
             // Pagination button
             let loadMoreBtn = document.getElementById('load-more-btn');
@@ -2090,6 +2104,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 resultsHeader.textContent = `${total} Recipe${total !== 1 ? 's' : ''} Found`;
             }
         } catch (e) {
+            removeInlineLoader();
             // If server error 5xx try a graceful fallback (no title_prefix) once
             if (e && e.status && String(e.status).startsWith('5')) {
                 try {
