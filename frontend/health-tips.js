@@ -193,6 +193,9 @@ export function renderTips(tips, container, options = {}) {
     const noteEl = document.createElement("p");
     noteEl.className = "tips-note";
     noteEl.textContent = note;
+    noteEl.setAttribute("role", "status");
+    noteEl.setAttribute("aria-live", "polite");
+    noteEl.setAttribute("aria-atomic", "true");
     wrapper.appendChild(noteEl);
   }
 

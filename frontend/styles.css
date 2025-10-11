@@ -2765,12 +2765,14 @@ html {
 
 .recipe-cards-container {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 40px;
+    /* Auto-fit: automatically adjust number of columns based on screen width */
+    grid-template-columns: repeat(auto-fit, minmax(min(350px, 100%), 1fr));
+    gap: clamp(1.5rem, 2.5vw, 2.5rem);
     width: 100%;
+    max-width: 1600px;
     margin: 0 auto;
-    align-items: center;
-    padding: 20px;
+    align-items: stretch;
+    padding: clamp(1rem, 3vw, 2rem);
 }
 
 .recipe-card {
@@ -2799,24 +2801,31 @@ html {
 
 /* Taller height for explore-recipes cards with nutrition info */
 .recipe-cards-container .recipe-card-with-nutrition {
-    height: 850px;
+    height: 750px;
 }
 
 /* Specific height for meal-planning page cards */
 .weekly-days-container .recipe-card {
-    height: 720px;
+    height: auto;
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
 }
 
 .recipe-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    /* Prevent hover highlight from overflowing */
 }
 
 .recipe-image {
     width: calc(100% + 3rem) !important;
-    height: 320px !important;
-    min-height: 320px !important;
-    max-height: 320px !important;
+    height: 240px !important;
+    min-height: 240px !important;
+    max-height: 240px !important;
+    flex-shrink: 0;
+    /* Prevent image from shrinking */
     overflow: hidden !important;
     border-radius: 18px 18px 0 0 !important;
     margin: -2rem -1.5rem 1rem -1.5rem !important;
@@ -2849,7 +2858,10 @@ html {
 
 .recipe-image-placeholder {
     width: calc(100% + 3rem);
-    height: 320px;
+    height: 240px;
+    min-height: 240px;
+    max-height: 240px;
+    flex-shrink: 0;
     background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
     display: flex;
     align-items: center;
@@ -2874,26 +2886,32 @@ html {
     background: rgba(76, 175, 80, 0.05);
     border-radius: 8px;
     border: 1px solid rgba(76, 175, 80, 0.1);
-    line-height: 1.6;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-top: 0px;
+    /* Push to bottom of card */
 }
 
 .nutrition-item {
-    display: inline-block;
-    margin-right: 0.75rem;
-    font-size: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    font-size: 0.95rem;
     font-weight: 600;
     color: #333;
     background: rgba(255, 255, 255, 0.9);
-    padding: 0.5rem 0.75rem;
+    padding: 0.6rem 0.75rem;
     border-radius: 6px;
-    margin-bottom: 0.5rem;
     border: 1px solid rgba(76, 175, 80, 0.2);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    min-height: 60px;
+    justify-content: center;
 }
 
 .nutrition-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     background: rgba(255, 255, 255, 1);
 }
 
@@ -2928,12 +2946,18 @@ html {
 }
 
 .recipe-title {
-    font-size: 1.45rem;
+    font-size: 1.35rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
+    min-height: 3.2rem;
+    line-height: 1.6rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
     text-align: left;
     color: #333;
-    line-height: 1.3;
 }
 
 .recipe-description {
@@ -4034,9 +4058,9 @@ html {
         margin-left: -30px;
     }
 
+    /* Grid auto-fit handles column count, just adjust gap for tablets */
     .recipe-cards-container {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 30px;
+        gap: clamp(1.25rem, 2vw, 1.875rem);
     }
 }
 
@@ -4133,9 +4157,10 @@ html {
 
 
     .recipe-cards-container {
-        grid-template-columns: 1fr;
-        padding: 10px;
-        gap: 20px;
+        /* Mobile: always 1 column, smaller minimum width */
+        grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+        padding: 0.75rem;
+        gap: 1.25rem;
     }
 
     .recipe-card {
@@ -7370,6 +7395,14 @@ html {
     margin-bottom: 0.75rem;
 }
 
+.filter-hint-inline {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: #5f7a61;
+    font-style: italic;
+    margin-left: 0.5rem;
+}
+
 .tips-filter-options {
     display: flex;
     flex-wrap: wrap;
@@ -7399,11 +7432,18 @@ html {
     width: 24px;
     height: 24px;
     accent-color: #2e7d32;
+    cursor: pointer;
+}
+
+.tips-filter-checkbox:focus-visible {
+    outline: 3px solid #4caf50;
+    outline-offset: 2px;
 }
 
 .tips-filter-label {
     font-weight: 600;
     cursor: pointer;
+    user-select: none;
 }
 
 .tips-filter-empty {

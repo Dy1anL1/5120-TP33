@@ -1,6 +1,6 @@
 [
   {
-    "text": "Wash your hands often—because germs are invisible ninjas.",
+    "text": "Wash your hands often-because germs are invisible ninjas.",
     "category": "hygiene",
     "type": "lifestyle",
     "diet_ok": [
@@ -12,7 +12,7 @@
     ]
   },
   {
-    "text": "Get regular check-ups—because WebMD is not a real doctor.",
+    "text": "Get regular check-ups-because WebMD is not a real doctor.",
     "category": "general",
     "type": "lifestyle",
     "diet_ok": [
@@ -24,7 +24,7 @@
     ]
   },
   {
-    "text": "Stretch every morning—it’s the closest thing to a reboot button for your body.",
+    "text": "Stretch every morning-it's the closest thing to a reboot button for your body.",
     "category": "wellness",
     "type": "lifestyle",
     "diet_ok": [
@@ -36,7 +36,7 @@
     ]
   },
   {
-    "text": "Drink plenty of water—your body loves hydration more than you love coffee!",
+    "text": "Drink plenty of water-your body loves hydration more than you love coffee!",
     "category": "hydration",
     "type": "nutrition",
     "diet_ok": [
@@ -48,7 +48,7 @@
     ]
   },
   {
-    "text": "Swap soda for water—your future self will high-five you.",
+    "text": "Swap soda for water-your future self will high-five you.",
     "category": "hydration",
     "type": "nutrition",
     "diet_ok": [
@@ -60,7 +60,7 @@
     ]
   },
   {
-    "text": "Meditate daily—even if it's just hiding from responsibilities for 5 minutes.",
+    "text": "Meditate daily-even if it's just hiding from responsibilities for 5 minutes.",
     "category": "general",
     "type": "lifestyle",
     "diet_ok": [
@@ -74,7 +74,7 @@
     ]
   },
   {
-    "text": "Keep your posture straight—slouching doesn’t make you look cool, just uncomfortable.",
+    "text": "Keep your posture straight-slouching doesn't make you look cool, just uncomfortable.",
     "category": "wellness",
     "type": "lifestyle",
     "diet_ok": [
@@ -86,7 +86,7 @@
     ]
   },
   {
-    "text": "Practice deep breathing—because hyperventilating over small things isn't productive.",
+    "text": "Practice deep breathing-because hyperventilating over small things isn't productive.",
     "category": "general",
     "type": "lifestyle",
     "diet_ok": [
@@ -98,7 +98,7 @@
     ]
   },
   {
-    "text": "Take the stairs whenever possible—your heart will thank you (even if your legs complain).",
+    "text": "Take the stairs whenever possible-your heart will thank you (even if your legs complain).",
     "category": "heart_health",
     "type": "nutrition",
     "diet_ok": [
@@ -110,7 +110,7 @@
     ]
   },
   {
-    "text": "Eat fiber-rich foods—because digestion is a journey, not a race.",
+    "text": "Eat fiber-rich foods-because digestion is a journey, not a race.",
     "category": "fiber",
     "type": "nutrition",
     "diet_ok": [
@@ -122,7 +122,7 @@
     ]
   },
   {
-    "text": "Practice gratitude—it’s a workout for your happiness muscles.",
+    "text": "Practice gratitude-it's a workout for your happiness muscles.",
     "category": "protein",
     "type": "nutrition",
     "diet_ok": [
@@ -134,7 +134,7 @@
     ]
   },
   {
-    "text": "Eat a rainbow of fruits and veggies—no, Skittles don’t count.",
+    "text": "Eat a rainbow of fruits and veggies-no, Skittles don't count.",
     "category": "antioxidants",
     "type": "nutrition",
     "diet_ok": [
@@ -149,7 +149,7 @@
     ]
   },
   {
-    "text": "Avoid processed food—if it can survive an apocalypse, it’s probably not good for you.",
+    "text": "Avoid processed food-if it can survive an apocalypse, it's probably not good for you.",
     "category": "general",
     "type": "lifestyle",
     "diet_ok": [
@@ -161,7 +161,7 @@
     ]
   },
   {
-    "text": "Get at least 7-8 hours of sleep. No, binge-watching doesn’t count as ‘resting your eyes.’.",
+    "text": "Get at least 7-8 hours of sleep. No, binge-watching doesn't count as 'resting your eyes.'",
     "category": "wellness",
     "type": "lifestyle",
     "diet_ok": [
@@ -173,7 +173,7 @@
     ]
   },
   {
-    "text": "Sunshine is great—just don’t turn into a lobster.",
+    "text": "Sunshine is great-just don't turn into a lobster.",
     "category": "vitaminD",
     "type": "nutrition",
     "diet_ok": [
@@ -187,7 +187,7 @@
     ]
   },
   {
-    "text": "Don’t skip breakfast—your stomach needs a good morning greeting too.",
+    "text": "Don't skip breakfast-your stomach needs a good morning greeting too.",
     "category": "general",
     "type": "lifestyle",
     "diet_ok": [
@@ -199,7 +199,7 @@
     ]
   },
   {
-    "text": "Move every hour—your chair isn't your best friend.",
+    "text": "Move every hour-your chair isn't your best friend.",
     "category": "general",
     "type": "lifestyle",
     "diet_ok": [
@@ -211,7 +211,7 @@
     ]
   },
   {
-    "text": "Laugh daily—it's like cardio for your soul.",
+    "text": "Laugh daily-it's like cardio for your soul.",
     "category": "general",
     "type": "lifestyle",
     "diet_ok": [
@@ -223,7 +223,7 @@
     ]
   },
   {
-    "text": "Listen to your body—unless it's telling you to eat an entire pizza alone.",
+    "text": "Listen to your body-unless it's telling you to eat an entire pizza alone.",
     "category": "general",
     "type": "lifestyle",
     "diet_ok": [
@@ -235,7 +235,7 @@
     ]
   },
   {
-    "text": "Limit sugar intake—your pancreas isn’t thrilled with that extra donut.",
+    "text": "Limit sugar intake-your pancreas isn't thrilled with that extra donut.",
     "category": "general",
     "type": "lifestyle",
     "diet_ok": [
