@@ -1571,6 +1571,35 @@ document.addEventListener('DOMContentLoaded', function () {
     let lastQuery = {};
     let displayedRecipeIds = new Set(); // Track displayed recipes to avoid duplicates
 
+    // Quick Filter Chips State
+    const CHIP_KEYWORDS = {
+        chicken: ['chicken', 'chicken breast', 'chicken thigh', 'chicken thighs', 'chicken wing', 'chicken wings', 'drumstick', 'rotisserie chicken', 'hen'],
+        beef: ['beef', 'ground beef', 'beef mince', 'minced beef', 'steak', 'sirloin', 'ribeye', 't-bone', 'brisket', 'chuck', 'short rib', 'oxtail'],
+        pork: ['pork', 'pork belly', 'ground pork', 'bacon', 'ham', 'prosciutto', 'pancetta', 'sausage', 'chorizo'],
+        seafood: ['fish', 'salmon', 'tuna', 'cod', 'haddock', 'halibut', 'trout', 'snapper', 'tilapia', 'mackerel', 'sardine', 'anchovy', 'sea bass'],
+        shellfish: ['shrimp', 'shrimps', 'prawn', 'prawns', 'lobster', 'crab', 'crabmeat', 'oyster', 'oysters', 'mussel', 'mussels', 'clam', 'clams', 'scallop', 'scallops', 'scampi', 'crayfish']
+    };
+
+    const CHIPS_STORAGE_KEY = 'recipeChipsState';
+    let chipsState = loadChipsState();
+
+    function loadChipsState() {
+        try {
+            const stored = localStorage.getItem(CHIPS_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : { chicken: false, beef: false, pork: false, seafood: false, shellfish: false };
+        } catch {
+            return { chicken: false, beef: false, pork: false, seafood: false, shellfish: false };
+        }
+    }
+
+    function saveChipsState() {
+        try {
+            localStorage.setItem(CHIPS_STORAGE_KEY, JSON.stringify(chipsState));
+        } catch (e) {
+            console.error('Failed to save chips state:', e);
+        }
+    }
+
     // Seasonal data cache (preloaded for performance)
     let seasonalData = null;
     let currentSeason = '';
@@ -1802,6 +1831,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 filteredItems = filteredItems.filter(r => isSeasonalRecipe(r));
             }
 
+            // Apply quick filter chips (ingredient-based filtering)
+            const activeChips = Object.entries(chipsState).filter(([_, isActive]) => isActive).map(([chipType, _]) => chipType);
+            if (activeChips.length > 0) {
+                filteredItems = filteredItems.filter(recipe => {
+                    if (!recipe.ingredients || !Array.isArray(recipe.ingredients)) return false;
+
+                    // Convert ingredients to lowercase string for matching
+                    const ingredientsText = recipe.ingredients
+                        .map(ing => (typeof ing === 'string' ? ing : ing.ingredient || '').toLowerCase())
+                        .join(' ');
+
+                    // Check if recipe matches ANY of the active chips
+                    return activeChips.some(chipType => {
+                        const keywords = CHIP_KEYWORDS[chipType] || [];
+                        return keywords.some(keyword => ingredientsText.includes(keyword.toLowerCase()));
+                    });
+                });
+            }
+
             // Apply sorting by nutrition values or default quality sorting
             if (sortBy !== 'default') {
                 if (cardsContainer && reset) cardsContainer.innerHTML = createLoadingHTML('Analyzing Nutrition', 'Calculating nutritional values for each recipe');
@@ -1978,6 +2026,54 @@ document.addEventListener('DOMContentLoaded', function () {
     if (searchInput) {
         searchInput.addEventListener('keyup', function (e) {
             if (e.key === 'Enter') updateRecipes(true);
+        });
+    }
+
+    // Initialize quick filter chips
+    const filterChips = document.querySelectorAll('.filter-chip');
+    const clearChipsBtn = document.getElementById('clear-chips');
+
+    // Restore chip states from localStorage
+    filterChips.forEach(chip => {
+        const chipType = chip.dataset.chip;
+        if (chipsState[chipType]) {
+            chip.setAttribute('aria-pressed', 'true');
+        }
+    });
+
+    // Add click event listeners to chips
+    filterChips.forEach(chip => {
+        chip.addEventListener('click', function() {
+            const chipType = this.dataset.chip;
+            const isPressed = this.getAttribute('aria-pressed') === 'true';
+
+            // Toggle state
+            this.setAttribute('aria-pressed', !isPressed);
+            chipsState[chipType] = !isPressed;
+
+            // Save state to localStorage
+            saveChipsState();
+
+            // Auto-apply filters when chip is clicked
+            updateRecipes(true);
+        });
+    });
+
+    // Clear chips button handler
+    if (clearChipsBtn) {
+        clearChipsBtn.addEventListener('click', function() {
+            // Reset all chip states
+            filterChips.forEach(chip => {
+                chip.setAttribute('aria-pressed', 'false');
+                const chipType = chip.dataset.chip;
+                chipsState[chipType] = false;
+            });
+
+            // Save state
+            saveChipsState();
+
+            // Auto-apply filters
+            updateRecipes(true);
         });
     }
 

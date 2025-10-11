@@ -2579,6 +2579,124 @@ html {
     box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
+/* Quick Filter Chips */
+.quick-filter-chips {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.chips-label {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+}
+
+.chips-container {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    min-height: 48px;
+    background: #ffffff;
+    border: 2px solid #e0e0e0;
+    border-radius: 24px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.filter-chip:hover {
+    border-color: #4CAF50;
+    background: #f1f8e9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.filter-chip:focus {
+    outline: 3px solid rgba(76, 175, 80, 0.3);
+    outline-offset: 2px;
+}
+
+.filter-chip[aria-pressed="true"] {
+    background: #4CAF50;
+    border-color: #4CAF50;
+    color: white;
+}
+
+.filter-chip[aria-pressed="true"]:hover {
+    background: #45a049;
+    border-color: #45a049;
+}
+
+.filter-chip i {
+    font-size: 1.2rem;
+}
+
+.filter-chip-clear {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    min-height: 48px;
+    background: #ffffff;
+    border: 2px solid #ff5722;
+    border-radius: 24px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #ff5722;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.filter-chip-clear:hover {
+    background: #ff5722;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 87, 34, 0.3);
+}
+
+.filter-chip-clear:focus {
+    outline: 3px solid rgba(255, 87, 34, 0.3);
+    outline-offset: 2px;
+}
+
+.filter-chip-clear i {
+    font-size: 1.2rem;
+}
+
+@media (max-width: 768px) {
+    .quick-filter-chips {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .chips-container {
+        width: 100%;
+    }
+
+    .filter-chip,
+    .filter-chip-clear {
+        font-size: 1rem;
+        padding: 0.7rem 1.2rem;
+    }
+}
+
 .filter-options {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -6576,70 +6694,166 @@ html {
     }
 }
 
-/* Seasonal Filter Checkbox - Senior Friendly Design */
-.seasonal-filter-group {
-    margin: 1.5rem 0;
-    padding: 1.25rem;
-    background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%);
-    border-radius: 12px;
-    border: 2px solid #4CAF50;
+/* Seasonal Filter Card - Modern Toggle Design */
+.seasonal-filter-card {
+    margin: 2rem 0;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fdf9 100%);
+    border: 2px solid #e0e0e0;
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.seasonal-checkbox-label {
+.seasonal-filter-card:hover {
+    border-color: #4CAF50;
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.15);
+    transform: translateY(-2px);
+}
+
+.seasonal-toggle {
+    display: none;
+}
+
+.seasonal-label {
     display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    align-items: center;
+    gap: 1.5rem;
     cursor: pointer;
     user-select: none;
 }
 
-.seasonal-checkbox {
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
-    margin-right: 1rem;
-    flex-shrink: 0;
-    accent-color: #4CAF50;
-}
-
-.seasonal-checkbox-text {
+.seasonal-icon {
     display: flex;
     align-items: center;
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #2e7d32;
-    gap: 0.75rem;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-radius: 12px;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
 }
 
-.seasonal-checkbox-text i {
+.seasonal-icon i {
+    font-size: 1.8rem;
     color: #4CAF50;
-    font-size: 1.3rem;
+    transition: all 0.3s ease;
 }
 
-.seasonal-checkbox-hint {
+.seasonal-content {
+    flex: 1;
+}
+
+.seasonal-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.25rem;
+    transition: color 0.3s ease;
+}
+
+.seasonal-hint {
     font-size: 1rem;
     color: #666;
     font-weight: 400;
-    margin-left: 2.5rem;
 }
 
-.seasonal-checkbox:checked+.seasonal-checkbox-text {
-    color: #1b5e20;
+/* Toggle Switch */
+.seasonal-toggle-switch {
+    position: relative;
+    width: 64px;
+    height: 32px;
+    background: #ddd;
+    border-radius: 16px;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
 }
 
-.seasonal-checkbox:checked+.seasonal-checkbox-text i {
+.toggle-slider {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 26px;
+    height: 26px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Checked State */
+.seasonal-toggle:checked + .seasonal-label .seasonal-toggle-switch {
+    background: #4CAF50;
+}
+
+.seasonal-toggle:checked + .seasonal-label .toggle-slider {
+    left: 35px;
+}
+
+.seasonal-toggle:checked + .seasonal-label .seasonal-icon {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    transform: scale(1.05);
+}
+
+.seasonal-toggle:checked + .seasonal-label .seasonal-icon i {
+    color: white;
     animation: leafBounce 0.5s ease;
 }
 
+.seasonal-toggle:checked + .seasonal-label .seasonal-title {
+    color: #2e7d32;
+}
+
+/* Focus State for Accessibility */
+.seasonal-toggle:focus + .seasonal-label {
+    outline: 3px solid rgba(76, 175, 80, 0.3);
+    outline-offset: 2px;
+    border-radius: 16px;
+}
+
+/* Animation */
 @keyframes leafBounce {
 
     0%,
     100% {
-        transform: scale(1);
+        transform: rotate(0deg) scale(1);
     }
 
-    50% {
-        transform: scale(1.2);
+    25% {
+        transform: rotate(-15deg) scale(1.1);
+    }
+
+    75% {
+        transform: rotate(15deg) scale(1.1);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .seasonal-filter-card {
+        padding: 1.25rem 1.5rem;
+    }
+
+    .seasonal-label {
+        gap: 1rem;
+    }
+
+    .seasonal-icon {
+        width: 48px;
+        height: 48px;
+    }
+
+    .seasonal-icon i {
+        font-size: 1.5rem;
+    }
+
+    .seasonal-title {
+        font-size: 1.15rem;
+    }
+
+    .seasonal-hint {
+        font-size: 0.9rem;
     }
 }
 
@@ -7111,5 +7325,102 @@ html {
     .tip-toggle {
         font-size: 1.2rem;
         padding: 0.9rem 1.8rem;
+    }
+}
+.tip-filter-form {
+    background: #f1faf4;
+    border: 2px solid #d4efd9;
+    border-radius: 20px;
+    padding: 1.75rem 1.5rem;
+    margin-bottom: 1.75rem;
+    box-shadow: 0 8px 24px rgba(44, 62, 80, 0.08);
+}
+
+.tip-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.tip-filter-fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+    min-width: 240px;
+    flex: 1;
+}
+
+.tip-filter-fieldset legend {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2e7d32;
+    margin-bottom: 0.6rem;
+}
+
+.tip-filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.tip-filter-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #ffffff;
+    border: 2px solid #d7eadc;
+    border-radius: 999px;
+    padding: 0.45rem 0.9rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tip-filter-option:hover,
+.tip-filter-option:focus-within {
+    border-color: #4caf50;
+    background: #e8f5e9;
+}
+
+.tip-filter-option input {
+    width: 20px;
+    height: 20px;
+}
+
+.tip-filter-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1.25rem;
+}
+
+.tip-filter-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.4rem;
+    font-size: 1rem;
+}
+
+.tip-filter-active-note {
+    margin-top: 1rem;
+    font-size: 1rem;
+    color: #4f5b62;
+    min-height: 1.2rem;
+}
+
+@media (max-width: 768px) {
+    .tip-filter-row {
+        flex-direction: column;
+    }
+
+    .tip-filter-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .tip-filter-actions .btn {
+        width: 100%;
+        justify-content: center;
     }
 }

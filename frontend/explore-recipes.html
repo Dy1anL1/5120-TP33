@@ -95,7 +95,38 @@
                         <i class="fas fa-search"></i>
                         <input type="text" placeholder="Search recipes, ingredients, or health benefits..." class="search-input">
                     </div>
-                    
+
+                    <!-- Quick Filter Chips -->
+                    <div class="quick-filter-chips">
+                        <div class="chips-label">Quick Filters:</div>
+                        <div class="chips-container">
+                            <button class="filter-chip" data-chip="chicken" aria-pressed="false">
+                                <i class="fas fa-drumstick-bite"></i>
+                                <span>Chicken</span>
+                            </button>
+                            <button class="filter-chip" data-chip="beef" aria-pressed="false">
+                                <i class="fas fa-bacon"></i>
+                                <span>Beef</span>
+                            </button>
+                            <button class="filter-chip" data-chip="pork" aria-pressed="false">
+                                <i class="fas fa-bacon"></i>
+                                <span>Pork</span>
+                            </button>
+                            <button class="filter-chip" data-chip="seafood" aria-pressed="false">
+                                <i class="fas fa-fish"></i>
+                                <span>Seafood</span>
+                            </button>
+                            <button class="filter-chip" data-chip="shellfish" aria-pressed="false">
+                                <i class="fas fa-shrimp"></i>
+                                <span>Shellfish</span>
+                            </button>
+                            <button class="filter-chip-clear" id="clear-chips">
+                                <i class="fas fa-times-circle"></i>
+                                <span>Clear</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="filter-options">
                         <div class="filter-group">
                             <label for="recipe-category">Recipe Category</label>
@@ -142,16 +173,22 @@
                         </div>
                     </div>
 
-                    <div class="filter-group seasonal-filter-group">
-                        <label class="seasonal-checkbox-label">
-                            <input type="checkbox" id="seasonal-filter" class="seasonal-checkbox">
-                            <span class="seasonal-checkbox-text">
+                    <!-- Seasonal Filter Card -->
+                    <div class="seasonal-filter-card">
+                        <input type="checkbox" id="seasonal-filter" class="seasonal-toggle">
+                        <label for="seasonal-filter" class="seasonal-label">
+                            <div class="seasonal-icon">
                                 <i class="fas fa-leaf"></i>
-                                Show only seasonal recipes
-                            </span>
-                            <span class="seasonal-checkbox-hint" id="current-season-hint">
-                                (Fresh ingredients in season now)
-                            </span>
+                            </div>
+                            <div class="seasonal-content">
+                                <div class="seasonal-title">Seasonal Recipes</div>
+                                <div class="seasonal-hint" id="current-season-hint">
+                                    Fresh ingredients in season now
+                                </div>
+                            </div>
+                            <div class="seasonal-toggle-switch">
+                                <span class="toggle-slider"></span>
+                            </div>
                         </label>
                     </div>
 
