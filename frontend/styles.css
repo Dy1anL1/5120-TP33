@@ -7339,99 +7339,116 @@ html {
         padding: 0.9rem 1.8rem;
     }
 }
-.tip-filter-form {
+.tips-filter-wrapper {
     background: #f1faf4;
     border: 2px solid #d4efd9;
     border-radius: 20px;
     padding: 1.75rem 1.5rem;
-    margin-bottom: 1.75rem;
+    margin-bottom: 2rem;
     box-shadow: 0 8px 24px rgba(44, 62, 80, 0.08);
 }
 
-.tip-filter-row {
+.tips-filter-form {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 1.5rem;
 }
 
-.tip-filter-fieldset {
+.tips-filter-group {
     border: none;
     padding: 0;
     margin: 0;
-    min-width: 240px;
-    flex: 1;
 }
 
-.tip-filter-fieldset legend {
-    font-size: 1.1rem;
+.tips-filter-group legend {
+    font-size: 1.15rem;
     font-weight: 700;
     color: #2e7d32;
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.75rem;
 }
 
-.tip-filter-options {
+.tips-filter-options {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.65rem;
+    gap: 0.75rem;
 }
 
-.tip-filter-option {
+.tips-filter-option {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.6rem;
     background: #ffffff;
     border: 2px solid #d7eadc;
     border-radius: 999px;
-    padding: 0.45rem 0.9rem;
-    font-size: 1rem;
+    padding: 0.55rem 1rem;
+    font-size: 1.05rem;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
-.tip-filter-option:hover,
-.tip-filter-option:focus-within {
+.tips-filter-option:hover,
+.tips-filter-option:focus-within {
     border-color: #4caf50;
     background: #e8f5e9;
 }
 
-.tip-filter-option input {
-    width: 20px;
-    height: 20px;
+.tips-filter-checkbox {
+    width: 24px;
+    height: 24px;
+    accent-color: #2e7d32;
 }
 
-.tip-filter-actions {
+.tips-filter-label {
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tips-filter-empty {
+    margin: 0;
+    font-size: 1rem;
+    color: #546e7a;
+}
+
+.tips-filter-actions {
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;
-    margin-top: 1.25rem;
+    margin-top: 0.5rem;
 }
 
-.tip-filter-actions .btn {
+.tips-filter-actions .btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.65rem 1.4rem;
-    font-size: 1rem;
+    gap: 0.6rem;
+    padding: 0.75rem 1.6rem;
+    font-size: 1.05rem;
 }
 
-.tip-filter-active-note {
-    margin-top: 1rem;
+.tips-filter-hint {
+    margin: 0.25rem 0 0;
     font-size: 1rem;
     color: #4f5b62;
-    min-height: 1.2rem;
+}
+
+.tips-filter-status {
+    margin-top: 0.75rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #2e7d32;
+    min-height: 1.4rem;
 }
 
 @media (max-width: 768px) {
-    .tip-filter-row {
-        flex-direction: column;
+    .tips-filter-wrapper {
+        padding: 1.5rem 1.25rem;
     }
 
-    .tip-filter-actions {
+    .tips-filter-actions {
         flex-direction: column;
         align-items: stretch;
     }
 
-    .tip-filter-actions .btn {
+    .tips-filter-actions .btn {
         width: 100%;
         justify-content: center;
     }

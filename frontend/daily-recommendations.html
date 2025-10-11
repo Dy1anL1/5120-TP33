@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -107,7 +107,7 @@
         <section id="daily-tips" aria-label="Daily Health Tips">
             <div class="section-container">
                 <div class="tips-loading" role="status">
-                    <span class="tips-loading-text">Loading personalized tips…</span>
+                    <span class="tips-loading-text">Loading personalized tips...</span>
                 </div>
             </div>
         </section>
@@ -460,12 +460,10 @@
         <div class="section-container">
             <div class="footer-content">
                 <p class="footer-text">Supporting healthy eating habits for a better life</p>
-                <p class="footer-copyright">© 2024 Silver Spoon Society. Designed for senior wellness.</p>
+                <p class="footer-copyright">Â© 2024 Silver Spoon Society. Designed for senior wellness.</p>
             </div>
         </div>
-    </footer>
-
-    <script src="config.js"></script>
+    </footer>    <script src="config.js"></script>
     <script src="script.js"></script>
     <script type="module">
         import {
@@ -480,83 +478,21 @@
         } from './health-tips.js';
 
         const tipsSection = document.getElementById('daily-tips');
+        const FILTER_STORAGE_KEY = 'dailyTipsFilters';
 
-        async function buildTipsSection(refreshCounterOverride) {
-            if (!tipsSection) return;
+        let allTipsCache = [];
+        let baseTips = [];
+        let profileCache = {};
+        let desiredTipCount = 4;
+        let baseNote;
+        let usingFallbackData = false;
+        let activeFilters = loadStoredFilters();
+        let filterOptions = { categories: [], types: [] };
+        let currentRefreshCounter;
 
-            tipsSection.innerHTML = `
-                <div class="section-container">
-                    <div class="tips-loading" role="status">
-                        <span class="tips-loading-text">Loading personalized tips…</span>
-                    </div>
-                </div>
-            `;
-
-            try {
-                const [allTips, profile] = await Promise.all([
-                    loadHealthTips(),
-                    Promise.resolve(getUserProfile())
-                ]);
-
-                const filtered = filterTips(allTips, profile);
-                const usingFallback = allTips.length > 0 && allTips.every(tip => tip._fallback);
-
-                let note;
-                let sourceTips = filtered;
-                let desiredCount = 4;
-
-                if (filtered.length === 0 && !usingFallback) {
-                    const generalTips = allTips.filter(
-                        tip => tip.type === 'lifestyle' || String(tip.category || '').toLowerCase() === 'balanced_diet'
-                    );
-                    note = 'No personalized tips found. Showing general tips.';
-                    sourceTips = generalTips.length ? generalTips : allTips;
-                    desiredCount = Math.min(3, Math.max(2, sourceTips.length));
-                } else if (usingFallback) {
-                    note = 'Unable to load personalized tips. Showing a default reminder.';
-                    sourceTips = allTips;
-                    desiredCount = Math.min(2, sourceTips.length);
-                }
-
-                if (!sourceTips.length) {
-                    sourceTips = allTips;
-                }
-
-                const refreshCounter = Number.isFinite(refreshCounterOverride)
-                    ? refreshCounterOverride
-                    : getRefreshCounter();
-
-                const picked = pickDailyTips(sourceTips, desiredCount, profile, refreshCounter);
-                renderTips(picked, tipsSection, {
-                    title: 'Personalized Daily Tips',
-                    subtitle: 'Tailored suggestions based on your questionnaire responses',
-                    note,
-                    refreshable: true
-                });
-
-                attachRefreshHandler(profile);
-            } catch (error) {
-                console.error('[daily-tips] Failed to initialize tips:', error);
-                renderTips([], tipsSection, {
-                    title: 'Personalized Daily Tips',
-                    subtitle: 'Tailored suggestions based on your questionnaire responses',
-                    note: 'Tips are temporarily unavailable. Please try again later.'
-                });
-            }
-        }
-
-        function attachRefreshHandler(profile) {
-            const refreshBtn = tipsSection.querySelector('.tips-refresh-btn');
-            if (!refreshBtn) return;
-
-            refreshBtn.addEventListener('click', () => {
-                refreshBtn.disabled = true;
-                const counter = incrementRefreshCounter();
-                buildTipsSection(counter).finally(() => {
-                    refreshBtn.disabled = false;
-                });
-            });
-        }
+        let filterForm;
+        let tipsResultsContainer;
+        let filterStatusRegion;
 
         if (tipsSection) {
             const currentDate = dateKey();
@@ -565,7 +501,425 @@
                 resetRefreshCounter();
                 sessionStorage.setItem('dailyTipsDate', currentDate);
             }
-            buildTipsSection();
+            initializeSectionSkeleton();
+            buildInitialTips();
+        }
+
+        async function buildInitialTips(refreshCounterOverride) {
+            setLoadingState();
+
+            try {
+                const [allTips, profile] = await Promise.all([
+                    loadHealthTips(),
+                    Promise.resolve(getUserProfile())
+                ]);
+
+                allTipsCache = Array.isArray(allTips) ? allTips : [];
+                profileCache = profile || {};
+                usingFallbackData = allTipsCache.length > 0 && allTipsCache.every(tip => tip._fallback);
+
+                const personalized = filterTips(allTipsCache, profileCache);
+
+                let note;
+                let sourceTips = personalized;
+                let desiredCount = 4;
+
+                if (personalized.length === 0 && !usingFallbackData) {
+                    const generalTips = allTipsCache.filter(
+                        tip => tip.type === 'lifestyle' || normalizeKey(tip.category) === 'balanced_diet'
+                    );
+                    note = 'No personalized tips found. Showing general tips.';
+                    sourceTips = generalTips.length ? generalTips : allTipsCache;
+                    desiredCount = Math.min(3, Math.max(2, sourceTips.length));
+                } else if (usingFallbackData) {
+                    note = 'Unable to load personalized tips. Showing a default reminder.';
+                    sourceTips = allTipsCache;
+                    desiredCount = Math.min(2, sourceTips.length);
+                }
+
+                if (!sourceTips.length) {
+                    sourceTips = allTipsCache;
+                }
+
+                baseTips = Array.isArray(sourceTips) ? sourceTips : [];
+                baseNote = note;
+                desiredTipCount = desiredCount;
+
+                filterOptions = deriveFilterOptions(allTipsCache);
+                renderFilterControls();
+
+                currentRefreshCounter = Number.isFinite(refreshCounterOverride)
+                    ? refreshCounterOverride
+                    : getRefreshCounter();
+
+                renderCurrentTips(currentRefreshCounter);
+            } catch (error) {
+                console.error('[daily-tips] Failed to initialize tips:', error);
+                if (tipsResultsContainer) {
+                    renderTips([], tipsResultsContainer, {
+                        title: 'Personalized Daily Tips',
+                        subtitle: 'Tailored suggestions based on your questionnaire responses',
+                        note: 'Tips are temporarily unavailable. Please try again later.'
+                    });
+                }
+                updateStatusMessage('Tips are temporarily unavailable. Please try again later.');
+            }
+        }
+
+        function renderCurrentTips(refreshCounterOverride) {
+            if (!tipsResultsContainer) return;
+
+            if (Number.isFinite(refreshCounterOverride)) {
+                currentRefreshCounter = refreshCounterOverride;
+            } else if (!Number.isFinite(currentRefreshCounter)) {
+                currentRefreshCounter = getRefreshCounter();
+            }
+
+            const filtersApplied = hasActiveFilters();
+            const filteredTips = filtersApplied ? applyFilters(baseTips, activeFilters) : baseTips;
+
+            let tipsForSelection = filteredTips;
+            let statusMessage;
+
+            if (filtersApplied) {
+                if (!filteredTips.length) {
+                    statusMessage = 'No tips matched your filters. Showing personalized recommendations instead.';
+                    tipsForSelection = baseTips;
+                } else {
+                    statusMessage = buildAppliedStatus(filteredTips.length);
+                }
+            } else {
+                statusMessage = usingFallbackData
+                    ? 'Currently showing the default reminder.'
+                    : 'Currently showing personalized tips.';
+            }
+
+            updateStatusMessage(statusMessage);
+
+            const effectiveSeedCounter = computeEffectiveCounter(currentRefreshCounter, activeFilters);
+            const picked = pickDailyTips(tipsForSelection, desiredTipCount, profileCache, effectiveSeedCounter);
+
+            renderTips(picked, tipsResultsContainer, {
+                title: 'Personalized Daily Tips',
+                subtitle: 'Tailored suggestions based on your questionnaire responses',
+                note: baseNote,
+                refreshable: true
+            });
+
+            attachRefreshHandler();
+        }
+
+        function attachRefreshHandler() {
+            if (!tipsResultsContainer) return;
+            const refreshBtn = tipsResultsContainer.querySelector('.tips-refresh-btn');
+            if (!refreshBtn) return;
+
+            refreshBtn.addEventListener('click', () => {
+                refreshBtn.disabled = true;
+                const counter = incrementRefreshCounter();
+                renderCurrentTips(counter);
+                refreshBtn.disabled = false;
+            });
+        }
+
+        function initializeSectionSkeleton() {
+            tipsSection.innerHTML = `
+                <div class="section-container">
+                    <div class="tips-filter-wrapper">
+                        <form class="tips-filter-form" aria-label="Filter daily tips">
+                            <fieldset class="tips-filter-group">
+                                <legend>Filter by Category</legend>
+                                <div class="tips-filter-options tips-filter-options--category" role="group" aria-label="Filter by category">
+                                    <p class="tips-filter-empty">Loading categories...</p>
+                                </div>
+                            </fieldset>
+                            <fieldset class="tips-filter-group">
+                                <legend>Filter by Type</legend>
+                                <div class="tips-filter-options tips-filter-options--type" role="group" aria-label="Filter by type">
+                                    <p class="tips-filter-empty">Loading types...</p>
+                                </div>
+                            </fieldset>
+                            <div class="tips-filter-actions">
+                                <button type="submit" class="btn btn-primary tips-filter-apply">Apply</button>
+                                <button type="button" class="btn btn-secondary tips-filter-clear" data-clear-filters>Clear</button>
+                            </div>
+                        </form>
+                        <p class="tips-filter-hint">Choose categories or types to explore different themes. Filters do not change your questionnaire results.</p>
+                        <div class="tips-filter-status" aria-live="polite" role="status"></div>
+                    </div>
+                    <div class="tips-results">
+                        <div class="tips-loading" role="status">
+                            <span class="tips-loading-text">Loading personalized tips...</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            filterForm = tipsSection.querySelector('.tips-filter-form');
+            tipsResultsContainer = tipsSection.querySelector('.tips-results');
+            filterStatusRegion = tipsSection.querySelector('.tips-filter-status');
+
+            if (filterForm) {
+                filterForm.addEventListener('submit', handleFilterSubmit);
+                const clearButton = filterForm.querySelector('[data-clear-filters]');
+                if (clearButton) {
+                    clearButton.addEventListener('click', handleFilterClear);
+                }
+            }
+        }
+
+        function renderFilterControls() {
+            if (!filterForm) return;
+
+            syncActiveFiltersWithOptions();
+
+            renderFilterGroup(
+                filterForm.querySelector('.tips-filter-options--category'),
+                filterOptions.categories,
+                'filter-category',
+                activeFilters.categories
+            );
+
+            renderFilterGroup(
+                filterForm.querySelector('.tips-filter-options--type'),
+                filterOptions.types,
+                'filter-type',
+                activeFilters.types
+            );
+        }
+
+        function renderFilterGroup(container, options, inputName, selectedValues) {
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (!options.length) {
+                const empty = document.createElement('p');
+                empty.className = 'tips-filter-empty';
+                empty.textContent = 'No options available.';
+                container.appendChild(empty);
+                return;
+            }
+
+            options.forEach((option, index) => {
+                const optionWrapper = document.createElement('div');
+                optionWrapper.className = 'tips-filter-option';
+
+                const checkboxId = `${inputName}-${index}`;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = checkboxId;
+                checkbox.name = inputName;
+                checkbox.value = option.value;
+                checkbox.className = 'tips-filter-checkbox';
+                checkbox.checked = selectedValues.includes(option.value);
+
+                const label = document.createElement('label');
+                label.htmlFor = checkboxId;
+                label.className = 'tips-filter-label';
+                label.textContent = option.label;
+
+                optionWrapper.appendChild(checkbox);
+                optionWrapper.appendChild(label);
+                container.appendChild(optionWrapper);
+            });
+        }
+
+        function handleFilterSubmit(event) {
+            event.preventDefault();
+            if (!filterForm) return;
+
+            const selectedCategories = Array.from(
+                filterForm.querySelectorAll('input[name="filter-category"]:checked')
+            ).map(input => input.value);
+
+            const selectedTypes = Array.from(
+                filterForm.querySelectorAll('input[name="filter-type"]:checked')
+            ).map(input => input.value);
+
+            activeFilters = normalizeFilterState({
+                categories: selectedCategories,
+                types: selectedTypes
+            });
+
+            persistFilters();
+            renderCurrentTips(currentRefreshCounter);
+        }
+
+        function handleFilterClear() {
+            if (!filterForm) return;
+
+            activeFilters = { categories: [], types: [] };
+            persistFilters();
+
+            filterForm
+                .querySelectorAll('input[name="filter-category"], input[name="filter-type"]')
+                .forEach(input => {
+                    input.checked = false;
+                });
+
+            renderCurrentTips(currentRefreshCounter);
+        }
+
+        function applyFilters(tips, filters) {
+            if (!Array.isArray(tips) || tips.length === 0) return [];
+
+            const categories = filters.categories || [];
+            const types = filters.types || [];
+
+            return tips.filter(tip => {
+                const categoryMatch = !categories.length || categories.includes(normalizeKey(tip.category));
+                const typeMatch = !types.length || types.includes(normalizeKey(tip.type));
+                return categoryMatch && typeMatch;
+            });
+        }
+
+        function computeEffectiveCounter(counter, filters) {
+            const filterKey = `${(filters.categories || []).slice().sort().join('|')}::${(filters.types || []).slice().sort().join('|')}`;
+            const filterHash = hashString(filterKey);
+            return (counter || 0) ^ filterHash;
+        }
+
+        function buildAppliedStatus(matchCount) {
+            const parts = [];
+
+            if (activeFilters.categories.length) {
+                parts.push(`Category: ${formatSelectionList(activeFilters.categories, filterOptions.categories)}`);
+            }
+
+            if (activeFilters.types.length) {
+                parts.push(`Type: ${formatSelectionList(activeFilters.types, filterOptions.types)}`);
+            }
+
+            const filtersText = parts.join('; ') || 'Filters applied';
+            return `${filtersText}; ${matchCount} tips available.`;
+        }
+
+        function formatSelectionList(values, options) {
+            const labels = values
+                .map(value => {
+                    const match = options.find(option => option.value === value);
+                    return match ? match.label : value;
+                })
+                .filter(Boolean);
+
+            return labels.join(', ');
+        }
+
+        function updateStatusMessage(message) {
+            if (!filterStatusRegion) return;
+            filterStatusRegion.textContent = message || '';
+        }
+
+        function setLoadingState() {
+            if (!tipsResultsContainer) return;
+            tipsResultsContainer.innerHTML = `
+                <div class="tips-loading" role="status">
+                    <span class="tips-loading-text">Loading personalized tips...</span>
+                </div>
+            `;
+            updateStatusMessage('Loading personalized tips...');
+        }
+
+        function deriveFilterOptions(tips) {
+            const categoryMap = new Map();
+            const typeMap = new Map();
+
+            tips.forEach(tip => {
+                const categoryKey = normalizeKey(tip.category || 'general');
+                const typeKey = normalizeKey(tip.type || 'lifestyle');
+
+                if (categoryKey && !categoryMap.has(categoryKey)) {
+                    categoryMap.set(categoryKey, formatLabel(tip.category || 'general'));
+                }
+                if (typeKey && !typeMap.has(typeKey)) {
+                    typeMap.set(typeKey, formatLabel(tip.type || 'lifestyle'));
+                }
+            });
+
+            const categories = Array.from(categoryMap.entries())
+                .map(([value, label]) => ({ value, label }))
+                .sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+
+            const types = Array.from(typeMap.entries())
+                .map(([value, label]) => ({ value, label }))
+                .sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+
+            return { categories, types };
+        }
+
+        function syncActiveFiltersWithOptions() {
+            const validCategories = new Set(filterOptions.categories.map(option => option.value));
+            const validTypes = new Set(filterOptions.types.map(option => option.value));
+
+            const normalized = {
+                categories: activeFilters.categories.filter(value => validCategories.has(value)),
+                types: activeFilters.types.filter(value => validTypes.has(value))
+            };
+
+            if (
+                normalized.categories.length !== activeFilters.categories.length ||
+                normalized.types.length !== activeFilters.types.length
+            ) {
+                activeFilters = normalized;
+                persistFilters();
+            } else {
+                activeFilters = normalized;
+            }
+        }
+
+        function hasActiveFilters() {
+            return (activeFilters.categories && activeFilters.categories.length > 0) ||
+                (activeFilters.types && activeFilters.types.length > 0);
+        }
+
+        function loadStoredFilters() {
+            try {
+                const raw = localStorage.getItem(FILTER_STORAGE_KEY);
+                if (!raw) return { categories: [], types: [] };
+                const parsed = JSON.parse(raw);
+                return normalizeFilterState(parsed);
+            } catch {
+                return { categories: [], types: [] };
+            }
+        }
+
+        function persistFilters() {
+            try {
+                localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(activeFilters));
+            } catch {
+                /* noop */
+            }
+        }
+
+        function normalizeFilterState(raw = {}) {
+            const categories = Array.isArray(raw.categories) ? raw.categories : [];
+            const types = Array.isArray(raw.types) ? raw.types : [];
+
+            return {
+                categories: Array.from(new Set(categories.map(normalizeKey).filter(Boolean))),
+                types: Array.from(new Set(types.map(normalizeKey).filter(Boolean)))
+            };
+        }
+
+        function normalizeKey(value) {
+            return String(value || '').toLowerCase().trim();
+        }
+
+        function formatLabel(value) {
+            const str = String(value || '');
+            if (!str) return 'General';
+            const cleaned = str.replace(/_/g, ' ');
+            return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+        }
+
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i += 1) {
+                hash = (hash << 5) - hash + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return hash >>> 0;
         }
 
         function dateKey() {
@@ -574,3 +928,4 @@
     </script>
 </body>
 </html>
+
