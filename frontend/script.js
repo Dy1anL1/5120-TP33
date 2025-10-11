@@ -1600,6 +1600,137 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Smart Filter Logic: Update Diet Type and Allergy filters based on active chips
+    function updateDietAndAllergyOptions() {
+        const dietTypeSelect = document.getElementById('diet-type');
+        const allergyFilterSelect = document.getElementById('allergy-filter');
+
+        if (!dietTypeSelect || !allergyFilterSelect) return;
+
+        // Determine active meat types
+        const hasMeat = chipsState.chicken || chipsState.beef || chipsState.pork;
+        const hasSeafood = chipsState.seafood;
+        const hasShellfish = chipsState.shellfish;
+
+        // Diet Type Logic
+        const vegetarianOption = dietTypeSelect.querySelector('option[value="vegetarian"]');
+        const veganOption = dietTypeSelect.querySelector('option[value="vegan"]');
+
+        if (hasMeat || hasSeafood || hasShellfish) {
+            // Disable Vegetarian & Vegan if any animal protein is selected
+            if (vegetarianOption) {
+                vegetarianOption.disabled = true;
+                vegetarianOption.textContent = 'Vegetarian (unavailable with selected proteins)';
+            }
+            if (veganOption) {
+                veganOption.disabled = true;
+                veganOption.textContent = 'Vegan (unavailable with selected proteins)';
+            }
+
+            // Auto-reset to "All" if currently selected
+            if (dietTypeSelect.value === 'vegetarian' || dietTypeSelect.value === 'vegan') {
+                dietTypeSelect.value = 'all';
+            }
+        } else {
+            // Enable Vegetarian & Vegan if no animal protein
+            if (vegetarianOption) {
+                vegetarianOption.disabled = false;
+                vegetarianOption.textContent = 'Vegetarian';
+            }
+            if (veganOption) {
+                veganOption.disabled = false;
+                veganOption.textContent = 'Vegan';
+            }
+        }
+
+        // Allergy Filter Logic - Disable incompatible allergy filters
+        const shellfishFreeOption = allergyFilterSelect.querySelector('option[value="shellfish_free"]');
+        const fishFreeOption = allergyFilterSelect.querySelector('option[value="fish_free"]');
+
+        // Reset all allergy option texts and enabled state first
+        allergyFilterSelect.querySelectorAll('option').forEach(opt => {
+            const value = opt.value;
+            const originalTexts = {
+                'shellfish_free': 'Shellfish-Free',
+                'fish_free': 'Fish-Free',
+                'dairy_free': 'Dairy-Free',
+                'gluten_free': 'Gluten-Free',
+                'nut_free': 'Nut-Free',
+                'egg_free': 'Egg-Free',
+                'soy_free': 'Soy-Free'
+            };
+            if (originalTexts[value]) {
+                opt.textContent = originalTexts[value];
+                opt.disabled = false; // Re-enable all options first
+            }
+        });
+
+        // Disable incompatible allergy filters based on active chips
+        // If shellfish is selected, disable shellfish-free
+        if (hasShellfish && shellfishFreeOption) {
+            shellfishFreeOption.disabled = true;
+            shellfishFreeOption.textContent = 'Shellfish-Free (unavailable: shellfish selected)';
+
+            // Auto-reset if currently selected
+            if (allergyFilterSelect.value === 'shellfish_free') {
+                allergyFilterSelect.value = 'all';
+            }
+        }
+
+        // If seafood is selected, disable both fish-free and shellfish-free
+        if (hasSeafood) {
+            if (fishFreeOption) {
+                fishFreeOption.disabled = true;
+                fishFreeOption.textContent = 'Fish-Free (unavailable: seafood selected)';
+
+                // Auto-reset if currently selected
+                if (allergyFilterSelect.value === 'fish_free') {
+                    allergyFilterSelect.value = 'all';
+                }
+            }
+
+            // Seafood also includes shellfish, so disable shellfish-free too
+            if (shellfishFreeOption && !shellfishFreeOption.disabled) {
+                shellfishFreeOption.disabled = true;
+                shellfishFreeOption.textContent = 'Shellfish-Free (unavailable: seafood selected)';
+
+                // Auto-reset if currently selected
+                if (allergyFilterSelect.value === 'shellfish_free') {
+                    allergyFilterSelect.value = 'all';
+                }
+            }
+        }
+
+        // Apply visual styling to disabled options
+        applyDisabledOptionsStyle();
+    }
+
+    // Apply visual styling to disabled select options
+    function applyDisabledOptionsStyle() {
+        const dietTypeSelect = document.getElementById('diet-type');
+        const allergyFilterSelect = document.getElementById('allergy-filter');
+
+        // Style diet type select if it has disabled options
+        if (dietTypeSelect) {
+            const hasDisabled = Array.from(dietTypeSelect.options).some(opt => opt.disabled);
+            if (hasDisabled) {
+                dietTypeSelect.classList.add('has-disabled-options');
+            } else {
+                dietTypeSelect.classList.remove('has-disabled-options');
+            }
+        }
+
+        // Style allergy filter select if it has disabled options
+        if (allergyFilterSelect) {
+            const hasDisabled = Array.from(allergyFilterSelect.options).some(opt => opt.disabled);
+            if (hasDisabled) {
+                allergyFilterSelect.classList.add('has-disabled-options');
+            } else {
+                allergyFilterSelect.classList.remove('has-disabled-options');
+            }
+        }
+    }
+
     // Seasonal data cache (preloaded for performance)
     let seasonalData = null;
     let currentSeason = '';
@@ -2041,6 +2172,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // Initialize diet and allergy options based on restored chip state
+    updateDietAndAllergyOptions();
+
     // Add click event listeners to chips
     filterChips.forEach(chip => {
         chip.addEventListener('click', function() {
@@ -2053,6 +2187,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Save state to localStorage
             saveChipsState();
+
+            // Update diet type and allergy filter options based on active chips
+            updateDietAndAllergyOptions();
 
             // Auto-apply filters when chip is clicked
             updateRecipes(true);
@@ -2071,6 +2208,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Save state
             saveChipsState();
+
+            // Update diet type and allergy filter options
+            updateDietAndAllergyOptions();
 
             // Auto-apply filters
             updateRecipes(true);
