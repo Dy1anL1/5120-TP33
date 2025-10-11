@@ -146,34 +146,49 @@ export function renderTips(tips, container, options = {}) {
   if (!container) return;
   container.innerHTML = "";
 
+  const {
+    title: titleText = "Personalized Daily Tips",
+    subtitle: subtitleText,
+    refreshable = false,
+    note,
+    showHeading = true,
+    refreshPosition = "heading"
+  } = options;
+
+  const effectiveRefreshPosition =
+    refreshable && (!showHeading || refreshPosition === "footer") ? "footer" : refreshPosition;
+
   const wrapper = document.createElement("div");
   wrapper.className = "tips-wrapper";
 
-  const headingWrap = document.createElement("div");
-  headingWrap.className = "tips-heading";
-  const title = document.createElement("h2");
-  title.className = "section-title";
-  title.textContent = options.title || "Personalized Daily Tips";
-  headingWrap.appendChild(title);
-  if (options.subtitle) {
-    const subtitle = document.createElement("p");
-    subtitle.className = "section-subtitle";
-    subtitle.textContent = options.subtitle;
-    headingWrap.appendChild(subtitle);
+  if (showHeading) {
+    const headingWrap = document.createElement("div");
+    headingWrap.className = "tips-heading";
+
+    const title = document.createElement("h2");
+    title.className = "section-title";
+    title.textContent = titleText;
+    headingWrap.appendChild(title);
+
+    if (subtitleText) {
+      const subtitle = document.createElement("p");
+      subtitle.className = "section-subtitle";
+      subtitle.textContent = subtitleText;
+      headingWrap.appendChild(subtitle);
+    }
+
+    if (refreshable && effectiveRefreshPosition === "heading") {
+      const refreshBtn = document.createElement("button");
+      refreshBtn.type = "button";
+      refreshBtn.className = "tips-refresh-btn";
+      refreshBtn.innerHTML = `<i class="fas fa-sync-alt" aria-hidden="true"></i><span>Refresh tips</span>`;
+      refreshBtn.setAttribute("aria-label", "Refresh tips");
+      headingWrap.appendChild(refreshBtn);
+    }
+
+    wrapper.appendChild(headingWrap);
   }
 
-  if (options.refreshable) {
-    const refreshBtn = document.createElement("button");
-    refreshBtn.type = "button";
-    refreshBtn.className = "tips-refresh-btn";
-    refreshBtn.innerHTML = `<i class="fas fa-sync-alt" aria-hidden="true"></i><span>Refresh tips</span>`;
-    refreshBtn.setAttribute("aria-label", "Refresh tips");
-    headingWrap.appendChild(refreshBtn);
-  }
-
-  wrapper.appendChild(headingWrap);
-
-  const note = options.note;
   if (note) {
     const noteEl = document.createElement("p");
     noteEl.className = "tips-note";
@@ -249,6 +264,18 @@ export function renderTips(tips, container, options = {}) {
 
   wrapper.appendChild(list);
   container.appendChild(wrapper);
+
+  if (refreshable && effectiveRefreshPosition === "footer") {
+    const footer = document.createElement("div");
+    footer.className = "tips-footer";
+    const refreshBtn = document.createElement("button");
+    refreshBtn.type = "button";
+    refreshBtn.className = "tips-refresh-btn";
+    refreshBtn.innerHTML = `<i class="fas fa-sync-alt" aria-hidden="true"></i><span>Refresh tips</span>`;
+    refreshBtn.setAttribute("aria-label", "Refresh tips");
+    footer.appendChild(refreshBtn);
+    wrapper.appendChild(footer);
+  }
 }
 
 /* ----------------------------- helpers ----------------------------- */

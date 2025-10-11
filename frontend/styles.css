@@ -6795,30 +6795,30 @@ html {
 }
 
 /* Checked State */
-.seasonal-toggle:checked + .seasonal-label .seasonal-toggle-switch {
+.seasonal-toggle:checked+.seasonal-label .seasonal-toggle-switch {
     background: #4CAF50;
 }
 
-.seasonal-toggle:checked + .seasonal-label .toggle-slider {
+.seasonal-toggle:checked+.seasonal-label .toggle-slider {
     left: 35px;
 }
 
-.seasonal-toggle:checked + .seasonal-label .seasonal-icon {
+.seasonal-toggle:checked+.seasonal-label .seasonal-icon {
     background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
     transform: scale(1.05);
 }
 
-.seasonal-toggle:checked + .seasonal-label .seasonal-icon i {
+.seasonal-toggle:checked+.seasonal-label .seasonal-icon i {
     color: white;
     animation: leafBounce 0.5s ease;
 }
 
-.seasonal-toggle:checked + .seasonal-label .seasonal-title {
+.seasonal-toggle:checked+.seasonal-label .seasonal-title {
     color: #2e7d32;
 }
 
 /* Focus State for Accessibility */
-.seasonal-toggle:focus + .seasonal-label {
+.seasonal-toggle:focus+.seasonal-label {
     outline: 3px solid rgba(76, 175, 80, 0.3);
     outline-offset: 2px;
     border-radius: 16px;
@@ -6962,6 +6962,7 @@ html {
         transform: translateY(-50px);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;
@@ -7060,7 +7061,7 @@ html {
 }
 
 .tips-heading .section-title {
-    margin-bottom: 1rem;
+    margin-bottom: 1px;
     font-size: 2.6rem;
     color: #2e7d32;
     text-align: center;
@@ -7073,6 +7074,7 @@ html {
     font-size: 1.4rem;
     text-align: center;
     line-height: 1.6;
+    margin-bottom: 20px;
 }
 
 .tips-heading {
@@ -7339,6 +7341,7 @@ html {
         padding: 0.9rem 1.8rem;
     }
 }
+
 .tips-filter-wrapper {
     background: #f1faf4;
     border: 2px solid #d4efd9;
@@ -7425,17 +7428,9 @@ html {
 }
 
 .tips-filter-hint {
-    margin: 0.25rem 0 0;
-    font-size: 1rem;
+    margin: 0.7rem 0 0;
+    font-size: 1.2rem;
     color: #4f5b62;
-}
-
-.tips-filter-status {
-    margin-top: 0.75rem;
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: #2e7d32;
-    min-height: 1.4rem;
 }
 
 @media (max-width: 768px) {
@@ -7452,4 +7447,15 @@ html {
         width: 100%;
         justify-content: center;
     }
+}
+
+.tips-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.tips-footer .tips-refresh-btn {
+    font-size: 1.1rem;
+    padding: 0.9rem 1.8rem;
 }
