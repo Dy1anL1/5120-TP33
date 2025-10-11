@@ -1716,11 +1716,22 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (cardsContainer && reset) cardsContainer.innerHTML = createLoadingHTML('Loading Recipes', 'Finding the best recipes for you');
         try {
-            const { items = [], next_token } = await fetchRecipes({ keyword, category, diet_type, allergy_filter, nextToken: reset ? null : nextToken });
+            // Smart fetch: increase limit for keyword search to get more results for filtering
+            const hasKeyword = keyword && keyword.trim();
+            const fetchLimit = hasKeyword ? 100 : 10;
+
+            const { items = [], next_token } = await fetchRecipes({
+                keyword,
+                category,
+                diet_type,
+                allergy_filter,
+                limit: fetchLimit,
+                nextToken: reset ? null : nextToken
+            });
             let filteredItems = items;
 
             // Client-side keyword filtering (because title_prefix API doesn't work)
-            if (keyword && keyword.trim()) {
+            if (hasKeyword) {
                 const searchLower = keyword.toLowerCase().trim();
                 filteredItems = filteredItems.filter(r => {
                     const title = (r.title || '').toLowerCase();
@@ -1728,6 +1739,45 @@ document.addEventListener('DOMContentLoaded', function () {
                     const ingredients = Array.isArray(r.ingredients) ? r.ingredients.join(' ').toLowerCase() : '';
                     return title.includes(searchLower) || description.includes(searchLower) || ingredients.includes(searchLower);
                 });
+
+                // Auto-fetch more if we don't have enough results
+                const MIN_RESULTS = 5;
+                let tempNextToken = next_token;
+                let fetchRound = 1;
+                const MAX_ROUNDS = 5;
+
+                while (filteredItems.length < MIN_RESULTS && tempNextToken && fetchRound < MAX_ROUNDS) {
+                    if (cardsContainer) {
+                        cardsContainer.innerHTML = createLoadingHTML(
+                            'Searching More Recipes',
+                            `Found ${filteredItems.length} matches, looking for more...`
+                        );
+                    }
+
+                    const moreFetch = await fetchRecipes({
+                        keyword,
+                        category,
+                        diet_type,
+                        allergy_filter,
+                        limit: 100,
+                        nextToken: tempNextToken
+                    });
+
+                    const moreMatches = moreFetch.items.filter(r => {
+                        const title = (r.title || '').toLowerCase();
+                        const description = (r.description || '').toLowerCase();
+                        const ingredients = Array.isArray(r.ingredients) ? r.ingredients.join(' ').toLowerCase() : '';
+                        return title.includes(searchLower) || description.includes(searchLower) || ingredients.includes(searchLower);
+                    });
+
+                    filteredItems.push(...moreMatches);
+                    tempNextToken = moreFetch.next_token;
+                    fetchRound++;
+                }
+
+                nextToken = tempNextToken;
+            } else {
+                nextToken = next_token;
             }
 
             // Remove duplicates and already displayed recipes
