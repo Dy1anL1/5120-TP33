@@ -5779,6 +5779,7 @@ html {
     flex-direction: column;
     min-height: 480px;
     height: 100%;
+    width: 100%;
 }
 
 .recommended-section .recipe-card:hover {
@@ -5817,6 +5818,7 @@ html {
     flex-direction: column;
     gap: 0.75rem;
     min-height: 0;
+    width: 100%;
 }
 
 .recipe-title {
@@ -5894,6 +5896,8 @@ html {
     gap: 0.6rem;
     transition: all 0.3s ease;
     box-sizing: border-box;
+    white-space: nowrap;
+    min-height: 48px;
 }
 
 .btn-refresh {
@@ -7406,7 +7410,7 @@ html {
 .tips-filter-options {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: 0.85rem;
 }
 
 .tips-filter-option {
@@ -7419,31 +7423,54 @@ html {
     padding: 0.55rem 1rem;
     font-size: 1.05rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
 }
 
-.tips-filter-option:hover,
+.tips-filter-option:hover {
+    border-color: #4caf50;
+    background: #f1f8f4;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(76, 175, 80, 0.15);
+}
+
 .tips-filter-option:focus-within {
     border-color: #4caf50;
     background: #e8f5e9;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
+}
+
+/* Selected state - when checkbox is checked */
+.tips-filter-option:has(.tips-filter-checkbox:checked) {
+    background: #e8f5e9;
+    border-color: #2e7d32;
+    font-weight: 600;
 }
 
 .tips-filter-checkbox {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     accent-color: #2e7d32;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .tips-filter-checkbox:focus-visible {
     outline: 3px solid #4caf50;
     outline-offset: 2px;
+    border-radius: 4px;
 }
 
 .tips-filter-label {
     font-weight: 600;
     cursor: pointer;
     user-select: none;
+    color: #333;
+    transition: color 0.2s ease;
+}
+
+/* Label color change when checkbox is checked */
+.tips-filter-checkbox:checked + .tips-filter-label {
+    color: #2e7d32;
 }
 
 .tips-filter-empty {
@@ -7456,15 +7483,32 @@ html {
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;
-    margin-top: 0.5rem;
+    margin-top: 0.75rem;
 }
 
 .tips-filter-actions .btn {
     display: inline-flex;
     align-items: center;
     gap: 0.6rem;
-    padding: 0.75rem 1.6rem;
+    padding: 0.8rem 1.8rem;
     font-size: 1.05rem;
+    font-weight: 600;
+    min-width: 160px;
+    justify-content: center;
+    transition: all 0.25s ease;
+}
+
+.tips-filter-actions .btn-primary {
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+}
+
+.tips-filter-actions .btn-primary:hover {
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    transform: translateY(-2px);
+}
+
+.tips-filter-actions .btn-secondary:hover {
+    transform: translateY(-1px);
 }
 
 .tips-filter-hint {
@@ -7476,16 +7520,64 @@ html {
 @media (max-width: 768px) {
     .tips-filter-wrapper {
         padding: 1.5rem 1.25rem;
+        border-radius: 16px;
+    }
+
+    .tips-filter-group legend {
+        font-size: 1.1rem;
+    }
+
+    .tips-filter-options {
+        gap: 0.7rem;
+    }
+
+    .tips-filter-option {
+        padding: 0.5rem 0.9rem;
+        font-size: 1rem;
+    }
+
+    .tips-filter-checkbox {
+        width: 20px;
+        height: 20px;
     }
 
     .tips-filter-actions {
         flex-direction: column;
         align-items: stretch;
+        gap: 0.75rem;
     }
 
     .tips-filter-actions .btn {
         width: 100%;
+        min-width: unset;
         justify-content: center;
+        padding: 0.85rem 1.5rem;
+    }
+
+    .tips-filter-hint {
+        font-size: 1.05rem;
+        line-height: 1.5;
+    }
+}
+
+@media (max-width: 480px) {
+    .tips-filter-wrapper {
+        padding: 1.25rem 1rem;
+    }
+
+    .tips-filter-group legend {
+        font-size: 1.05rem;
+    }
+
+    .filter-hint-inline {
+        display: block;
+        margin-left: 0;
+        margin-top: 0.25rem;
+    }
+
+    .tips-filter-option {
+        font-size: 0.95rem;
+        padding: 0.45rem 0.8rem;
     }
 }
 
