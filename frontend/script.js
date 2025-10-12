@@ -1920,7 +1920,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const MAX_ROUNDS = 5;
 
                 while (filteredItems.length < MIN_RESULTS && tempNextToken && fetchRound < MAX_ROUNDS) {
-                    if (cardsContainer) {
+                    if (cardsContainer && reset) {
                         cardsContainer.innerHTML = createLoadingHTML(
                             'Searching More Recipes',
                             `Found ${filteredItems.length} matches, looking for more...`
@@ -2074,6 +2074,15 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             removeInlineLoader();
             nextToken = next_token || null;
+
+            // Auto-continue loading if no new results were displayed in Load More scenario
+            if (!reset && filteredItems.length === 0 && nextToken) {
+                // No new results after filtering, but more data available - auto-load next batch
+                console.log('Auto-continuing load: no new results found, fetching next batch...');
+                updateRecipes(false); // Recursively call to load more
+                return; // Exit early to avoid showing Load More button prematurely
+            }
+
             // Pagination button
             let loadMoreBtn = document.getElementById('load-more-btn');
             if (loadMoreBtn) loadMoreBtn.remove();
