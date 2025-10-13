@@ -187,7 +187,7 @@
 			</div>
 			-->
 			
-			<button class="mobile-menu-btn" aria-label="Toggle mobile menu" aria-expanded="false">
+			<button class="mobile-menu-btn" aria-label="Toggle mobile menu">
 				<i class="fas fa-bars"></i>
 			</button>
 		</div>
@@ -248,29 +248,41 @@
 		<section class="features-section scroll-to-section" id="features">
 			<div class="section-container">
 				<div class="features-container">
+					<a class="feature-item" href="explore-recipes.html">
+						<div class="feature-icon">
+							<i class="fas fa-search"></i>
+						</div>
+						<span class="feature-text">All Recipes</span>
+					</a>
+					<a class="feature-item" href="seasonal-produce.html">
+						<div class="feature-icon">
+							<i class="fas fa-leaf"></i>
+						</div>
+						<span class="feature-text">Seasonal Produce</span>
+					</a>
 					<a class="feature-item" href="meal-planning.html">
 						<div class="feature-icon">
-							<i class="fas fa-calendar"></i>
+							<i class="fas fa-calendar-alt"></i>
 						</div>
 						<span class="feature-text">Meal Planning</span>
 					</a>
 					<a class="feature-item" href="shopping-list.html">
 						<div class="feature-icon">
-							<i class="fas fa-bolt"></i>
+							<i class="fas fa-shopping-cart"></i>
 						</div>
 						<span class="feature-text">Shopping List</span>
+					</a>
+					<a class="feature-item" href="nutrition-dashboard.html">
+						<div class="feature-icon">
+							<i class="fas fa-chart-line"></i>
+						</div>
+						<span class="feature-text">Nutrition Dashboard</span>
 					</a>
 					<a class="feature-item" href="daily-recommendations.html">
 						<div class="feature-icon">
 							<i class="fas fa-heart"></i>
 						</div>
-						<span class="feature-text">Recommendations</span>
-					</a>
-					<a class="feature-item" href="explore-recipes.html">
-						<div class="feature-icon">
-							<i class="fas fa-chart-bar"></i>
-						</div>
-						<span class="feature-text">All Recipes</span>
+						<span class="feature-text">Daily Tips</span>
 					</a>
 				</div>
 			</div>
@@ -324,14 +336,6 @@
 			}
 			
 			lastScrollTop = scrollTop;
-		});
-
-		// Mobile menu toggle
-		const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-		const navLinks = document.querySelector('.nav-links');
-
-		mobileMenuBtn.addEventListener('click', function() {
-			navLinks.classList.toggle('show');
 		});
 
 		// Smooth scroll to sections
