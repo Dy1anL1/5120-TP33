@@ -1576,7 +1576,7 @@ document.addEventListener('DOMContentLoaded', function () {
         chicken: ['chicken', 'chicken breast', 'chicken thigh', 'chicken thighs', 'chicken wing', 'chicken wings', 'drumstick', 'rotisserie chicken', 'hen'],
         beef: ['beef', 'ground beef', 'beef mince', 'minced beef', 'steak', 'sirloin', 'ribeye', 't-bone', 'brisket', 'chuck', 'short rib', 'oxtail'],
         pork: ['pork', 'pork belly', 'ground pork', 'bacon', 'ham', 'prosciutto', 'pancetta', 'sausage', 'chorizo'],
-        seafood: ['fish', 'salmon', 'tuna', 'cod', 'haddock', 'halibut', 'trout', 'snapper', 'tilapia', 'mackerel', 'sardine', 'anchovy', 'sea bass'],
+        fish: ['fish', 'salmon', 'tuna', 'cod', 'haddock', 'halibut', 'trout', 'snapper', 'tilapia', 'mackerel', 'sardine', 'anchovy', 'sea bass'],
         shellfish: ['shrimp', 'shrimps', 'prawn', 'prawns', 'lobster', 'crab', 'crabmeat', 'oyster', 'oysters', 'mussel', 'mussels', 'clam', 'clams', 'scallop', 'scallops', 'scampi', 'crayfish']
     };
 
@@ -1586,9 +1586,9 @@ document.addEventListener('DOMContentLoaded', function () {
     function loadChipsState() {
         try {
             const stored = localStorage.getItem(CHIPS_STORAGE_KEY);
-            return stored ? JSON.parse(stored) : { chicken: false, beef: false, pork: false, seafood: false, shellfish: false };
+            return stored ? JSON.parse(stored) : { chicken: false, beef: false, pork: false, fish: false, shellfish: false };
         } catch {
-            return { chicken: false, beef: false, pork: false, seafood: false, shellfish: false };
+            return { chicken: false, beef: false, pork: false, fish: false, shellfish: false };
         }
     }
 
@@ -1609,14 +1609,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Determine active meat types
         const hasMeat = chipsState.chicken || chipsState.beef || chipsState.pork;
-        const hasSeafood = chipsState.seafood;
+        const hasFish = chipsState.fish;
         const hasShellfish = chipsState.shellfish;
 
         // Diet Type Logic
         const vegetarianOption = dietTypeSelect.querySelector('option[value="vegetarian"]');
         const veganOption = dietTypeSelect.querySelector('option[value="vegan"]');
 
-        if (hasMeat || hasSeafood || hasShellfish) {
+        if (hasMeat || hasFish || hasShellfish) {
             // Disable Vegetarian & Vegan if any animal protein is selected
             if (vegetarianOption) {
                 vegetarianOption.disabled = true;
@@ -1677,25 +1677,14 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // If seafood is selected, disable both fish-free and shellfish-free
-        if (hasSeafood) {
+        // If fish is selected, disable fish-free
+        if (hasFish) {
             if (fishFreeOption) {
                 fishFreeOption.disabled = true;
-                fishFreeOption.textContent = 'Fish-Free (unavailable: seafood selected)';
+                fishFreeOption.textContent = 'Fish-Free (unavailable: fish selected)';
 
                 // Auto-reset if currently selected
                 if (allergyFilterSelect.value === 'fish_free') {
-                    allergyFilterSelect.value = 'all';
-                }
-            }
-
-            // Seafood also includes shellfish, so disable shellfish-free too
-            if (shellfishFreeOption && !shellfishFreeOption.disabled) {
-                shellfishFreeOption.disabled = true;
-                shellfishFreeOption.textContent = 'Shellfish-Free (unavailable: seafood selected)';
-
-                // Auto-reset if currently selected
-                if (allergyFilterSelect.value === 'shellfish_free') {
                     allergyFilterSelect.value = 'all';
                 }
             }
@@ -2201,7 +2190,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Add click event listeners to chips
     filterChips.forEach(chip => {
-        chip.addEventListener('click', function() {
+        chip.addEventListener('click', function () {
             const chipType = this.dataset.chip;
             const isPressed = this.getAttribute('aria-pressed') === 'true';
 
@@ -2222,7 +2211,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Clear chips button handler
     if (clearChipsBtn) {
-        clearChipsBtn.addEventListener('click', function() {
+        clearChipsBtn.addEventListener('click', function () {
             // Reset all chip states
             filterChips.forEach(chip => {
                 chip.setAttribute('aria-pressed', 'false');
