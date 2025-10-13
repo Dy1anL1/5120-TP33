@@ -1851,6 +1851,8 @@ h6 {
 
 html {
     height: 100%;
+    overflow-x: hidden;
+    max-width: 100vw;
 }
 
 body {
@@ -1861,6 +1863,8 @@ body {
     min-height: 100%;
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
+    max-width: 100vw;
 }
 
 /* Navigation Bar Styles */
@@ -4283,8 +4287,17 @@ html {
         font-size: 1.8rem;
     }
 
+    .section-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
     .search-filter-section {
         padding: 20px 15px;
+        max-width: 100%;
+        width: 100%;
     }
 
     .search-filter-box {
