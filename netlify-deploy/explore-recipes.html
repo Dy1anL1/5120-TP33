@@ -34,13 +34,9 @@
                     <i class="fas fa-search"></i>
                     <span>Recipes</span>
                 </a>
-                <a href="nutrition-dashboard.html" class="nav-link">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="daily-recommendations.html" class="nav-link">
-                    <i class="fas fa-heart"></i>
-                    <span>Daily Tips</span>
+                <a href="seasonal-produce.html" class="nav-link">
+                    <i class="fas fa-leaf"></i>
+                    <span>Seasonal</span>
                 </a>
                 <a href="meal-planning.html" class="nav-link">
                     <i class="fas fa-calendar-alt"></i>
@@ -49,6 +45,14 @@
                 <a href="shopping-list.html" class="nav-link">
                     <i class="fas fa-shopping-cart"></i>
                     <span>Shopping</span>
+                </a>
+                <a href="nutrition-dashboard.html" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="daily-recommendations.html" class="nav-link">
+                    <i class="fas fa-heart"></i>
+                    <span>Daily Tips</span>
                 </a>
             </div>
             
@@ -91,7 +95,38 @@
                         <i class="fas fa-search"></i>
                         <input type="text" placeholder="Search recipes, ingredients, or health benefits..." class="search-input">
                     </div>
-                    
+
+                    <!-- Quick Filter Chips -->
+                    <div class="quick-filter-chips">
+                        <div class="chips-label">Quick Filters:</div>
+                        <div class="chips-container">
+                            <button class="filter-chip" data-chip="chicken" aria-pressed="false">
+                                <i class="fas fa-drumstick-bite"></i>
+                                <span>Chicken</span>
+                            </button>
+                            <button class="filter-chip" data-chip="beef" aria-pressed="false">
+                                <i class="fas fa-bacon"></i>
+                                <span>Beef</span>
+                            </button>
+                            <button class="filter-chip" data-chip="pork" aria-pressed="false">
+                                <i class="fas fa-bacon"></i>
+                                <span>Pork</span>
+                            </button>
+                            <button class="filter-chip" data-chip="fish" aria-pressed="false">
+                                <i class="fas fa-fish"></i>
+                                <span>Fish</span>
+                            </button>
+                            <button class="filter-chip" data-chip="shellfish" aria-pressed="false">
+                                <i class="fas fa-shrimp"></i>
+                                <span>Shellfish</span>
+                            </button>
+                            <button class="filter-chip-clear" id="clear-chips">
+                                <i class="fas fa-times-circle"></i>
+                                <span>Clear</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="filter-options">
                         <div class="filter-group">
                             <label for="recipe-category">Recipe Category</label>
@@ -137,7 +172,26 @@
                             </select>
                         </div>
                     </div>
-                    
+
+                    <!-- Seasonal Filter Card -->
+                    <div class="seasonal-filter-card">
+                        <input type="checkbox" id="seasonal-filter" class="seasonal-toggle">
+                        <label for="seasonal-filter" class="seasonal-label">
+                            <div class="seasonal-icon">
+                                <i class="fas fa-leaf"></i>
+                            </div>
+                            <div class="seasonal-content">
+                                <div class="seasonal-title">Seasonal Recipes</div>
+                                <div class="seasonal-hint" id="current-season-hint">
+                                    Fresh ingredients in season now
+                                </div>
+                            </div>
+                            <div class="seasonal-toggle-switch">
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+
                     <div class="filter-group">
                         <label for="sort-by">Sort By</label>
                         <select id="sort-by" class="filter-select">
@@ -146,13 +200,13 @@
                             <option value="calories-low">Calories (Low to High)</option>
                             <option value="protein-high">Protein (High to Low)</option>
                             <option value="protein-low">Protein (Low to High)</option>
-                            <option value="fat-high">Fat (High to Low)</option>
-                            <option value="fat-low">Fat (Low to High)</option>
-                            <option value="sodium-high">Sodium (High to Low)</option>
-                            <option value="sodium-low">Sodium (Low to High)</option>
+                            <option value="calcium-high">Calcium (High to Low)</option>
+                            <option value="calcium-low">Calcium (Low to High)</option>
+                            <option value="vitamin_d-high">Vitamin D (High to Low)</option>
+                            <option value="vitamin_d-low">Vitamin D (Low to High)</option>
                         </select>
                     </div>
-                    
+
                     <button class="btn btn-primary apply-filters-btn">
                         <i class="fas fa-filter"></i>
                         <span>Apply Filters</span>
@@ -176,26 +230,25 @@
         <!-- Recipe Modal -->
         <div id="recipe-modal" class="modal" aria-hidden="true" style="display:none">
             <div class="modal-backdrop"></div>
-            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
+            <div class="modal-card recipe-modal-new" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
                 <button class="modal-close" aria-label="Close">&times;</button>
-                
-                <!-- Recipe Image in Modal -->
-                <div id="recipe-modal-image" class="modal-recipe-image" style="display:none;">
-                    <img id="recipe-modal-img" src="" alt="" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;">
-                </div>
-                
-                <h2 id="recipe-modal-title" class="recipe-title"></h2>
 
-                <!-- Nutrition Summary (Top Section) -->
-                <div class="nutrition-top-section" style="margin-bottom: 1.5rem;">
-                    <h3>Nutrition Information</h3>
-                    <div id="nutrition-summary" class="nutri-grid">
-                        <!-- nutrition cards inserted by JS -->
+                <!-- Hero Image Header -->
+                <div id="recipe-modal-image" class="recipe-modal-hero">
+                    <img id="recipe-modal-img" src="" alt="Recipe Image" />
+                    <div class="recipe-modal-overlay">
+                        <h2 id="recipe-modal-title" class="recipe-modal-hero-title"></h2>
                     </div>
                 </div>
 
+                <!-- Nutrition Summary (Top Section) -->
+                <div class="nutrition-top-section" style="margin: 1.5rem 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: #333; font-size: 1.3rem;">Nutrition Information</h3>
+                    <div id="nutrition-summary" class="nutrition-grid"></div>
+                </div>
+
                 <!-- Action Buttons -->
-                <div class="modal-buttons" style="margin-bottom: 1.5rem; text-align: center; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
+                <div class="modal-buttons" style="margin: 0 2rem 1.5rem; text-align: center; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
                     <button id="add-to-dashboard" class="btn btn-primary">
                         Add to Nutrition Dashboard
                     </button>
@@ -205,16 +258,23 @@
                     </button>
                 </div>
 
-                <!-- Ingredients and Instructions (Two Columns) -->
-                <div class="modal-cols">
-                    <div class="modal-col">
-                        <h3>Ingredients</h3>
-                        <ul id="recipe-ingredients" class="ingredients-list"></ul>
-                    </div>
+                <!-- Tabs -->
+                <div class="recipe-modal-tabs">
+                    <button class="recipe-tab active" data-tab="ingredients">
+                        <i class="fas fa-list-ul"></i> Ingredients
+                    </button>
+                    <button class="recipe-tab" data-tab="instructions">
+                        <i class="fas fa-tasks"></i> Instructions
+                    </button>
+                </div>
 
-                    <div class="modal-col">
-                        <h3>Instructions</h3>
-                        <ol id="recipe-directions" class="directions-list"></ol>
+                <!-- Tab Content -->
+                <div class="recipe-modal-content">
+                    <div id="tab-ingredients" class="recipe-tab-content active">
+                        <ul id="recipe-ingredients" class="recipe-ingredients-list"></ul>
+                    </div>
+                    <div id="tab-instructions" class="recipe-tab-content">
+                        <ol id="recipe-directions" class="recipe-instructions-list"></ol>
                     </div>
                 </div>
             </div>
@@ -233,5 +293,27 @@
 
     <script src="config.js"></script>
     <script src="script.js"></script>
+    <script>
+        // Add tab switching functionality for recipe modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('recipe-modal');
+            if (modal) {
+                const tabs = modal.querySelectorAll('.recipe-tab');
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', function() {
+                        const targetTab = this.dataset.tab;
+
+                        // Remove active class from all tabs and contents
+                        modal.querySelectorAll('.recipe-tab').forEach(t => t.classList.remove('active'));
+                        modal.querySelectorAll('.recipe-tab-content').forEach(c => c.classList.remove('active'));
+
+                        // Add active class to clicked tab and corresponding content
+                        this.classList.add('active');
+                        modal.querySelector(`#tab-${targetTab}`).classList.add('active');
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>

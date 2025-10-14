@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -33,13 +33,9 @@
                     <i class="fas fa-search"></i>
                     <span>Recipes</span>
                 </a>
-                <a href="nutrition-dashboard.html" class="nav-link">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="daily-recommendations.html" class="nav-link active">
-                    <i class="fas fa-heart"></i>
-                    <span>Daily Tips</span>
+                <a href="seasonal-produce.html" class="nav-link">
+                    <i class="fas fa-leaf"></i>
+                    <span>Seasonal</span>
                 </a>
                 <a href="meal-planning.html" class="nav-link">
                     <i class="fas fa-calendar-alt"></i>
@@ -48,6 +44,14 @@
                 <a href="shopping-list.html" class="nav-link">
                     <i class="fas fa-shopping-cart"></i>
                     <span>Shopping</span>
+                </a>
+                <a href="nutrition-dashboard.html" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="daily-recommendations.html" class="nav-link active">
+                    <i class="fas fa-heart"></i>
+                    <span>Daily Tips</span>
                 </a>
             </div>
             
@@ -88,13 +92,16 @@
                         <h2>Today's Featured Tip</h2>
                         <h3>Stay Hydrated for Better Energy</h3>
                         <p>Drink a glass of water first thing in the morning to kickstart your metabolism. Proper hydration helps maintain energy levels, supports digestion, and keeps your skin healthy. Aim for 8-10 glasses throughout the day.</p>
-                        <div class="tip-action">
-                            <button class="btn btn-primary tip-btn">
-                                <i class="fas fa-tint"></i>
-                                Track Water Intake
-                            </button>
-                        </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Personalized Daily Tips -->
+        <section id="daily-tips" aria-label="Daily Health Tips">
+            <div class="section-container">
+                <div class="tips-loading" role="status">
+                    <span class="tips-loading-text">Loading personalized tips...</span>
                 </div>
             </div>
         </section>
@@ -124,9 +131,6 @@
                                 <span class="stat-label">per meal</span>
                             </div>
                         </div>
-                        <div class="card-action">
-                            <a href="explore-recipes.html" class="action-link">Find Protein Recipes</a>
-                        </div>
                     </div>
 
                     <!-- Exercise Recommendation -->
@@ -144,10 +148,7 @@
                                 <span class="stat-number">30 min</span>
                                 <span class="stat-label">recommended</span>
                             </div>
-                        </div>
-                        <div class="card-action">
-                            <a href="#" class="action-link">View Exercise Tips</a>
-                        </div>
+                        </div>                    
                     </div>
 
                     <!-- Hydration Recommendation -->
@@ -165,10 +166,7 @@
                                 <span class="stat-number">8-10</span>
                                 <span class="stat-label">glasses/day</span>
                             </div>
-                        </div>
-                        <div class="card-action">
-                            <a href="#" class="action-link">Hydration Tracker</a>
-                        </div>
+                        </div>                        
                     </div>
 
                     <!-- Sleep Recommendation -->
@@ -186,9 +184,6 @@
                                 <span class="stat-number">7-9</span>
                                 <span class="stat-label">hours ideal</span>
                             </div>
-                        </div>
-                        <div class="card-action">
-                            <a href="#" class="action-link">Sleep Better Tips</a>
                         </div>
                     </div>
 
@@ -208,9 +203,6 @@
                                 <span class="stat-label">interaction</span>
                             </div>
                         </div>
-                        <div class="card-action">
-                            <a href="meal-planning.html" class="action-link">Plan Social Meals</a>
-                        </div>
                     </div>
 
                     <!-- Preventive Care Recommendation -->
@@ -228,9 +220,6 @@
                                 <span class="stat-number">5-9</span>
                                 <span class="stat-label">fruits/veg daily</span>
                             </div>
-                        </div>
-                        <div class="card-action">
-                            <a href="nutrition-dashboard.html" class="action-link">Track Nutrition</a>
                         </div>
                     </div>
                 </div>
@@ -262,12 +251,132 @@
                                 <i class="fas fa-check-circle"></i>
                                 <span>Try weight-bearing exercises like walking</span>
                             </div>
+                        </div>                    
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Health News Section -->
+        <section class="health-news-section">
+            <div class="section-container">
+                <div class="section-title-wrapper">
+                    <h2 class="section-title">Latest Health News</h2>
+                    <p class="section-subtitle">Stay informed with the latest nutrition and wellness research</p>
+                </div>
+                
+                <div class="news-grid">
+                    <div class="news-card">
+                        <div class="news-image">
+                            <i class="fas fa-heartbeat"></i>
                         </div>
-                        <div class="focus-action">
-                            <button class="btn btn-secondary">
-                                <i class="fas fa-bone"></i>
-                                View Bone Health Recipes
-                            </button>
+                        <div class="news-content">
+                            <div class="news-category">Cardiovascular Health</div>
+                            <h3 class="news-title">New Study Shows Mediterranean Diet Reduces Heart Disease Risk</h3>
+                            <p class="news-summary">Recent research confirms that following a Mediterranean diet pattern can significantly reduce cardiovascular disease risk in older adults.</p>
+                            <div class="news-meta">
+                                <span class="news-date">October 3, 2024</span>
+                                <span class="news-source">Mayo Clinic</span>
+                            </div>
+                            <a href="https://www.mayoclinic.org/healthy-lifestyle/nutrition-and-healthy-eating/in-depth/mediterranean-diet/art-20047801" target="_blank" class="news-link">
+                                <i class="fas fa-external-link-alt"></i>
+                                Read Full Article
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="news-card">
+                        <div class="news-image">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div class="news-content">
+                            <div class="news-category">Brain Health</div>
+                            <h3 class="news-title">Omega-3 Fatty Acids Linked to Better Cognitive Function</h3>
+                            <p class="news-summary">A comprehensive study reveals that regular consumption of omega-3 rich foods may help maintain cognitive abilities as we age.</p>
+                            <div class="news-meta">
+                                <span class="news-date">October 1, 2024</span>
+                                <span class="news-source">Mayo Clinic</span>
+                            </div>
+                            <a href="https://www.mayoclinic.org/drugs-supplements-fish-oil/art-20364810" target="_blank" class="news-link">
+                                <i class="fas fa-external-link-alt"></i>
+                                Read Full Article
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="news-card">
+                        <div class="news-image">
+                            <i class="fas fa-bone"></i>
+                        </div>
+                        <div class="news-content">
+                            <div class="news-category">Bone Health</div>
+                            <h3 class="news-title">Vitamin D and Calcium: Essential for Senior Bone Strength</h3>
+                            <p class="news-summary">New guidelines emphasize the importance of adequate vitamin D and calcium intake for preventing osteoporosis in older adults.</p>
+                            <div class="news-meta">
+                                <span class="news-date">September 28, 2024</span>
+                                <span class="news-source">Mayo Clinic</span>
+                            </div>
+                            <a href="https://www.mayoclinic.org/healthy-lifestyle/adult-health/in-depth/bone-health/art-20045060" target="_blank" class="news-link">
+                                <i class="fas fa-external-link-alt"></i>
+                                Read Full Article
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="news-card">
+                        <div class="news-image">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <div class="news-content">
+                            <div class="news-category">Nutrition</div>
+                            <h3 class="news-title">Plant-Based Proteins Show Benefits for Aging Muscles</h3>
+                            <p class="news-summary">Research suggests that incorporating more plant-based proteins can help maintain muscle mass and strength in seniors.</p>
+                            <div class="news-meta">
+                                <span class="news-date">September 25, 2024</span>
+                                <span class="news-source">Mayo Clinic</span>
+                            </div>
+                            <a href="https://www.mayoclinic.org/healthy-lifestyle/nutrition-and-healthy-eating/basics/nutrition-basics/hlv-20049477" target="_blank" class="news-link">
+                                <i class="fas fa-external-link-alt"></i>
+                                Read Full Article
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="news-card">
+                        <div class="news-image">
+                            <i class="fas fa-moon"></i>
+                        </div>
+                        <div class="news-content">
+                            <div class="news-category">Sleep Health</div>
+                            <h3 class="news-title">Sleep Quality Improves with Evening Meal Timing</h3>
+                            <p class="news-summary">A new study finds that eating dinner earlier and avoiding late-night snacks can significantly improve sleep quality in older adults.</p>
+                            <div class="news-meta">
+                                <span class="news-date">September 22, 2024</span>
+                                <span class="news-source">Mayo Clinic</span>
+                            </div>
+                            <a href="https://diet.mayoclinic.org/us/blog/2022/healthy-habits-for-a-better-night-s-sleep/" target="_blank" class="news-link">
+                                <i class="fas fa-external-link-alt"></i>
+                                Read Full Article
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="news-card">
+                        <div class="news-image">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="news-content">
+                            <div class="news-category">Social Health</div>
+                            <h3 class="news-title">Social Dining Enhances Nutritional Intake</h3>
+                            <p class="news-summary">Research confirms that eating meals with others leads to better nutrition choices and improved overall health outcomes.</p>
+                            <div class="news-meta">
+                                <span class="news-date">September 20, 2024</span>
+                                <span class="news-source">ScienceDirect</span>
+                            </div>
+                            <a href="https://www.sciencedirect.com/science/article/pii/S019566632400388X" target="_blank" class="news-link">
+                                <i class="fas fa-external-link-alt"></i>
+                                Read Full Article
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -321,12 +430,471 @@
         <div class="section-container">
             <div class="footer-content">
                 <p class="footer-text">Supporting healthy eating habits for a better life</p>
-                <p class="footer-copyright">© 2024 Silver Spoon Society. Designed for senior wellness.</p>
+                <p class="footer-copyright">Â© 2024 Silver Spoon Society. Designed for senior wellness.</p>
             </div>
         </div>
-    </footer>
-
-    <script src="config.js"></script>
+    </footer>    <script src="config.js"></script>
     <script src="script.js"></script>
+    <script type="module">
+        import {
+            loadHealthTips,
+            getUserProfile,
+            filterTips,
+            pickDailyTips,
+            renderTips,
+            getRefreshCounter,
+            incrementRefreshCounter,
+            resetRefreshCounter
+        } from './health-tips.js';
+
+        const tipsSection = document.getElementById('daily-tips');
+        const FILTER_STORAGE_KEY = 'dailyTipsFilters';
+
+        let allTipsCache = [];
+        let baseTips = [];
+        let profileCache = {};
+        let desiredTipCount = 4;
+        let baseNote;
+        let usingFallbackData = false;
+        let activeFilters = loadStoredFilters();
+        let filterOptions = { categories: [], types: [] };
+        let currentRefreshCounter;
+
+        let filterForm;
+        let tipsResultsContainer;
+
+        if (tipsSection) {
+            const currentDate = dateKey();
+            const storedDate = sessionStorage.getItem('dailyTipsDate');
+            if (storedDate !== currentDate) {
+                resetRefreshCounter();
+                sessionStorage.setItem('dailyTipsDate', currentDate);
+            }
+            initializeSectionSkeleton();
+            buildInitialTips();
+        }
+
+        async function buildInitialTips(refreshCounterOverride) {
+            setLoadingState();
+
+            try {
+                const [allTips, profile] = await Promise.all([
+                    loadHealthTips(),
+                    Promise.resolve(getUserProfile())
+                ]);
+
+                allTipsCache = Array.isArray(allTips) ? allTips : [];
+                profileCache = profile || {};
+                usingFallbackData = allTipsCache.length > 0 && allTipsCache.every(tip => tip._fallback);
+
+                const personalized = filterTips(allTipsCache, profileCache);
+
+                let note;
+                let sourceTips = personalized;
+                let desiredCount = 4;
+
+                if (personalized.length === 0 && !usingFallbackData) {
+                    const generalTips = allTipsCache.filter(
+                        tip => tip.type === 'lifestyle' || normalizeKey(tip.category) === 'balanced_diet'
+                    );
+                    note = 'No personalized tips found. Showing general tips.';
+                    sourceTips = generalTips.length ? generalTips : allTipsCache;
+                    desiredCount = Math.min(3, Math.max(2, sourceTips.length));
+                } else if (usingFallbackData) {
+                    note = 'Unable to load personalized tips. Showing a default reminder.';
+                    sourceTips = allTipsCache;
+                    desiredCount = Math.min(2, sourceTips.length);
+                }
+
+                if (!sourceTips.length) {
+                    sourceTips = allTipsCache;
+                }
+
+                baseTips = Array.isArray(sourceTips) ? sourceTips : [];
+                baseNote = note;
+                desiredTipCount = desiredCount;
+
+                // Derive filter options from ALL tips, not just personalized ones
+                filterOptions = deriveFilterOptions(allTipsCache);
+                renderFilterControls();
+
+                currentRefreshCounter = Number.isFinite(refreshCounterOverride)
+                    ? refreshCounterOverride
+                    : getRefreshCounter();
+
+                renderCurrentTips(currentRefreshCounter);
+            } catch (error) {
+                console.error('[daily-tips] Failed to initialize tips:', error);
+                if (tipsResultsContainer) {
+                    renderTips([], tipsResultsContainer, {
+                        note: 'Tips are temporarily unavailable. Please try again later.',
+                        showHeading: false
+                    });
+                }
+            }
+        }
+
+        function renderCurrentTips(refreshCounterOverride) {
+            if (!tipsResultsContainer) return;
+
+            if (Number.isFinite(refreshCounterOverride)) {
+                currentRefreshCounter = refreshCounterOverride;
+            } else if (!Number.isFinite(currentRefreshCounter)) {
+                currentRefreshCounter = getRefreshCounter();
+            }
+
+            const filtersApplied = hasActiveFilters();
+
+            // When filters are applied, search in ALL tips to allow exploring beyond personalized results
+            // When no filters, use personalized baseTips
+            const sourceForFiltering = filtersApplied ? allTipsCache : baseTips;
+            const filteredTips = filtersApplied ? applyFilters(sourceForFiltering, activeFilters) : baseTips;
+
+            let tipsForSelection = filteredTips;
+            let noteMessage = baseNote || '';
+
+            if (filtersApplied) {
+                if (!filteredTips.length) {
+                    noteMessage = 'No tips match your filters. Showing personalized recommendations instead.';
+                    tipsForSelection = baseTips;
+                } else {
+                    const appliedNote = buildFilterNote(filteredTips.length);
+                    noteMessage = appliedNote;
+                }
+            } else if (!noteMessage && usingFallbackData) {
+                noteMessage = 'Currently showing the default reminder.';
+            }
+
+            const effectiveSeedCounter = computeEffectiveCounter(currentRefreshCounter, activeFilters);
+            const picked = pickDailyTips(tipsForSelection, desiredTipCount, profileCache, effectiveSeedCounter);
+
+            renderTips(picked, tipsResultsContainer, {
+                note: noteMessage || undefined,
+                refreshable: true,
+                showHeading: false,
+                refreshPosition: 'footer'
+            });
+
+            attachRefreshHandler();
+        }
+
+        function attachRefreshHandler() {
+            if (!tipsResultsContainer) return;
+            const refreshBtn = tipsResultsContainer.querySelector('.tips-refresh-btn');
+            if (!refreshBtn) return;
+
+            refreshBtn.addEventListener('click', () => {
+                refreshBtn.disabled = true;
+                const counter = incrementRefreshCounter();
+                renderCurrentTips(counter);
+                refreshBtn.disabled = false;
+            });
+        }
+
+        function initializeSectionSkeleton() {
+            tipsSection.innerHTML = `
+                <div class="section-container">
+                    <div class="tips-heading">
+                        <h2 class="section-title">Personalized Daily Tips</h2>
+                        <p class="section-subtitle">Tailored suggestions based on your questionnaire responses</p>
+                    </div>
+                    <div class="tips-filter-wrapper">
+                        <form class="tips-filter-form" aria-label="Filter daily tips">
+                            <fieldset class="tips-filter-group">
+                                <legend>Filter by Category <span class="filter-hint-inline">(Choose topics)</span></legend>
+                                <div class="tips-filter-options tips-filter-options--category" role="group" aria-label="Filter by category">
+                                    <p class="tips-filter-empty">Loading categories...</p>
+                                </div>
+                            </fieldset>
+                            <fieldset class="tips-filter-group">
+                                <legend>Filter by Type <span class="filter-hint-inline">(Nutrition or Lifestyle)</span></legend>
+                                <div class="tips-filter-options tips-filter-options--type" role="group" aria-label="Filter by type">
+                                    <p class="tips-filter-empty">Loading types...</p>
+                                </div>
+                            </fieldset>
+                            <div class="tips-filter-actions">
+                                <button type="submit" class="btn btn-primary tips-filter-apply" aria-label="Apply selected filters to daily tips">Apply Filters</button>
+                                <button type="button" class="btn btn-secondary tips-filter-clear" data-clear-filters aria-label="Clear all filters and show personalized recommendations">Clear Filters</button>
+                            </div>
+                        </form>
+                        <p class="tips-filter-hint" role="status" aria-live="polite" aria-atomic="true">Choose categories or types to explore different themes. Filters do not change your questionnaire results.</p>
+                    </div>
+                    <div class="tips-results">
+                        <div class="tips-loading" role="status">
+                            <span class="tips-loading-text">Loading personalized tips...</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            filterForm = tipsSection.querySelector('.tips-filter-form');
+            tipsResultsContainer = tipsSection.querySelector('.tips-results');
+
+            if (filterForm) {
+                filterForm.addEventListener('submit', handleFilterSubmit);
+                const clearButton = filterForm.querySelector('[data-clear-filters]');
+                if (clearButton) {
+                    clearButton.addEventListener('click', handleFilterClear);
+                }
+            }
+        }
+
+        function renderFilterControls() {
+            if (!filterForm) return;
+
+            syncActiveFiltersWithOptions();
+
+            renderFilterGroup(
+                filterForm.querySelector('.tips-filter-options--category'),
+                filterOptions.categories,
+                'filter-category',
+                activeFilters.categories
+            );
+
+            renderFilterGroup(
+                filterForm.querySelector('.tips-filter-options--type'),
+                filterOptions.types,
+                'filter-type',
+                activeFilters.types
+            );
+        }
+
+        function renderFilterGroup(container, options, inputName, selectedValues) {
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (!options.length) {
+                const empty = document.createElement('p');
+                empty.className = 'tips-filter-empty';
+                empty.textContent = 'No options available.';
+                container.appendChild(empty);
+                return;
+            }
+
+            options.forEach((option, index) => {
+                const optionWrapper = document.createElement('div');
+                optionWrapper.className = 'tips-filter-option';
+
+                const checkboxId = `${inputName}-${index}`;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = checkboxId;
+                checkbox.name = inputName;
+                checkbox.value = option.value;
+                checkbox.className = 'tips-filter-checkbox';
+                checkbox.checked = selectedValues.includes(option.value);
+
+                const label = document.createElement('label');
+                label.htmlFor = checkboxId;
+                label.className = 'tips-filter-label';
+                label.textContent = option.label;
+
+                optionWrapper.appendChild(checkbox);
+                optionWrapper.appendChild(label);
+                container.appendChild(optionWrapper);
+            });
+        }
+
+        function handleFilterSubmit(event) {
+            event.preventDefault();
+            if (!filterForm) return;
+
+            const selectedCategories = Array.from(
+                filterForm.querySelectorAll('input[name="filter-category"]:checked')
+            ).map(input => input.value);
+
+            const selectedTypes = Array.from(
+                filterForm.querySelectorAll('input[name="filter-type"]:checked')
+            ).map(input => input.value);
+
+            activeFilters = normalizeFilterState({
+                categories: selectedCategories,
+                types: selectedTypes
+            });
+
+            persistFilters();
+            renderCurrentTips(currentRefreshCounter);
+        }
+
+        function handleFilterClear() {
+            if (!filterForm) return;
+
+            activeFilters = { categories: [], types: [] };
+            persistFilters();
+
+            filterForm
+                .querySelectorAll('input[name="filter-category"], input[name="filter-type"]')
+                .forEach(input => {
+                    input.checked = false;
+                });
+
+            renderCurrentTips(currentRefreshCounter);
+        }
+
+        function applyFilters(tips, filters) {
+            if (!Array.isArray(tips) || tips.length === 0) return [];
+
+            const categories = filters.categories || [];
+            const types = filters.types || [];
+
+            return tips.filter(tip => {
+                const categoryMatch = !categories.length || categories.includes(normalizeKey(tip.category));
+                const typeMatch = !types.length || types.includes(normalizeKey(tip.type));
+                return categoryMatch && typeMatch;
+            });
+        }
+
+        function computeEffectiveCounter(counter, filters) {
+            const filterKey = `${(filters.categories || []).slice().sort().join('|')}::${(filters.types || []).slice().sort().join('|')}`;
+            const filterHash = hashString(filterKey);
+            return (counter || 0) ^ filterHash;
+        }
+
+        function buildFilterNote(matchCount) {
+            const parts = [];
+
+            if (activeFilters.categories.length) {
+                parts.push(`Category: ${formatSelectionList(activeFilters.categories, filterOptions.categories)}`);
+            }
+
+            if (activeFilters.types.length) {
+                parts.push(`Type: ${formatSelectionList(activeFilters.types, filterOptions.types)}`);
+            }
+
+            return parts.length > 0 ? `${parts.join(' - ')}.` : 'Filters applied.';
+        }
+
+        function formatSelectionList(values, options) {
+            const labels = values
+                .map(value => {
+                    const match = options.find(option => option.value === value);
+                    return match ? match.label : value;
+                })
+                .filter(Boolean);
+
+            return labels.join(', ');
+        }
+
+        function setLoadingState() {
+            if (!tipsResultsContainer) return;
+            tipsResultsContainer.innerHTML = `
+                <div class="tips-loading" role="status">
+                    <span class="tips-loading-text">Loading personalized tips...</span>
+                </div>
+            `;
+        }
+
+        function deriveFilterOptions(tips) {
+            const categoryMap = new Map();
+            const typeMap = new Map();
+
+            tips.forEach(tip => {
+                const categoryKey = normalizeKey(tip.category || 'general');
+                const typeKey = normalizeKey(tip.type || 'lifestyle');
+
+                if (categoryKey && !categoryMap.has(categoryKey)) {
+                    categoryMap.set(categoryKey, formatLabel(tip.category || 'general'));
+                }
+                if (typeKey && !typeMap.has(typeKey)) {
+                    typeMap.set(typeKey, formatLabel(tip.type || 'lifestyle'));
+                }
+            });
+
+            const categories = Array.from(categoryMap.entries())
+                .map(([value, label]) => ({ value, label }))
+                .sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+
+            const types = Array.from(typeMap.entries())
+                .map(([value, label]) => ({ value, label }))
+                .sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+
+            return { categories, types };
+        }
+
+        function syncActiveFiltersWithOptions() {
+            const validCategories = new Set(filterOptions.categories.map(option => option.value));
+            const validTypes = new Set(filterOptions.types.map(option => option.value));
+
+            const normalized = {
+                categories: activeFilters.categories.filter(value => validCategories.has(value)),
+                types: activeFilters.types.filter(value => validTypes.has(value))
+            };
+
+            if (
+                normalized.categories.length !== activeFilters.categories.length ||
+                normalized.types.length !== activeFilters.types.length
+            ) {
+                activeFilters = normalized;
+                persistFilters();
+            } else {
+                activeFilters = normalized;
+            }
+        }
+
+        function hasActiveFilters() {
+            return (activeFilters.categories && activeFilters.categories.length > 0) ||
+                (activeFilters.types && activeFilters.types.length > 0);
+        }
+
+        function loadStoredFilters() {
+            try {
+                const raw = localStorage.getItem(FILTER_STORAGE_KEY);
+                if (!raw) return { categories: [], types: [] };
+                const parsed = JSON.parse(raw);
+                return normalizeFilterState(parsed);
+            } catch {
+                return { categories: [], types: [] };
+            }
+        }
+
+        function persistFilters() {
+            try {
+                localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(activeFilters));
+            } catch {
+                /* noop */
+            }
+        }
+
+        function normalizeFilterState(raw = {}) {
+            const categories = Array.isArray(raw.categories) ? raw.categories : [];
+            const types = Array.isArray(raw.types) ? raw.types : [];
+
+            return {
+                categories: Array.from(new Set(categories.map(normalizeKey).filter(Boolean))),
+                types: Array.from(new Set(types.map(normalizeKey).filter(Boolean)))
+            };
+        }
+
+        function normalizeKey(value) {
+            return String(value || '').toLowerCase().trim();
+        }
+
+        function formatLabel(value) {
+            const str = String(value || '');
+            if (!str) return 'General';
+
+            // Replace underscores with spaces and capitalize each word
+            const cleaned = str.replace(/_/g, ' ');
+            return cleaned
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ');
+        }
+
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i += 1) {
+                hash = (hash << 5) - hash + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return hash >>> 0;
+        }
+
+        function dateKey() {
+            return new Date().toISOString().slice(0, 10);
+        }
+    </script>
 </body>
 </html>
+

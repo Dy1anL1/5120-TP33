@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Seasonal Ingredients Recommender - Silver Spoon Society</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="password-protection.js"></script>
+    <script src="config.js"></script>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <div class="logo-icon">
+                    <img src="SliverSpoonSociety_Logo.jpg" alt="Silver Spoon Society Logo" class="custom-logo">
+                </div>
+                <div class="logo-text">
+                    <h1>Silver Spoon Society</h1>
+                </div>
+            </a>
+
+            <div class="nav-links">
+                <a href="home.html" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="explore-recipes.html" class="nav-link">
+                    <i class="fas fa-search"></i>
+                    <span>Recipes</span>
+                </a>
+                <a href="seasonal-produce.html" class="nav-link active">
+                    <i class="fas fa-leaf"></i>
+                    <span>Seasonal</span>
+                </a>
+                <a href="meal-planning.html" class="nav-link">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Planning</span>
+                </a>
+                <a href="shopping-list.html" class="nav-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Shopping</span>
+                </a>
+                <a href="nutrition-dashboard.html" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="daily-recommendations.html" class="nav-link">
+                    <i class="fas fa-heart"></i>
+                    <span>Daily Tips</span>
+                </a>
+            </div>
+
+            <button class="mobile-menu-btn" aria-label="Toggle mobile menu">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content seasonal-main">
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1><i class="fas fa-leaf"></i> Seasonal Ingredients Recommender</h1>
+            <p>Discover what's fresh in your area and find perfect seasonal recipes</p>
+        </section>
+
+        <!-- Selector Section -->
+        <section class="selector-section">
+            <!-- Step 1: State Selector -->
+            <div class="state-selector-container">
+                <label for="stateSelect" class="selector-label">
+                    <span class="step-number">Step 1</span>
+                    <span class="step-title">Select Your State</span>
+                </label>
+                <select id="stateSelect" class="state-dropdown" aria-label="Select your state">
+                    <option value="VIC">Victoria (VIC)</option>
+                    <option value="NSW">New South Wales (NSW)</option>
+                    <option value="QLD">Queensland (QLD)</option>
+                    <option value="SA">South Australia (SA)</option>
+                    <option value="WA">Western Australia (WA)</option>
+                    <option value="TAS">Tasmania (TAS)</option>
+                </select>
+            </div>
+
+            <!-- Step 2: Season Display and Slider -->
+            <div class="season-selector-container">
+                <div class="selector-label">
+                    <span class="step-number">Step 2</span>
+                    <span class="step-title">Current Season</span>
+                </div>
+                <button id="currentSeasonBtn" class="season-display-btn" aria-label="Current season">
+                    <i class="fas fa-seedling"></i>
+                    <span>Spring</span>
+                    <div class="month-display-content">
+                        <span class="month-text" id="monthText">October</span>
+                    </div>
+                </button>
+                <div class="season-slider-wrapper">
+                    <input
+                        type="range"
+                        id="seasonRange"
+                        class="season-slider"
+                        min="1"
+                        max="12"
+                        step="1"
+                        aria-label="Select season by month"
+                    />
+                    <div class="season-labels">
+                        <span class="season-label">Summer</span>
+                        <span class="season-label">Autumn</span>
+                        <span class="season-label">Winter</span>
+                        <span class="season-label">Spring</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seasonal Lists Section -->
+        <section class="seasonal-lists">
+            <!-- Seasonal Fruits Card -->
+            <div class="list-card fruits-card">
+                <h3 class="list-card-title">
+                    <i class="fas fa-apple-alt"></i>
+                    <span>Seasonal Fruits</span>
+                </h3>
+                <ul id="fruitsList" class="ingredient-list" role="list">
+                    <!-- Dynamically populated -->
+                </ul>
+                <button id="loadMoreFruits" class="load-more-btn" style="display: none;">
+                    <i class="fas fa-chevron-down"></i>
+                    <span>Load More Fruits</span>
+                </button>
+            </div>
+
+            <!-- Seasonal Vegetables Card -->
+            <div class="list-card vegetables-card">
+                <h3 class="list-card-title">
+                    <i class="fas fa-carrot"></i>
+                    <span>Seasonal Vegetables</span>
+                </h3>
+                <ul id="vegetablesList" class="ingredient-list" role="list">
+                    <!-- Dynamically populated -->
+                </ul>
+                <button id="loadMoreVegetables" class="load-more-btn" style="display: none;">
+                    <i class="fas fa-chevron-down"></i>
+                    <span>Load More Vegetables</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Recommended Recipes Section -->
+        <section class="recommended-section">
+            <div class="recommended-header">
+                <h3 class="recommended-title">
+                    <i class="fas fa-utensils"></i>
+                    <span>Recommended Seasonal Recipes</span>
+                </h3>
+                <p class="recommended-subtitle">Perfect recipes using ingredients that are in season now</p>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="recipesLoadingSpinner" class="recipes-loading-container" style="display: none;">
+                <div class="loading-spinner-content">
+                    <div class="spinner"></div>
+                    <p class="loading-text">Loading seasonal recipes...</p>
+                    <p class="loading-subtext">Finding recipes with fresh ingredients</p>
+                </div>
+            </div>
+
+            <div id="recipeCards" class="recipe-grid" role="list">
+                <!-- Recipe cards will be dynamically populated -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="section-container">
+            <div class="footer-content">
+                <p class="footer-text">Supporting healthy eating habits for a better life</p>
+                <p class="footer-copyright">© 2024 Silver Spoon Society. Designed for senior wellness.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Global state variables
+        let seasonalData = {};
+        let currentState = 'VIC'; // Default to Victoria
+        let currentSeason = '';
+        let currentMonth = new Date().getMonth() + 1; // 1-12
+        let showAllFruits = false; // Track if showing all fruits
+        let showAllVegetables = false; // Track if showing all vegetables
+        const INITIAL_DISPLAY_COUNT = 3; // Initial number of items to display
+
+        // Season configuration (Southern Hemisphere - Australia)
+        const SEASON_CONFIG = {
+            spring: { months: [9, 10, 11], name: 'Spring', icon: 'fa-seedling', label: 'Spring' },
+            summer: { months: [12, 1, 2], name: 'Summer', icon: 'fa-sun', label: 'Summer' },
+            autumn: { months: [3, 4, 5], name: 'Autumn', icon: 'fa-leaf', label: 'Autumn' },
+            winter: { months: [6, 7, 8], name: 'Winter', icon: 'fa-snowflake', label: 'Winter' }
+        };
+
+        // Month names
+        const MONTH_NAMES = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+        });
+
+        // Initialize page
+        async function initializePage() {
+            await loadSeasonalData();
+            detectCurrentSeason();
+            initializeEventListeners();
+
+            // Set default state in dropdown
+            const stateSelect = document.getElementById('stateSelect');
+            if (stateSelect) {
+                stateSelect.value = currentState; // Set to VIC
+            }
+
+            updateAllContent();
+        }
+
+        // Load seasonal data from JSON
+        async function loadSeasonalData() {
+            try {
+                const response = await fetch('data/season_food.json');
+                seasonalData = await response.json();
+            } catch (error) {
+                console.error('Error loading seasonal data:', error);
+                showError('Failed to load seasonal data');
+            }
+        }
+
+        // Removed - no longer loading recipes data for recommended section
+
+        // Detect current season based on month
+        function detectCurrentSeason() {
+            for (const [seasonKey, config] of Object.entries(SEASON_CONFIG)) {
+                if (config.months.includes(currentMonth)) {
+                    currentSeason = seasonKey;
+                    break;
+                }
+            }
+
+            // Update slider position
+            const slider = document.getElementById('seasonRange');
+            slider.value = currentMonth;
+            updateSeasonButton();
+        }
+
+        // Get season from month number
+        function getSeasonFromMonth(month) {
+            for (const [seasonKey, config] of Object.entries(SEASON_CONFIG)) {
+                if (config.months.includes(month)) {
+                    return seasonKey;
+                }
+            }
+            return 'spring';
+        }
+
+        // Initialize all event listeners
+        function initializeEventListeners() {
+            // State dropdown
+            const stateSelect = document.getElementById('stateSelect');
+            stateSelect.addEventListener('change', function() {
+                currentState = this.value;
+                showAllFruits = false;
+                showAllVegetables = false;
+                updateAllContent();
+            });
+
+            // Season slider
+            const seasonSlider = document.getElementById('seasonRange');
+            seasonSlider.addEventListener('input', function() {
+                currentMonth = parseInt(this.value);
+                currentSeason = getSeasonFromMonth(currentMonth);
+                showAllFruits = false;
+                showAllVegetables = false;
+                updateSeasonButton();
+                updateAllContent();
+            });
+
+            // Load More Fruits button
+            const loadMoreFruitsBtn = document.getElementById('loadMoreFruits');
+            loadMoreFruitsBtn.addEventListener('click', function() {
+                showAllFruits = !showAllFruits;
+                renderFruitsList();
+            });
+
+            // Load More Vegetables button
+            const loadMoreVegetablesBtn = document.getElementById('loadMoreVegetables');
+            loadMoreVegetablesBtn.addEventListener('click', function() {
+                showAllVegetables = !showAllVegetables;
+                renderVegetablesList();
+            });
+
+        }
+
+        // Update season button display
+        function updateSeasonButton() {
+            const btn = document.getElementById('currentSeasonBtn');
+            const config = SEASON_CONFIG[currentSeason];
+            const monthText = MONTH_NAMES[currentMonth - 1];
+
+            btn.innerHTML = `
+                <i class="fas ${config.icon}"></i>
+                <div class="season-month-row">
+                    <span>${config.name}</span>
+                    <span class="month-text">${monthText}</span>
+                </div>
+            `;
+
+            // Update button class for styling
+            btn.className = `season-display-btn season-${currentSeason}`;
+        }
+
+
+        // Update all content
+        function updateAllContent() {
+            renderFruitsList();
+            renderVegetablesList();
+            loadRecommendedRecipes();
+        }
+
+        // Global variable to store all fetched recipes for refresh functionality
+        let allFetchedRecipes = [];
+        let displayedRecipeIds = new Set();
+
+        // Load recommended recipes based on seasonal ingredients
+        async function loadRecommendedRecipes() {
+            const recipeCardsContainer = document.getElementById('recipeCards');
+            const loadingSpinner = document.getElementById('recipesLoadingSpinner');
+
+            // Show loading spinner and hide recipe cards
+            loadingSpinner.style.display = 'flex';
+            recipeCardsContainer.style.display = 'none';
+
+            try {
+                // Get current in-season ingredients
+                const inSeasonIngredients = getInSeasonIngredients();
+
+                if (inSeasonIngredients.length === 0) {
+                    loadingSpinner.style.display = 'none';
+                    recipeCardsContainer.style.display = 'grid';
+                    recipeCardsContainer.innerHTML = '<p class="empty-message">No seasonal ingredients available for the selected state and season.</p>';
+                    return;
+                }
+
+                // Fetch recipes from backend with ingredients filter
+                const ingredientsParam = inSeasonIngredients.join(',');
+                const response = await fetch(`${API_CONFIG.RECIPES_API}?ingredients=${encodeURIComponent(ingredientsParam)}&limit=50`);
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch recipes: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const rawRecipes = data.items || [];
+
+                console.log(`Loaded ${rawRecipes.length} recipes from API`);
+
+                // Filter and sort recipes by seasonal relevance
+                allFetchedRecipes = filterAndSortRecipes(rawRecipes);
+
+                console.log(`Filtered to ${allFetchedRecipes.length} highly seasonal recipes`);
+
+                if (allFetchedRecipes.length === 0) {
+                    loadingSpinner.style.display = 'none';
+                    recipeCardsContainer.style.display = 'grid';
+                    recipeCardsContainer.innerHTML = '<p class="empty-message">No recipes found with enough seasonal ingredients. Try a different season or state.</p>';
+                    return;
+                }
+
+                // Hide loading spinner and show recipe cards
+                loadingSpinner.style.display = 'none';
+                recipeCardsContainer.style.display = 'grid';
+
+                // Reset displayed recipe IDs and render initial 4 recipes
+                displayedRecipeIds.clear();
+                renderRecipeCards(allFetchedRecipes.slice(0, 4));
+
+            } catch (error) {
+                console.error('Error loading recommended recipes:', error);
+                loadingSpinner.style.display = 'none';
+                recipeCardsContainer.style.display = 'grid';
+                recipeCardsContainer.innerHTML = '<p class="error-message">Failed to load recipes. Please try again later.</p>';
+            }
+        }
+
+        // Get list of in-season ingredients for current state and season
+        function getInSeasonIngredients() {
+            if (!currentState || !seasonalData[currentState]) {
+                return [];
+            }
+
+            const stateData = seasonalData[currentState];
+            const ingredients = [];
+
+            // Get in-season fruits
+            const fruits = stateData.fruits || {};
+            for (const [fruitName, seasons] of Object.entries(fruits)) {
+                if (seasons.includes(currentSeason)) {
+                    ingredients.push(fruitName.toLowerCase());
+                }
+            }
+
+            // Get in-season vegetables
+            const vegetables = stateData.vegetables || {};
+            for (const [vegName, seasons] of Object.entries(vegetables)) {
+                if (seasons.includes(currentSeason)) {
+                    ingredients.push(vegName.toLowerCase());
+                }
+            }
+
+            return ingredients;
+        }
+
+        // Get seasonal ingredients that are in a recipe
+        function getRecipeSeasonalIngredients(recipe) {
+            const inSeasonIngredients = getInSeasonIngredients();
+            const recipeIngredients = recipe.ingredients || [];
+
+            const matchedIngredients = [];
+
+            for (const seasonalIng of inSeasonIngredients) {
+                for (const recipeIng of recipeIngredients) {
+                    if (typeof recipeIng === 'string') {
+                        const regex = new RegExp(`\\b${seasonalIng.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+                        if (regex.test(recipeIng.toLowerCase())) {
+                            matchedIngredients.push(capitalizeFirst(seasonalIng));
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return matchedIngredients;
+        }
+
+        // Calculate recipe score based on seasonal ingredients
+        // Prioritizes recipes with main ingredients (first 3) being seasonal
+        function calculateRecipeScore(recipe) {
+            const inSeasonIngredients = getInSeasonIngredients();
+            const recipeIngredients = recipe.ingredients || [];
+
+            let score = 0;
+            let mainIngredientsMatched = 0;
+            let totalMatches = 0;
+
+            // Check first 3 ingredients (main ingredients) with higher weight
+            for (let i = 0; i < Math.min(3, recipeIngredients.length); i++) {
+                const recipeIng = recipeIngredients[i];
+                if (typeof recipeIng === 'string') {
+                    for (const seasonalIng of inSeasonIngredients) {
+                        const regex = new RegExp(`\\b${seasonalIng.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+                        if (regex.test(recipeIng.toLowerCase())) {
+                            score += 10; // High score for main ingredients
+                            mainIngredientsMatched++;
+                            totalMatches++;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Check remaining ingredients with lower weight
+            for (let i = 3; i < recipeIngredients.length; i++) {
+                const recipeIng = recipeIngredients[i];
+                if (typeof recipeIng === 'string') {
+                    for (const seasonalIng of inSeasonIngredients) {
+                        const regex = new RegExp(`\\b${seasonalIng.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+                        if (regex.test(recipeIng.toLowerCase())) {
+                            score += 1; // Low score for secondary ingredients
+                            totalMatches++;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return { score, mainIngredientsMatched, totalMatches };
+        }
+
+        // Filter and sort recipes by seasonal relevance
+        function filterAndSortRecipes(recipes) {
+            // Calculate scores for all recipes
+            const recipesWithScores = recipes.map(recipe => {
+                const scoreInfo = calculateRecipeScore(recipe);
+                return { recipe, ...scoreInfo };
+            });
+
+            // Filter: require at least 2 total matches OR 1+ main ingredient match
+            const filtered = recipesWithScores.filter(item =>
+                item.totalMatches >= 2 || item.mainIngredientsMatched >= 1
+            );
+
+            // Sort by score (descending)
+            filtered.sort((a, b) => b.score - a.score);
+
+            return filtered.map(item => item.recipe);
+        }
+
+        // Render recipe cards
+        function renderRecipeCards(recipes) {
+            const recipeCardsContainer = document.getElementById('recipeCards');
+
+            // Limit to 4 recipes for display
+            const displayRecipes = recipes.slice(0, 4);
+
+            // Track displayed recipe IDs
+            displayRecipes.forEach(recipe => {
+                if (recipe.recipe_id) {
+                    displayedRecipeIds.add(recipe.recipe_id);
+                }
+            });
+
+            const cardsHTML = displayRecipes.map((recipe, index) => {
+                const title = recipe.title || 'Untitled Recipe';
+
+                // Image handling similar to explore-recipes
+                const imageHtml = recipe.has_image && recipe.image_display ?
+                    `<div class="recipe-image"><img src="${recipe.image_display}" alt="${title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-utensils\\" style=\\"color:#ccc;font-size:3rem;\\"></i>'"></div>` :
+                    `<div class="recipe-image"><i class="fas fa-utensils"></i></div>`;
+
+                // Get seasonal ingredients in this recipe
+                const seasonalIngredients = getRecipeSeasonalIngredients(recipe);
+                const ingredientTags = seasonalIngredients.map(ing =>
+                    `<span class="ingredient-tag">${ing}</span>`
+                ).join('');
+
+                return `
+                    <div class="recipe-card" role="listitem" data-recipe-id="${recipe.recipe_id || ''}" data-card-index="${index}" style="cursor: pointer;" tabindex="0">
+                        ${imageHtml}
+                        <div class="recipe-content">
+                            <div class="recipe-title">${title}</div>
+                            <div class="seasonal-ingredients-tags">
+                                ${ingredientTags}
+                            </div>
+                            <div class="recipe-actions">
+                                <button class="btn-refresh" onclick="event.stopPropagation(); refreshSingleRecipe(${index})" aria-label="Refresh recipe">
+                                    <i class="fas fa-sync-alt"></i>
+                                    <span>Refresh</span>
+                                </button>
+                                <button class="btn-remove" onclick="event.stopPropagation(); removeSingleRecipe(${index})" aria-label="Remove recipe">
+                                    <i class="fas fa-times"></i>
+                                    <span>I don't want this</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            recipeCardsContainer.innerHTML = cardsHTML;
+
+            // Add click event listeners to recipe cards
+            const cards = recipeCardsContainer.querySelectorAll('.recipe-card');
+            cards.forEach((card, idx) => {
+                const recipe = displayRecipes[idx];
+                card.addEventListener('click', function(e) {
+                    // Don't open if clicking on buttons
+                    if (e.target.closest('.btn-refresh') || e.target.closest('.btn-remove')) {
+                        return;
+                    }
+                    openRecipeModal(recipe, 'seasonal');
+                });
+            });
+        }
+
+        // Refresh a single recipe card
+        function refreshSingleRecipe(cardIndex) {
+            // Get a random recipe that hasn't been displayed
+            const availableRecipes = allFetchedRecipes.filter(recipe =>
+                !displayedRecipeIds.has(recipe.recipe_id)
+            );
+
+            if (availableRecipes.length === 0) {
+                alert('No more recipes available. Try changing the season or state.');
+                return;
+            }
+
+            // Pick a random recipe
+            const randomIndex = Math.floor(Math.random() * availableRecipes.length);
+            const newRecipe = availableRecipes[randomIndex];
+
+            // Get current displayed recipes
+            const recipeCards = document.querySelectorAll('.recipe-card');
+            const currentRecipes = Array.from(recipeCards).map(card => {
+                const recipeId = card.dataset.recipeId;
+                return allFetchedRecipes.find(r => r.recipe_id === recipeId);
+            });
+
+            // Remove old recipe ID from displayed set
+            const oldRecipeId = currentRecipes[cardIndex]?.recipe_id;
+            if (oldRecipeId) {
+                displayedRecipeIds.delete(oldRecipeId);
+            }
+
+            // Replace with new recipe
+            currentRecipes[cardIndex] = newRecipe;
+
+            // Re-render all cards
+            renderRecipeCards(currentRecipes);
+        }
+
+        // Remove a single recipe card
+        function removeSingleRecipe(cardIndex) {
+            // Get current displayed recipes
+            const recipeCards = document.querySelectorAll('.recipe-card');
+            const currentRecipes = Array.from(recipeCards).map(card => {
+                const recipeId = card.dataset.recipeId;
+                return allFetchedRecipes.find(r => r.recipe_id === recipeId);
+            }).filter((recipe, index) => index !== cardIndex); // Remove the specified card
+
+            // Remove from displayed set
+            const removedRecipeId = recipeCards[cardIndex]?.dataset.recipeId;
+            if (removedRecipeId) {
+                displayedRecipeIds.delete(removedRecipeId);
+            }
+
+            // Try to add a new recipe to maintain 4 cards
+            const availableRecipes = allFetchedRecipes.filter(recipe =>
+                !displayedRecipeIds.has(recipe.recipe_id)
+            );
+
+            if (availableRecipes.length > 0) {
+                const randomIndex = Math.floor(Math.random() * availableRecipes.length);
+                currentRecipes.push(availableRecipes[randomIndex]);
+            }
+
+            // Re-render all cards
+            if (currentRecipes.length > 0) {
+                renderRecipeCards(currentRecipes);
+            } else {
+                document.getElementById('recipeCards').innerHTML = '<p class="empty-message">No more recipes available.</p>';
+            }
+        }
+
+        // Render fruits list
+        function renderFruitsList() {
+            const fruitsList = document.getElementById('fruitsList');
+            const loadMoreBtn = document.getElementById('loadMoreFruits');
+
+            if (!currentState || !seasonalData[currentState]) {
+                fruitsList.innerHTML = '<li class="empty-message">Please select a state to see seasonal fruits</li>';
+                loadMoreBtn.style.display = 'none';
+                return;
+            }
+
+            const stateData = seasonalData[currentState];
+            const fruits = stateData.fruits || {};
+
+            // Filter only in-season fruits
+            const inSeasonFruits = [];
+            for (const [fruitName, seasons] of Object.entries(fruits)) {
+                const isInSeason = seasons.includes(currentSeason);
+                if (isInSeason) {
+                    inSeasonFruits.push(fruitName);
+                }
+            }
+
+            // Determine how many to show
+            const displayCount = showAllFruits ? inSeasonFruits.length : INITIAL_DISPLAY_COUNT;
+            const fruitsToShow = inSeasonFruits.slice(0, displayCount);
+
+            let fruitsHTML = '';
+            for (const fruitName of fruitsToShow) {
+                fruitsHTML += `
+                    <li class="ingredient-row" role="listitem">
+                        <span class="ingredient-icon"><i class="fas fa-apple-alt"></i></span>
+                        <span class="ingredient-name">${capitalizeFirst(fruitName)}</span>
+                        <div class="status-bar in-season" aria-label="In Season!">
+                            In Season!
+                        </div>
+                    </li>
+                `;
+            }
+
+            fruitsList.innerHTML = fruitsHTML || '<li class="empty-message">No fruits data available</li>';
+
+            // Show/hide Load More button
+            if (inSeasonFruits.length > INITIAL_DISPLAY_COUNT) {
+                loadMoreBtn.style.display = 'block';
+                if (showAllFruits) {
+                    loadMoreBtn.innerHTML = `
+                        <i class="fas fa-chevron-up"></i>
+                        <span>Show Less</span>
+                    `;
+                } else {
+                    loadMoreBtn.innerHTML = `
+                        <i class="fas fa-chevron-down"></i>
+                        <span>Load More Fruits (${inSeasonFruits.length - INITIAL_DISPLAY_COUNT} more)</span>
+                    `;
+                }
+            } else {
+                loadMoreBtn.style.display = 'none';
+            }
+        }
+
+        // Render vegetables list
+        function renderVegetablesList() {
+            const vegetablesList = document.getElementById('vegetablesList');
+            const loadMoreBtn = document.getElementById('loadMoreVegetables');
+
+            if (!currentState || !seasonalData[currentState]) {
+                vegetablesList.innerHTML = '<li class="empty-message">Please select a state to see seasonal vegetables</li>';
+                loadMoreBtn.style.display = 'none';
+                return;
+            }
+
+            const stateData = seasonalData[currentState];
+            const vegetables = stateData.vegetables || {};
+
+            // Filter only in-season vegetables
+            const inSeasonVegetables = [];
+            for (const [vegName, seasons] of Object.entries(vegetables)) {
+                const isInSeason = seasons.includes(currentSeason);
+                if (isInSeason) {
+                    inSeasonVegetables.push(vegName);
+                }
+            }
+
+            // Determine how many to show
+            const displayCount = showAllVegetables ? inSeasonVegetables.length : INITIAL_DISPLAY_COUNT;
+            const vegetablesToShow = inSeasonVegetables.slice(0, displayCount);
+
+            let vegetablesHTML = '';
+            for (const vegName of vegetablesToShow) {
+                vegetablesHTML += `
+                    <li class="ingredient-row" role="listitem">
+                        <span class="ingredient-icon"><i class="fas fa-carrot"></i></span>
+                        <span class="ingredient-name">${capitalizeFirst(vegName)}</span>
+                        <div class="status-bar in-season" aria-label="In Season!">
+                            In Season!
+                        </div>
+                    </li>
+                `;
+            }
+
+            vegetablesList.innerHTML = vegetablesHTML || '<li class="empty-message">No vegetables data available</li>';
+
+            // Show/hide Load More button
+            if (inSeasonVegetables.length > INITIAL_DISPLAY_COUNT) {
+                loadMoreBtn.style.display = 'block';
+                if (showAllVegetables) {
+                    loadMoreBtn.innerHTML = `
+                        <i class="fas fa-chevron-up"></i>
+                        <span>Show Less</span>
+                    `;
+                } else {
+                    loadMoreBtn.innerHTML = `
+                        <i class="fas fa-chevron-down"></i>
+                        <span>Load More Vegetables (${inSeasonVegetables.length - INITIAL_DISPLAY_COUNT} more)</span>
+                    `;
+                }
+            } else {
+                loadMoreBtn.style.display = 'none';
+            }
+        }
+
+        // Render recommended recipes
+        // Removed - Recommended recipes functionality deleted
+
+        // Capitalize first letter of a string
+        function capitalizeFirst(str) {
+            if (!str) return '';
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        // Show error message
+        function showError(message) {
+            console.error(message);
+        }
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>

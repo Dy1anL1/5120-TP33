@@ -17,7 +17,7 @@
         .welcome-section {
             background-image: url('cta3.jpg');
             background-size: cover;
-            background-position: center 40%;
+            background-position: center center;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -146,7 +146,7 @@
             </a>
             
             <div class="nav-links">
-                <a href="#welcome" class="nav-link">
+                <a href="home.html" class="nav-link active">
                     <i class="fas fa-home"></i>
                     <span>Home</span>
                 </a>
@@ -154,13 +154,9 @@
                     <i class="fas fa-search"></i>
                     <span>Recipes</span>
                 </a>
-                <a href="nutrition-dashboard.html" class="nav-link">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="daily-recommendations.html" class="nav-link">
-                    <i class="fas fa-heart"></i>
-                    <span>Daily Tips</span>
+                <a href="seasonal-produce.html" class="nav-link">
+                    <i class="fas fa-leaf"></i>
+                    <span>Seasonal</span>
                 </a>
                 <a href="meal-planning.html" class="nav-link">
                     <i class="fas fa-calendar-alt"></i>
@@ -169,6 +165,14 @@
                 <a href="shopping-list.html" class="nav-link">
                     <i class="fas fa-shopping-cart"></i>
                     <span>Shopping</span>
+                </a>
+                <a href="nutrition-dashboard.html" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="daily-recommendations.html" class="nav-link">
+                    <i class="fas fa-heart"></i>
+                    <span>Daily Tips</span>
                 </a>
             </div>
             
@@ -183,7 +187,7 @@
             </div>
             -->
             
-            <button class="mobile-menu-btn" aria-label="Toggle mobile menu" aria-expanded="false">
+            <button class="mobile-menu-btn" aria-label="Toggle mobile menu">
                 <i class="fas fa-bars"></i>
             </button>
         </div>
@@ -244,29 +248,41 @@
         <section class="features-section scroll-to-section" id="features">
             <div class="section-container">
                 <div class="features-container">
+                    <a class="feature-item" href="explore-recipes.html">
+                        <div class="feature-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <span class="feature-text">All Recipes</span>
+                    </a>
+                    <a class="feature-item" href="seasonal-produce.html">
+                        <div class="feature-icon">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <span class="feature-text">Seasonal Produce</span>
+                    </a>
                     <a class="feature-item" href="meal-planning.html">
                         <div class="feature-icon">
-                            <i class="fas fa-calendar"></i>
+                            <i class="fas fa-calendar-alt"></i>
                         </div>
                         <span class="feature-text">Meal Planning</span>
                     </a>
                     <a class="feature-item" href="shopping-list.html">
                         <div class="feature-icon">
-                            <i class="fas fa-bolt"></i>
+                            <i class="fas fa-shopping-cart"></i>
                         </div>
                         <span class="feature-text">Shopping List</span>
+                    </a>
+                    <a class="feature-item" href="nutrition-dashboard.html">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <span class="feature-text">Nutrition Dashboard</span>
                     </a>
                     <a class="feature-item" href="daily-recommendations.html">
                         <div class="feature-icon">
                             <i class="fas fa-heart"></i>
                         </div>
-                        <span class="feature-text">Recommendations</span>
-                    </a>
-                    <a class="feature-item" href="explore-recipes.html">
-                        <div class="feature-icon">
-                            <i class="fas fa-chart-bar"></i>
-                        </div>
-                        <span class="feature-text">All Recipes</span>
+                        <span class="feature-text">Daily Tips</span>
                     </a>
                 </div>
             </div>
@@ -321,14 +337,6 @@
             }
             
             lastScrollTop = scrollTop;
-        });
-
-        // Mobile menu toggle
-        const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-        const navLinks = document.querySelector('.nav-links');
-
-        mobileMenuBtn.addEventListener('click', function() {
-            navLinks.classList.toggle('show');
         });
 
         // Smooth scroll to sections

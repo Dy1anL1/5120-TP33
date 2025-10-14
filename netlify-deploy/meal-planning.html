@@ -33,13 +33,9 @@
                     <i class="fas fa-search"></i>
                     <span>Recipes</span>
                 </a>
-                <a href="nutrition-dashboard.html" class="nav-link">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="daily-recommendations.html" class="nav-link">
-                    <i class="fas fa-heart"></i>
-                    <span>Daily Tips</span>
+                <a href="seasonal-produce.html" class="nav-link">
+                    <i class="fas fa-leaf"></i>
+                    <span>Seasonal</span>
                 </a>
                 <a href="meal-planning.html" class="nav-link active">
                     <i class="fas fa-calendar-alt"></i>
@@ -48,6 +44,14 @@
                 <a href="shopping-list.html" class="nav-link">
                     <i class="fas fa-shopping-cart"></i>
                     <span>Shopping</span>
+                </a>
+                <a href="nutrition-dashboard.html" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="daily-recommendations.html" class="nav-link">
+                    <i class="fas fa-heart"></i>
+                    <span>Daily Tips</span>
                 </a>
             </div>
             
@@ -62,7 +66,7 @@
             </div>
             -->
 
-            <button class="mobile-menu-btn">
+            <button class="mobile-menu-btn" aria-label="Toggle mobile menu" aria-expanded="false">
                 <i class="fas fa-bars"></i>
             </button>
         </div>
@@ -101,6 +105,7 @@
                 <div class="step" data-step="2">2</div>
                 <div class="step" data-step="3">3</div>
                 <div class="step" data-step="4">4</div>
+                <div class="step" data-step="5">5</div>
             </div>
 
             <!-- Questionnaire Content -->
@@ -172,6 +177,10 @@
                     <i class="fas fa-shopping-cart"></i>
                     <span>Generate Shopping List</span>
                 </button>
+                <button class="btn btn-success btn-large" onclick="addMealPlanToDashboard()">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Add to Dashboard</span>
+                </button>
                 <!-- Temporarily commented out print functionality
                 <button class="btn btn-outline btn-large" onclick="printMealPlan()">
                     <i class="fas fa-print"></i>
@@ -194,5 +203,19 @@
 
     <script src="config.js"></script>
     <script src="meal-planning.js"></script>
+    <script>
+        // Mobile menu toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+            const navLinks = document.querySelector('.nav-links');
+            if (mobileMenuBtn && navLinks) {
+                mobileMenuBtn.addEventListener('click', function() {
+                    const isExpanded = this.getAttribute('aria-expanded') === 'true';
+                    this.setAttribute('aria-expanded', !isExpanded);
+                    navLinks.classList.toggle('show');
+                });
+            }
+        });
+    </script>
 </body>
 </html>

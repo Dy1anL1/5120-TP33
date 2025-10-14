@@ -16,6 +16,61 @@ const nutritionCache = new Map();
 let lastNutritionRequest = 0;
 const NUTRITION_REQUEST_DELAY = 100; // 100ms delay between requests
 
+// Get consistent nutrition data (same logic as modal)
+async function getConsistentNutrition(recipe, options = {}) {
+    let nutrition = recipe.nutrition;
+    if (nutrition && nutrition._perServing !== true) {
+        // Legacy or total nutrition data -- force recalculation for consistency
+        nutrition = null;
+    }
+    const fallbackNutrition = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sugars_g: 0, saturated_fat_g: 0, trans_fat_g: 0, vitamin_d_iu: 0, calcium_mg: 0, iron_mg: 0, potassium_mg: 0 };
+
+    const parseServings = (value) => {
+        if (value == null) return null;
+        const num = parseInt(value, 10);
+        return Number.isFinite(num) && num > 0 ? num : null;
+    };
+
+    // Determine servings to normalize totals (default to recipe metadata or override)
+    const effectiveServings =
+        parseServings(options.servings) ||
+        parseServings(recipe.servings) ||
+        parseServings(recipe.yield) ||
+        1;
+
+    // If no meaningful nutrition data (all zeros except maybe sodium), calculate it from ingredients
+    const hasValidNutrition = nutrition && (
+        (nutrition.calories && nutrition.calories > 0) ||
+        (nutrition.protein_g && nutrition.protein_g > 0) ||
+        (nutrition.carbs_g && nutrition.carbs_g > 0) ||
+        (nutrition.fat_g && nutrition.fat_g > 0)
+    );
+
+    if (!hasValidNutrition && recipe.ingredients) {
+        try {
+            nutrition = await calculateNutrition(recipe.ingredients, effectiveServings);
+        } catch (error) {
+            console.error('Error calculating nutrition:', error);
+            nutrition = { ...fallbackNutrition };
+        }
+    }
+
+    const result = nutrition || { ...fallbackNutrition };
+    // Tag result as per-serving for future checks
+    if (result && result._perServing !== true) {
+        result._perServing = true;
+        result.servings_used = effectiveServings;
+    }
+
+    // Cache back onto recipe for reuse
+    if (recipe) {
+        recipe.nutrition = result;
+    }
+
+    return result;
+}
+
+
 // Format nutrition numbers to show 1-2 decimal places, avoiding zeros
 function formatNutritionNumber(value, unit = '') {
     // Apply nutrition value validation before formatting (using script.js function)
@@ -48,7 +103,7 @@ function formatNutritionNumber(value, unit = '') {
 // Simple estimated nutrition based on common ingredients (fallback)
 function estimateNutrition(ingredients, servings = 1) {
     if (!ingredients || !Array.isArray(ingredients)) {
-        return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+        return { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugars: 0, saturated_fat: 0, trans_fat: 0, vitamin_d: 0, calcium: 0, iron: 0, potassium: 0 };
     }
 
     let totalCalories = 0;
@@ -114,7 +169,7 @@ function estimateNutrition(ingredients, servings = 1) {
 // Nutrition calculation using the nutrition API with caching and fallback
 async function calculateNutrition(ingredients, servings = 1) {
     if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
-        return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+        return { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugars: 0, saturated_fat: 0, trans_fat: 0, vitamin_d: 0, calcium: 0, iron: 0, potassium: 0 };
     }
 
     // Create cache key
@@ -153,33 +208,52 @@ async function calculateNutrition(ingredients, servings = 1) {
                 return estimated;
             }
             // For other failures (400, 404, etc), return zero values instead of wrong estimates
-            return { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0, protein: 0, carbs: 0, fat: 0 };
+            return { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sugars_g: 0, saturated_fat_g: 0, trans_fat_g: 0, vitamin_d_iu: 0, calcium_mg: 0, iron_mg: 0, potassium_mg: 0 };
         }
 
         const data = await response.json();
+
+        console.log('[NUTRITION API] Full response:', data);
+        console.log('[NUTRITION API] Ingredients sent:', normalized);
+        console.log('[NUTRITION API] Servings parameter:', servings);
 
         if (!data.summary_100g_sum || Object.keys(data.summary_100g_sum).length === 0) {
             console.warn('No nutrition data found in API response');
             // If backend didn't provide any data, it means ingredients couldn't be matched
             // Return zero values instead of making up data
-            return { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0, protein: 0, carbs: 0, fat: 0 };
+            return { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sugars_g: 0, saturated_fat_g: 0, trans_fat_g: 0, vitamin_d_iu: 0, calcium_mg: 0, iron_mg: 0, potassium_mg: 0 };
         }
 
         const sum = data.summary_100g_sum;
+        console.log('[NUTRITION API] summary_100g_sum data:', sum);
+
         // NOTE: Backend returns TOTAL recipe nutrition in summary_100g_sum
-        // Store the total values - do NOT divide by servings here
-        // Servings division should be done at display time
+        // Divide by servings to get per-serving nutrition
+        const servingDivisor = servings || 1;
+        console.log('[NUTRITION API] Will divide by servings:', servingDivisor);
+
         const nutrition = {
-            calories: Math.round(sum.calories || sum.energy_kcal || sum.energy || 0),
-            protein_g: Math.round(sum.protein_g || sum.protein || 0),
-            carbs_g: Math.round(sum.carbohydrates || sum.carbohydrate_g || sum.carbohydrate || sum.carbs_g || sum.carbs || 0),
-            fat_g: Math.round(sum.total_fat || sum.fat_g || sum.fat || 0),
-            sodium_mg: Math.round(sum.sodium_mg || sum.sodium || 0),
+            calories: Math.round((sum.calories || 0) / servingDivisor),
+            protein_g: Math.round((sum.protein || 0) / servingDivisor),
+            carbs_g: Math.round((sum.carbohydrates || 0) / servingDivisor),
+            fat_g: Math.round((sum.total_fat || 0) / servingDivisor),
+            fiber_g: Math.round((sum.dietary_fiber || 0) / servingDivisor),
+            sugars_g: Math.round((sum.total_sugars || 0) / servingDivisor),
+            saturated_fat_g: Math.round((sum.saturated_fats || 0) / servingDivisor),
+            trans_fat_g: Math.round((sum.trans_fats || 0) / servingDivisor),
+            vitamin_d_iu: Math.round((sum.vitamin_d_iu || sum.vitamin_d || 0) / servingDivisor),
+            calcium_mg: Math.round((sum.calcium || 0) / servingDivisor),
+            iron_mg: Math.round((sum.iron || 0) / servingDivisor),
+            potassium_mg: Math.round((sum.potassium || 0) / servingDivisor),
             // Keep backward compatibility
-            protein: Math.round(sum.protein_g || sum.protein || 0),
-            carbs: Math.round(sum.carbohydrates || sum.carbohydrate_g || sum.carbohydrate || sum.carbs_g || sum.carbs || 0),
-            fat: Math.round(sum.total_fat || sum.fat_g || sum.fat || 0)
+            protein: Math.round((sum.protein || 0) / servingDivisor),
+            carbs: Math.round((sum.carbohydrates || 0) / servingDivisor),
+            fat: Math.round((sum.total_fat || 0) / servingDivisor),
+            _perServing: true,
+            servings_used: servingDivisor
         };
+
+        console.log(`calculateNutrition - Final nutrition (per serving):`, nutrition);
 
         // Cache the result
         nutritionCache.set(cacheKey, nutrition);
@@ -204,6 +278,36 @@ async function calculateNutrition(ingredients, servings = 1) {
 const questionnaireSteps = [
     {
         step: 1,
+        title: "Privacy & Data Protection",
+        type: "info",
+        questions: [
+            {
+                id: "privacy_acknowledgment",
+                type: "info",
+                content: `
+                    <div style="line-height: 1.8; font-size: 1.1rem;">
+                        <p style="margin-bottom: 1.5rem;"><strong>Your Privacy Matters</strong></p>
+                        <p style="margin-bottom: 1rem;">We value your privacy and are committed to protecting your personal information. Before we begin, please understand how your data is handled:</p>
+
+                        <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                            <li style="margin-bottom: 0.8rem;"><strong>Local Storage Only:</strong> All information you provide is stored <strong>locally on your device</strong>. Nothing is uploaded to any server.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>No Commercial Use:</strong> Your personal information will <strong>never be used for commercial purposes or marketing</strong>.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>No Third-Party Sharing:</strong> We do <strong>not share your data</strong> with any third parties.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>Educational Purpose:</strong> This meal planner is designed to help you create <strong>personalized, healthy meal plans</strong>.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>Personalized Experience:</strong> Your preferences will be used to customize your <strong>meal plans</strong> and <strong>daily health tips</strong> throughout the application, including the <strong>Daily Tips page</strong>.</li>
+                            <li style="margin-bottom: 0.8rem;"><strong>Your Control:</strong> You can <strong>clear your data at any time</strong> through your browser settings.</li>
+                        </ul>
+
+                        <p style="margin-top: 1.5rem; padding: 1rem; background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 4px;">
+                            <strong>By clicking "Next", you acknowledge that you have read and understood this privacy notice and consent to the local storage of your preferences on your device.</strong>
+                        </p>
+                    </div>
+                `
+            }
+        ]
+    },
+    {
+        step: 2,
         title: "Personal Information",
         questions: [
             {
@@ -249,7 +353,7 @@ const questionnaireSteps = [
         ]
     },
     {
-        step: 2,
+        step: 3,
         title: "Dietary Preferences",
         questions: [
             {
@@ -285,13 +389,15 @@ const questionnaireSteps = [
                 ],
                 validation: {
                     minSelected: 2,
-                    message: "Please select at least 2 meal types"
+                    maxSelected: 4,
+                    message: "Please select at least 2 meal types",
+                    maxMessage: "You can select a maximum of 4 meal types for balanced daily nutrition"
                 }
             }
         ]
     },
     {
-        step: 3,
+        step: 4,
         title: "Allergies & Food Restrictions",
         questions: [
             {
@@ -324,7 +430,7 @@ const questionnaireSteps = [
         ]
     },
     {
-        step: 4,
+        step: 5,
         title: "Nutrition Goals",
         questions: [
             {
@@ -334,9 +440,9 @@ const questionnaireSteps = [
                 required: true,
                 options: [
                     { value: "", text: "Select your daily energy needs" },
-                    { value: "1200-1500", text: "1200-1500 calories (Lower energy needs)" },
-                    { value: "1500-1800", text: "1500-1800 calories (Medium energy needs)" },
-                    { value: "1800-2200", text: "1800-2200 calories (High energy needs)" }
+                    { value: "1800-2100", text: "1800-2100 calories (Lower energy needs)" },
+                    { value: "2100-2400", text: "2100-2400 calories (Medium energy needs)" },
+                    { value: "2400-2600", text: "2400-2600 calories (High energy needs)" }
                 ]
             }/*,
             {
@@ -376,8 +482,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     await loadUserPreferences();
     renderCurrentStep();
 
-    // Always show the Weekly Summary (even with placeholder data)
-    generateWeeklySummary();
+    // Always show the Weekly Summary (pass weeklyPlan if loaded)
+    await generateWeeklySummary(weeklyPlan);
 });
 
 // Load saved user preferences from localStorage
@@ -461,11 +567,30 @@ function renderCurrentStep() {
     updateStepIndicator();
 
     const content = document.getElementById('questionnaire-content');
+    const renderedQuestions = stepData.questions.map(question => renderQuestion(question)).join('');
+
+    // Check if step 5 and gender is male/female (all questions are auto-skipped)
+    const isStep5Skipped = currentStep === 5 && (userPreferences.gender === 'male' || userPreferences.gender === 'female');
+
     content.innerHTML = `
         <div class="questionnaire-header">
             <h2>Step ${currentStep}: ${stepData.title}</h2>
         </div>
-        ${stepData.questions.map(question => renderQuestion(question)).join('')}
+        ${isStep5Skipped ? `
+            <div class="step-skipped-notice">
+                <div class="notice-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="notice-content">
+                    <h3>This step has been automatically completed</h3>
+                    <p>Based on your gender selection, we have automatically set your daily calorie target to align with nutritional guidelines for ${userPreferences.gender === 'male' ? 'males' : 'females'} aged 51+.</p>
+                    <p class="notice-detail">
+                        <strong>Your daily calorie target:</strong> ${userPreferences.calorie_target || 'Not set'} calories
+                    </p>
+                    <p class="notice-footer">You can proceed to the next step to complete your profile.</p>
+                </div>
+            </div>
+        ` : renderedQuestions}
     `;
 
     // Add event listeners
@@ -478,6 +603,27 @@ function renderCurrentStep() {
 // Render a single question
 function renderQuestion(question) {
     const value = userPreferences[question.id];
+
+    // Special logic for calorie_target - only show if gender is 'other' or 'prefer_not_to_say'
+    if (question.id === 'calorie_target') {
+        const gender = userPreferences.gender;
+        if (gender === 'male' || gender === 'female') {
+            // Skip rendering this question for male/female since we auto-set their calories
+            return `
+                <div class="question-group" style="display: none;">
+                    <div class="auto-selected-info">
+                        <i class="fas fa-info-circle"></i>
+                        Daily calorie target automatically set based on gender selection: ${userPreferences.calorie_target || 'Not set'}
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // Special logic for allergies - filter options based on diet types
+    if (question.id === 'allergies') {
+        question = filterAllergiesBasedOnDietTypes(question);
+    }
 
     switch (question.type) {
         case 'text':
@@ -523,18 +669,32 @@ function renderQuestion(question) {
                     </label>
                     <div class="checkbox-group">
                         ${question.options.map(opt => `
-                            <div class="checkbox-option ${selectedValues.includes(opt.value) ? 'selected' : ''}" 
+                            <div class="checkbox-option ${selectedValues.includes(opt.value) ? 'selected' : ''}"
                                  data-question-id="${question.id}" data-value="${opt.value}">
-                                <input type="checkbox" 
-                                       id="${question.id}-${opt.value}" 
+                                <input type="checkbox"
+                                       id="${question.id}-${opt.value}"
                                        value="${opt.value}"
                                        ${selectedValues.includes(opt.value) ? 'checked' : ''}>
                                 <label for="${question.id}-${opt.value}">${opt.text}</label>
                             </div>
                         `).join('')}
                     </div>
+                    ${question.hiddenOptionsNote ? `
+                        <div class="hidden-options-note">
+                            <i class="fas fa-info-circle"></i>
+                            ${question.hiddenOptionsNote}
+                        </div>
+                    ` : ''}
                     <div class="input-hint">${getQuestionHint(question)}</div>
                     <div id="${question.id}-error" class="validation-message error-message" style="display:none;"></div>
+                </div>
+            `;
+
+        case 'info':
+            // For informational/privacy notice steps
+            return `
+                <div class="question-group info-content">
+                    ${question.content || ''}
                 </div>
             `;
 
@@ -562,11 +722,46 @@ function addEventListeners() {
     document.querySelectorAll('.form-input').forEach(input => {
         input.addEventListener('change', handleInputChange);
         input.addEventListener('blur', validateField);
+
+        // Prevent decimal point input for age field
+        if (input.id === 'age') {
+            input.addEventListener('keypress', (e) => {
+                // Prevent decimal point (.) and minus sign (-)
+                if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                    e.preventDefault();
+                }
+            });
+
+            // Also prevent pasting decimal values
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                // Only allow digits
+                const digitsOnly = pastedText.replace(/[^0-9]/g, '');
+                if (digitsOnly) {
+                    input.value = digitsOnly;
+                    handleInputChange({ target: input });
+                }
+            });
+        }
     });
 
-    // Checkbox options
+    // Checkbox options - listen to both checkbox change and wrapper click
+    document.querySelectorAll('.checkbox-option input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', handleCheckboxChange);
+    });
+
+    // Also listen to clicks on the wrapper div (for clicking empty space)
     document.querySelectorAll('.checkbox-option').forEach(option => {
-        option.addEventListener('click', handleCheckboxClick);
+        option.addEventListener('click', (event) => {
+            // Only handle if clicking on the div itself or empty space, not on checkbox or label
+            if (event.target === option || event.target.classList.contains('checkbox-option')) {
+                const checkbox = option.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.click(); // This will trigger the change event
+                }
+            }
+        });
     });
 }
 
@@ -580,19 +775,117 @@ function handleInputChange(event) {
         userPreferences[id] = value;
     }
 
+    // Handle gender-specific logic for calorie selection
+    if (id === 'gender') {
+        handleGenderChange(value);
+    }
+
     saveUserPreferences();
     validateField(event);
 }
 
-// Handle checkbox clicks
-function handleCheckboxClick(event) {
-    const option = event.currentTarget;
+// Handle gender change and auto-set calorie target for male/female
+function handleGenderChange(gender) {
+    if (gender === 'male') {
+        // Auto-set male calorie target (typically higher needs)
+        userPreferences.calorie_target = '2400-2600';
+    } else if (gender === 'female') {
+        // Auto-set female calorie target (typically moderate needs)
+        userPreferences.calorie_target = '2100-2400';
+    } else {
+        // For 'other' or 'prefer_not_to_say', clear auto-selection to allow manual choice
+        if (gender === 'other' || gender === 'prefer_not_to_say') {
+            userPreferences.calorie_target = '';
+        }
+    }
+}
+
+// Filter allergies options based on selected diet types (hide irrelevant options)
+function filterAllergiesBasedOnDietTypes(allergiesQuestion) {
+    const selectedDietTypes = userPreferences.diet_types || [];
+
+    // If no diet types selected, show all allergies options
+    if (selectedDietTypes.length === 0) {
+        return allergiesQuestion;
+    }
+
+    // Create a copy of the question to avoid modifying the original
+    const filteredQuestion = { ...allergiesQuestion };
+
+    // Start with all options
+    let availableOptions = [...allergiesQuestion.options];
+
+    // Logic for different diet types - hide options that are redundant
+    const isVegan = selectedDietTypes.includes('vegan');
+    const isVegetarian = selectedDietTypes.includes('vegetarian');
+    const isKosher = selectedDietTypes.includes('kosher');
+
+    // Options to hide based on diet choices
+    let optionsToHide = [];
+
+    if (isVegan) {
+        // Vegans automatically avoid these, so hide these options
+        optionsToHide.push('dairy_free', 'egg_free', 'fish_free', 'shellfish_free');
+    } else if (isVegetarian) {
+        // Vegetarians automatically avoid these, so hide these options
+        optionsToHide.push('fish_free', 'shellfish_free');
+    }
+
+    if (isKosher) {
+        // Kosher diet automatically avoids shellfish, so hide this option
+        optionsToHide.push('shellfish_free');
+    }
+
+    // Remove duplicate options to hide
+    optionsToHide = [...new Set(optionsToHide)];
+
+    // Filter out the options that should be hidden
+    filteredQuestion.options = availableOptions.filter(option =>
+        !optionsToHide.includes(option.value)
+    );
+
+    // Add a note if options were hidden
+    if (optionsToHide.length > 0) {
+        const hiddenOptionsText = optionsToHide.map(option => {
+            const originalOption = allergiesQuestion.options.find(opt => opt.value === option);
+            return originalOption ? originalOption.text : option;
+        }).join(', ');
+
+        // Add info about hidden options
+        filteredQuestion.hiddenOptionsNote = `Note: ${hiddenOptionsText} ${optionsToHide.length === 1 ? 'is' : 'are'} automatically avoided based on your diet choices.`;
+    }
+
+    return filteredQuestion;
+}
+
+// Handle checkbox change events
+function handleCheckboxChange(event) {
+    const checkbox = event.target;
+    const option = checkbox.closest('.checkbox-option');
     const questionId = option.dataset.questionId;
     const value = option.dataset.value;
-    const checkbox = option.querySelector('input[type="checkbox"]');
 
-    // Toggle checkbox
-    checkbox.checked = !checkbox.checked;
+    // Find question to check for maxSelected validation
+    const question = findQuestionById(questionId);
+    const maxSelected = question?.validation?.maxSelected;
+
+    // Check if trying to select when already at max
+    if (checkbox.checked && maxSelected) {
+        const currentSelections = userPreferences[questionId] || [];
+        if (currentSelections.length >= maxSelected && !currentSelections.includes(value)) {
+            // Prevent selection - uncheck and show error
+            checkbox.checked = false;
+            const errorElement = document.getElementById(`${questionId}-error`);
+            if (errorElement) {
+                errorElement.textContent = question.validation.maxMessage || `Maximum ${maxSelected} selections allowed`;
+                errorElement.style.display = 'block';
+                errorElement.classList.remove('warning');
+            }
+            return;
+        }
+    }
+
+    // Update visual state
     option.classList.toggle('selected', checkbox.checked);
 
     // Update preferences
@@ -626,6 +919,7 @@ function validateField(event) {
 
     let isValid = true;
     let errorMessage = '';
+    let warningMessage = '';
 
     // Required field validation
     if (question.required) {
@@ -639,6 +933,15 @@ function validateField(event) {
                     errorMessage = question.validation.message;
                 }
             }
+
+            // Check for maximum selections
+            if (isValid && question.validation && question.validation.maxSelected) {
+                if (value.length > question.validation.maxSelected) {
+                    isValid = false;
+                    errorMessage = question.validation.maxMessage || `Maximum ${question.validation.maxSelected} selections allowed`;
+                }
+            }
+
         } else {
             if (!value || value === '') {
                 isValid = false;
@@ -651,10 +954,16 @@ function validateField(event) {
     if (isValid && rawValue && question.validation) {
         // Integer validation (check first, as it has priority)
         if (question.validation.integerOnly) {
-            const numValue = parseFloat(rawValue);
-            if (!Number.isInteger(numValue)) {
+            // Check if input contains decimal point
+            if (rawValue.includes('.')) {
                 isValid = false;
-                errorMessage = question.validation.integerMessage || "Please enter a number with no decimal";
+                errorMessage = question.validation.integerMessage || "Please enter a whole number with no decimal point";
+            } else {
+                const numValue = parseFloat(rawValue);
+                if (!Number.isInteger(numValue)) {
+                    isValid = false;
+                    errorMessage = question.validation.integerMessage || "Please enter a whole number with no decimal";
+                }
             }
         }
 
@@ -673,13 +982,22 @@ function validateField(event) {
     if (errorElement) {
         if (isValid) {
             errorElement.style.display = 'none';
+            errorElement.classList.remove('warning');
             if (inputElement) {
                 inputElement.classList.remove('error');
                 inputElement.classList.add('success');
             }
+
+            // Show warning if exists
+            if (warningMessage) {
+                errorElement.textContent = warningMessage;
+                errorElement.style.display = 'block';
+                errorElement.classList.add('warning');
+            }
         } else {
             errorElement.textContent = errorMessage;
             errorElement.style.display = 'block';
+            errorElement.classList.remove('warning');
             if (inputElement) {
                 inputElement.classList.add('error');
                 inputElement.classList.remove('success');
@@ -704,9 +1022,19 @@ function validateCurrentStep() {
     const stepData = questionnaireSteps.find(s => s.step === currentStep);
     if (!stepData) return false;
 
+    // Skip validation for info-type steps (like privacy notice)
+    if (stepData.type === 'info') {
+        return true;
+    }
+
     let isValid = true;
 
     for (const question of stepData.questions) {
+        // Skip validation for info-type questions
+        if (question.type === 'info') {
+            continue;
+        }
+
         const inputElement = document.getElementById(question.id);
         const fieldValid = validateField({ target: { id: question.id, value: inputElement ? inputElement.value : '' } });
         if (!fieldValid) {
@@ -891,10 +1219,17 @@ async function generateDayMealsWithProgress(day, selectedMealTypes, baseStep, to
                 selectedRecipeIds.add(recipe.recipe_id);
                 console.log(`Selected recipe for ${day} ${mealType}: ${recipe.title} (ID: ${recipe.recipe_id})`);
 
-                // Calculate nutrition for this recipe
+                // Calculate nutrition for this recipe (per serving)
                 console.log(`Calculating nutrition for ${recipe.title} (${mealType} for ${day})...`);
-                const nutrition = await calculateNutrition(recipe.ingredients || [], 1); // Get total recipe nutrition
-                console.log(`Nutrition calculated for ${recipe.title}:`, nutrition);
+                console.log(`Recipe servings field:`, recipe.servings, `Recipe yield field:`, recipe.yield);
+                let recipeServings = parseInt(recipe.servings) || parseInt(recipe.yield) || 4;
+                // Ensure servings is reasonable (between 1 and 20)
+                if (recipeServings < 1 || recipeServings > 20) {
+                    console.warn(`Unusual servings value ${recipeServings}, defaulting to 4`);
+                    recipeServings = 4;
+                }
+                const nutrition = await calculateNutrition(recipe.ingredients || [], recipeServings); // Per serving nutrition
+                console.log(`Nutrition calculated for ${recipe.title} (${recipeServings} servings):`, nutrition);
                 recipe.nutrition = nutrition; // Add nutrition data to recipe
                 meals[mealType] = recipe;
             } else {
@@ -1586,7 +1921,7 @@ async function renderWeeklyDays() {
     container.innerHTML = dayHTML.join('');
 
     // Generate Weekly Summary
-    generateWeeklySummary(weeklyPlan);
+    await generateWeeklySummary(weeklyPlan);
 }
 
 // Render large recipe card (same style as explore-recipes)
@@ -1601,16 +1936,17 @@ async function renderLargeRecipeCard(mealType, recipe) {
         `;
     }
 
-    // Use recipe's existing nutrition data and calculate per-serving values
-    const nutrition = recipe.nutrition || {};
-    const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+    const servingsCandidate = parseInt(recipe.servings, 10) || parseInt(recipe.yield, 10);
+    const servings = (Number.isFinite(servingsCandidate) && servingsCandidate > 0) ? servingsCandidate : 4;
 
+    // Use consistent nutrition data (same logic as modal)
+    const nutrition = await getConsistentNutrition(recipe, { servings });
 
     const nutritionInfo = `<div class="recipe-nutrition-info">
-        <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)}</span>
-        <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber((nutrition.protein_g || 0) / servings, 'g')}</span>
-        <span class="nutrition-item"><strong>Carbs:</strong> ${formatNutritionNumber((nutrition.carbs_g || 0) / servings, 'g')}</span>
-        <span class="nutrition-item"><strong>Sodium:</strong> ${formatNutritionNumber((nutrition.sodium_mg || 0) / servings, 'mg')}</span>
+        <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber(nutrition.calories || 0, 'kcal')} per serving</span>
+        <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber(nutrition.protein_g || 0, 'g')} per serving</span>
+        <span class="nutrition-item"><strong>Calcium:</strong> ${formatNutritionNumber(nutrition.calcium_mg || 0, 'mg')} per serving</span>
+        <span class="nutrition-item"><strong>Vitamin D:</strong> ${formatNutritionNumber(nutrition.vitamin_d_iu || 0, 'IU')} per serving</span>
     </div>`;
 
     // Image handling (same as explore-recipes)
@@ -1646,14 +1982,16 @@ async function renderMealCard(mealType, recipe) {
         `;
     }
 
-    // Use recipe's existing nutrition data and calculate per-serving values
-    const nutrition = recipe.nutrition || {};
-    const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+    const servingsCandidate = parseInt(recipe.servings, 10) || parseInt(recipe.yield, 10);
+    const servings = (Number.isFinite(servingsCandidate) && servingsCandidate > 0) ? servingsCandidate : 4;
+
+    // Use consistent nutrition data (same logic as modal)
+    const nutrition = await getConsistentNutrition(recipe, { servings });
     const nutritionInfo = `<div class="recipe-nutrition-info">
-        <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber((nutrition.calories || 0) / servings)}</span>
-        <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber((nutrition.protein_g || 0) / servings, 'g')}</span>
-        <span class="nutrition-item"><strong>Carbs:</strong> ${formatNutritionNumber((nutrition.carbs_g || 0) / servings, 'g')}</span>
-        <span class="nutrition-item"><strong>Sodium:</strong> ${formatNutritionNumber((nutrition.sodium_mg || 0) / servings, 'mg')}</span>
+        <span class="nutrition-item"><strong>Calories:</strong> ${formatNutritionNumber(nutrition.calories || 0, 'kcal')} per serving</span>
+        <span class="nutrition-item"><strong>Protein:</strong> ${formatNutritionNumber(nutrition.protein_g || 0, 'g')} per serving</span>
+        <span class="nutrition-item"><strong>Calcium:</strong> ${formatNutritionNumber(nutrition.calcium_mg || 0, 'mg')} per serving</span>
+        <span class="nutrition-item"><strong>Vitamin D:</strong> ${formatNutritionNumber(nutrition.vitamin_d_iu || 0, 'IU')} per serving</span>
     </div>`;
 
     // Image handling (same as explore-recipes)
@@ -1741,35 +2079,42 @@ function ensureRecipeModal() {
     const modalHTML = `
     <div id="recipe-modal" class="modal" aria-hidden="true" style="display:none">
         <div class="modal-backdrop"></div>
-        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
+        <div class="modal-card recipe-modal-new" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
             <button class="modal-close" aria-label="Close">&times;</button>
 
-            <!-- Recipe Title -->
-            <h2 id="recipe-modal-title"></h2>
-
-            <!-- Recipe Image -->
-            <div id="recipe-modal-image" class="modal-recipe-image" style="display:none;">
-                <img id="recipe-modal-img" src="" alt="" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;">
+            <!-- Hero Image Header -->
+            <div id="recipe-modal-image" class="recipe-modal-hero">
+                <img id="recipe-modal-img" src="" alt="Recipe Image" />
+                <div class="recipe-modal-overlay">
+                    <h2 id="recipe-modal-title" class="recipe-modal-hero-title"></h2>
+                </div>
             </div>
-            <p id="recipe-brief" class="recipe-brief"></p>
 
             <!-- Nutrition Summary (Top Section) -->
-            <div class="nutrition-top-section" style="margin-bottom: 1.5rem;">
-                <h3>Nutrition Information</h3>
-                <div id="nutrition-summary" class="nutri-grid">
+            <div class="nutrition-top-section" style="margin: 1.5rem 2rem;">
+                <h3 style="margin-bottom: 1rem; color: #333; font-size: 1.3rem;">Nutrition Information</h3>
+                <div id="nutrition-summary" class="nutrition-grid">
                     <!-- nutrition cards inserted by JS -->
                 </div>
             </div>
 
-            <!-- Ingredients and Instructions (Two Columns) -->
-            <div class="modal-cols">
-                <div class="modal-col">
-                    <h3>Ingredients</h3>
-                    <ul id="recipe-ingredients" class="ingredients-list"></ul>
+            <!-- Tabs -->
+            <div class="recipe-modal-tabs">
+                <button class="recipe-tab active" data-tab="ingredients">
+                    <i class="fas fa-list-ul"></i> Ingredients
+                </button>
+                <button class="recipe-tab" data-tab="instructions">
+                    <i class="fas fa-tasks"></i> Instructions
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="recipe-modal-content">
+                <div id="tab-ingredients" class="recipe-tab-content active">
+                    <ul id="recipe-ingredients" class="recipe-ingredients-list"></ul>
                 </div>
-                <div class="modal-col">
-                    <h3>Instructions</h3>
-                    <ol id="recipe-directions" class="directions-list"></ol>
+                <div id="tab-instructions" class="recipe-tab-content">
+                    <ol id="recipe-directions" class="recipe-instructions-list"></ol>
                 </div>
             </div>
         </div>
@@ -1798,6 +2143,22 @@ function ensureRecipeModal() {
         }
     });
 
+    // Add tab switching functionality
+    const tabs = m.querySelectorAll('.recipe-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function () {
+            const targetTab = this.dataset.tab;
+
+            // Remove active class from all tabs and contents
+            m.querySelectorAll('.recipe-tab').forEach(t => t.classList.remove('active'));
+            m.querySelectorAll('.recipe-tab-content').forEach(c => c.classList.remove('active'));
+
+            // Add active class to clicked tab and corresponding content
+            this.classList.add('active');
+            m.querySelector(`#tab-${targetTab}`).classList.add('active');
+        });
+    });
+
     return m;
 }
 
@@ -1811,6 +2172,14 @@ function openModal() {
 // Open recipe modal and fetch recipe details
 async function openRecipeModal(recipeId) {
     try {
+        // Show modal immediately with loading state
+        const m = ensureRecipeModal();
+        m.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+
+        const titleEl = m.querySelector('#recipe-modal-title');
+        if (titleEl) titleEl.textContent = 'Loading...';
+
         // Fetch recipe details
         const response = await fetch(`${API_CONFIG.RECIPES_API}?recipe_id=${recipeId}`);
         if (!response.ok) {
@@ -1819,14 +2188,14 @@ async function openRecipeModal(recipeId) {
 
         const recipe = await response.json();
 
-        const m = ensureRecipeModal();
-        const titleEl = m.querySelector('#recipe-modal-title');
+        // Get DOM elements
         const ingEl = m.querySelector('#recipe-ingredients');
         const dirEl = m.querySelector('#recipe-directions');
         const sumEl = m.querySelector('#nutrition-summary');
         const imgContainerEl = m.querySelector('#recipe-modal-image');
         const imgEl = m.querySelector('#recipe-modal-img');
 
+        // Update title
         if (titleEl) titleEl.textContent = recipe.title || '';
 
         // Handle recipe image in modal
@@ -1877,52 +2246,46 @@ async function openRecipeModal(recipeId) {
             }
         }
 
-        // Show nutrition info (per serving) - calculate if not available
+        // Show nutrition info (per serving) - use consistent nutrition data
         if (sumEl) {
-            let nutrition = recipe.nutrition;
+            sumEl.innerHTML = '<div style="text-align: center; padding: 1rem; color: #999;">Loading nutrition data...</div>';
 
-            // If no meaningful nutrition data (all zeros except maybe sodium), calculate it from ingredients
-            const hasValidNutrition = nutrition && (
-                (nutrition.calories && nutrition.calories > 0) ||
-                (nutrition.protein_g && nutrition.protein_g > 0) ||
-                (nutrition.carbs_g && nutrition.carbs_g > 0) ||
-                (nutrition.fat_g && nutrition.fat_g > 0)
-            );
+            const servingsCandidate = parseInt(recipe.servings, 10) || parseInt(recipe.yield, 10);
+            const servings = (Number.isFinite(servingsCandidate) && servingsCandidate > 0) ? servingsCandidate : 4;
 
-            if (!hasValidNutrition && recipe.ingredients) {
-                console.log('Calculating nutrition for modal (insufficient data):', recipe.title);
-                try {
-                    nutrition = await calculateNutrition(recipe.ingredients, 1);
-                } catch (error) {
-                    console.error('Error calculating nutrition for modal:', error);
-                    nutrition = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0 };
-                }
-            }
+            console.log('Getting consistent nutrition for modal:', recipe.title, 'servings:', servings);
+            const nutrition = await getConsistentNutrition(recipe, { servings });
 
             if (nutrition) {
                 console.log('Recipe nutrition data:', nutrition);
-                const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
                 console.log('Recipe servings:', servings);
                 sumEl.innerHTML = '';
 
                 const nutritionPairs = [
-                    { key: 'calories', value: nutrition.calories || 0, unit: 'kcal', label: 'Calories' },
-                    { key: 'protein_g', value: nutrition.protein_g || 0, unit: 'g', label: 'Protein' },
-                    { key: 'carbs_g', value: nutrition.carbs_g || 0, unit: 'g', label: 'Carbs' },
-                    { key: 'fat_g', value: nutrition.fat_g || 0, unit: 'g', label: 'Fat' },
-                    { key: 'sodium_mg', value: nutrition.sodium_mg || 0, unit: 'mg', label: 'Sodium' }
+                    { key: 'calories', value: nutrition.calories || 0, unit: 'kcal', label: 'Calories', icon: 'fa-fire' },
+                    { key: 'protein_g', value: nutrition.protein_g || 0, unit: 'g', label: 'Protein', icon: 'fa-drumstick-bite' },
+                    { key: 'fat_g', value: nutrition.fat_g || 0, unit: 'g', label: 'Total Fat', icon: 'fa-bacon' },
+                    { key: 'carbs_g', value: nutrition.carbs_g || 0, unit: 'g', label: 'Carbs', icon: 'fa-bread-slice' },
+                    { key: 'fiber_g', value: nutrition.fiber_g || 0, unit: 'g', label: 'Fiber', icon: 'fa-seedling' },
+                    { key: 'sugars_g', value: nutrition.sugars_g || 0, unit: 'g', label: 'Sugars', icon: 'fa-cube' },
+                    { key: 'saturated_fat_g', value: nutrition.saturated_fat_g || 0, unit: 'g', label: 'Saturated Fat', icon: 'fa-cheese' },
+                    { key: 'trans_fat_g', value: nutrition.trans_fat_g || 0, unit: 'g', label: 'Trans Fat', icon: 'fa-ban' },
+                    { key: 'vitamin_d_iu', value: nutrition.vitamin_d_iu || 0, unit: 'IU', label: 'Vitamin D', icon: 'fa-sun' },
+                    { key: 'calcium_mg', value: nutrition.calcium_mg || 0, unit: 'mg', label: 'Calcium', icon: 'fa-bone' },
+                    { key: 'iron_mg', value: nutrition.iron_mg || 0, unit: 'mg', label: 'Iron', icon: 'fa-magnet' },
+                    { key: 'potassium_mg', value: nutrition.potassium_mg || 0, unit: 'mg', label: 'Potassium', icon: 'fa-bolt' }
                 ];
 
                 nutritionPairs.forEach(p => {
-                    const perServingValue = p.value / servings;
-                    const formattedValue = formatNutritionNumber(perServingValue, p.unit);
-                    console.log(`Nutrition debug: ${p.label} = ${p.value} / ${servings} = ${perServingValue} -> ${formattedValue}`);
+                    const formattedValue = formatNutritionNumber(p.value, p.unit);
+                    console.log(`Nutrition debug: ${p.label} per serving = ${formattedValue}`);
 
                     const card = document.createElement('div');
-                    card.className = 'card';
+                    card.className = 'nutrition-card';
                     card.innerHTML = `
-                        <div class="key">${p.label}</div>
-                        <div class="val">${formattedValue}</div>
+                        <div class="nutrition-icon"><i class="fas ${p.icon}"></i></div>
+                        <div class="nutrition-label">${p.label} (per serving)</div>
+                        <div class="nutrition-value">${formattedValue}</div>
                     `;
                     sumEl.appendChild(card);
                 });
@@ -1951,7 +2314,7 @@ function printMealPlan() {
 }
 
 // Generate Weekly Summary
-function generateWeeklySummary(weeklyPlan) {
+async function generateWeeklySummary(weeklyPlan) {
     const summaryContainer = document.getElementById('weekly-summary');
     if (!summaryContainer) return;
 
@@ -1991,21 +2354,32 @@ function generateWeeklySummary(weeklyPlan) {
     let totalSodium = 0;
     let totalMeals = 0;
 
-    // Calculate totals from all meals (convert to per-serving values)
-    weeklyPlan.days.forEach(day => {
-        ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
+    // Calculate totals from all meals (values already per serving)
+    // Use async processing for consistent nutrition data
+    // Get the actual meal types the user selected
+    const selectedMealTypes = weeklyPlan.preferences?.meal_preferences || ['breakfast', 'lunch', 'dinner'];
+
+    for (const day of weeklyPlan.days) {
+        for (const mealType of selectedMealTypes) {
             const recipe = day.meals[mealType];
-            if (recipe && recipe.nutrition) {
-                const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
-                // Convert total recipe nutrition to per-serving values
-                totalCalories += (recipe.nutrition.calories || 0) / servings;
-                totalProtein += (recipe.nutrition.protein_g || 0) / servings;
-                totalCarbs += (recipe.nutrition.carbs_g || 0) / servings;
-                totalSodium += (recipe.nutrition.sodium_mg || 0) / servings;
-                totalMeals++;
+            if (recipe) {
+                try {
+                    // Use consistent nutrition data (same logic as cards and modal)
+                    const rawServings = Number(recipe.servings) || Number(recipe.yield);
+                    const servings = (Number.isFinite(rawServings) && rawServings > 0) ? rawServings : 4;
+                    const nutrition = await getConsistentNutrition(recipe, { servings });
+
+                    totalCalories += nutrition.calories || 0;
+                    totalProtein += nutrition.protein_g || 0;
+                    totalCarbs += nutrition.carbs_g || 0;
+                    totalSodium += nutrition.sodium_mg || 0;
+                    totalMeals++;
+                } catch (error) {
+                    console.error(`Error getting nutrition for ${recipe.title}:`, error);
+                }
             }
-        });
-    });
+        }
+    }
 
     // Calculate daily averages (for the days we have data)
     const daysWithData = weeklyPlan.days ? weeklyPlan.days.length : 1;
@@ -2044,6 +2418,169 @@ function generateWeeklySummary(weeklyPlan) {
     `;
 }
 
+// Add Meal Plan to Dashboard
+function addMealPlanToDashboard() {
+    // Check if meal plan exists
+    if (!weeklyPlan || !weeklyPlan.plan || Object.keys(weeklyPlan.plan).length === 0) {
+        showSeniorFriendlyAlert(
+            'No Meal Plan Found',
+            'Please generate a meal plan first before adding to dashboard.',
+            'warning'
+        );
+        return;
+    }
+
+    // Check if already has a plan in dashboard
+    const existingPlan = localStorage.getItem('weeklyMealPlanForDashboard');
+
+    if (existingPlan) {
+        // Show update confirmation
+        const existingData = JSON.parse(existingPlan);
+        const existingDate = new Date(existingData.createdAt);
+        const newStartDate = new Date();
+        const newEndDate = new Date();
+        newEndDate.setDate(newEndDate.getDate() + 6);
+
+        showSeniorFriendlyConfirm(
+            'Update Meal Plan?',
+            `You already have a meal plan in the dashboard.
+
+Current plan: ${existingDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })} - ${new Date(existingDate.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })}
+New plan: ${newStartDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })} - ${newEndDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })}
+
+Replace with new plan?`,
+            () => saveMealPlanToDashboard(),
+            'Replace',
+            'Cancel'
+        );
+    } else {
+        // Show add confirmation
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + 6);
+
+        showSeniorFriendlyConfirm(
+            'Add Meal Plan to Dashboard?',
+            `This will save your 7-day meal plan to the dashboard for easy tracking.
+
+Plan dates: ${startDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })}
+
+Continue?`,
+            () => saveMealPlanToDashboard(),
+            'Yes, Add',
+            'Cancel'
+        );
+    }
+}
+
+function saveMealPlanToDashboard() {
+    const planData = {
+        mealPlan: weeklyPlan.plan,
+        createdAt: Date.now(),
+        preferences: weeklyPlan.preferences
+    };
+
+    localStorage.setItem('weeklyMealPlanForDashboard', JSON.stringify(planData));
+
+    showSeniorFriendlySuccess(
+        'Meal Plan Added Successfully!',
+        'Your 7-day meal plan is now in the dashboard.',
+        () => {
+            window.location.href = 'nutrition-dashboard.html';
+        }
+    );
+}
+
+// Senior-friendly alert functions
+function showSeniorFriendlyAlert(title, message, type = 'info') {
+    const iconMap = {
+        'warning': 'fa-exclamation-triangle',
+        'error': 'fa-times-circle',
+        'info': 'fa-info-circle'
+    };
+
+    const colorMap = {
+        'warning': '#ff9800',
+        'error': '#f44336',
+        'info': '#2196F3'
+    };
+
+    const overlay = document.createElement('div');
+    overlay.className = 'senior-dialog-overlay';
+    overlay.innerHTML = `
+        <div class="senior-dialog">
+            <div class="senior-dialog-icon" style="color: ${colorMap[type]}">
+                <i class="fas ${iconMap[type]}"></i>
+            </div>
+            <h2 class="senior-dialog-title">${title}</h2>
+            <p class="senior-dialog-message">${message}</p>
+            <div class="senior-dialog-actions">
+                <button class="btn btn-primary btn-large" onclick="this.closest('.senior-dialog-overlay').remove()">
+                    OK
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function showSeniorFriendlyConfirm(title, message, onConfirm, confirmText = 'Yes', cancelText = 'Cancel') {
+    const overlay = document.createElement('div');
+    overlay.className = 'senior-dialog-overlay';
+    overlay.innerHTML = `
+        <div class="senior-dialog">
+            <div class="senior-dialog-icon" style="color: #ff9800">
+                <i class="fas fa-question-circle"></i>
+            </div>
+            <h2 class="senior-dialog-title">${title}</h2>
+            <p class="senior-dialog-message">${message.replace(/\n/g, '<br>')}</p>
+            <div class="senior-dialog-actions">
+                <button class="btn btn-primary btn-large senior-confirm-btn">
+                    ${confirmText}
+                </button>
+                <button class="btn btn-outline btn-large senior-cancel-btn">
+                    ${cancelText}
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('.senior-confirm-btn').onclick = () => {
+        overlay.remove();
+        onConfirm();
+    };
+
+    overlay.querySelector('.senior-cancel-btn').onclick = () => {
+        overlay.remove();
+    };
+}
+
+function showSeniorFriendlySuccess(title, message, onContinue) {
+    const overlay = document.createElement('div');
+    overlay.className = 'senior-dialog-overlay';
+    overlay.innerHTML = `
+        <div class="senior-dialog">
+            <div class="senior-dialog-icon" style="color: #4CAF50">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2 class="senior-dialog-title">${title}</h2>
+            <p class="senior-dialog-message">${message}</p>
+            <div class="senior-dialog-actions">
+                <button class="btn btn-success btn-large">
+                    <i class="fas fa-chart-line"></i> View in Dashboard
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('.btn-success').onclick = () => {
+        overlay.remove();
+        if (onContinue) onContinue();
+    };
+}
+
 // Export functions for HTML onclick handlers
 window.goToPreviousStep = goToPreviousStep;
 window.goToNextStep = goToNextStep;
@@ -2052,3 +2589,4 @@ window.regeneratePlan = regeneratePlan;
 window.updatePreferences = updatePreferences;
 window.openRecipeModal = openRecipeModal;
 window.printMealPlan = printMealPlan;
+window.addMealPlanToDashboard = addMealPlanToDashboard;

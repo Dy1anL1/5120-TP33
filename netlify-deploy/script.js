@@ -31,29 +31,30 @@ function formatNutritionNumber(value, unit = '') {
 }
 
 // ====== Compact Nutrition Goals (10 key nutrients for dashboard) ======
+// Based on Australian/New Zealand NRV standards
 const NUTRIENT_GOALS = {
     female_51: {
-        calories_kcal: 1800,
-        protein_g: 46,
-        carbohydrate_g: 130,
+        calories_kcal: 2100,
+        protein_g: 60,
+        carbohydrate_g: 350,
         total_fat_pct_range: '20-35',
-        fiber_g: 22.4,
-        calcium_mg: 1200,
-        potassium_mg: 4700,
-        sodium_mg: 2300,
-        vitaminD_IU: 600,
+        fiber_g: 25,
+        calcium_mg: 1300,
+        potassium_mg: 2800,
+        sodium_mg: 2000,
+        vitaminD_IU: 400,
         vitaminB12_mcg: 2.4
     },
     male_51: {
-        calories_kcal: 2200,
-        protein_g: 56,
-        carbohydrate_g: 130,
+        calories_kcal: 2600,
+        protein_g: 70,
+        carbohydrate_g: 375,
         total_fat_pct_range: '20-35',
-        fiber_g: 28,
-        calcium_mg: 1200,
-        potassium_mg: 4700,
-        sodium_mg: 2300,
-        vitaminD_IU: 600,
+        fiber_g: 30,
+        calcium_mg: 1000,
+        potassium_mg: 3800,
+        sodium_mg: 2000,
+        vitaminD_IU: 400,
         vitaminB12_mcg: 2.4
     }
 };
@@ -139,30 +140,93 @@ function ensureRecipeModal() {
     const tpl = `
     <div id="recipe-modal" class="modal" aria-hidden="true" style="display:none">
         <div class="modal-backdrop"></div>
-        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
+        <div class="modal-card recipe-modal-new" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
             <button class="modal-close" aria-label="Close">&times;</button>
-            <h2 id="recipe-modal-title"></h2>
-            <p id="recipe-brief" class="recipe-brief"></p>
-            <div class="modal-cols">
-                <div class="modal-col">
-                    <h3>Ingredients</h3>
-                    <ul id="recipe-ingredients"></ul>
-                    <h3>Instructions</h3>
-                    <ol id="recipe-directions"></ol>
+
+            <!-- Hero Image Header -->
+            <div id="recipe-modal-image" class="recipe-modal-hero">
+                <img id="recipe-modal-img" src="" alt="Recipe Image" />
+                <div class="recipe-modal-overlay">
+                    <h2 id="recipe-modal-title" class="recipe-modal-hero-title"></h2>
                 </div>
-                <div class="modal-col">
-                    <h3>Nutrition</h3>
-                    <div id="nutrition-summary"></div>
-                    <button id="add-to-dashboard" class="btn btn-primary" style="margin-top:1rem;">Add to Nutrition Dashboard</button>
-                    <button id="view-dashboard" class="btn btn-secondary" style="margin-top:0.5rem;">View Nutrition Dashboard</button>
+            </div>
+
+            <!-- Category Tag -->
+            <div id="recipe-category-tag" class="recipe-category-tag"></div>
+
+            <!-- Info Cards Row -->
+            <div class="recipe-info-cards">
+                <div class="recipe-info-card">
+                    <i class="fas fa-clock"></i>
+                    <div class="info-label">Cook Time</div>
+                    <div id="cook-time-value" class="info-value">30 mins</div>
                 </div>
+                <div class="recipe-info-card">
+                    <i class="fas fa-users"></i>
+                    <div class="info-label">Servings</div>
+                    <div id="servings-value" class="info-value">8</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="recipe-modal-tabs">
+                <button class="recipe-tab active" data-tab="ingredients">
+                    <i class="fas fa-list-ul"></i> Ingredients
+                </button>
+                <button class="recipe-tab" data-tab="instructions">
+                    <i class="fas fa-tasks"></i> Instructions
+                </button>
+                <button class="recipe-tab" data-tab="nutrition">
+                    <i class="fas fa-heartbeat"></i> Nutrition
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="recipe-modal-content">
+                <div id="tab-ingredients" class="recipe-tab-content active">
+                    <ul id="recipe-ingredients" class="recipe-ingredients-list"></ul>
+                </div>
+                <div id="tab-instructions" class="recipe-tab-content">
+                    <ol id="recipe-directions" class="recipe-instructions-list"></ol>
+                </div>
+                <div id="tab-nutrition" class="recipe-tab-content">
+                    <div id="nutrition-summary" class="nutrition-grid"></div>
+                </div>
+            </div>
+
+            <!-- Fixed Footer Buttons -->
+            <div class="recipe-modal-footer">
+                <button id="add-to-dashboard" class="btn btn-primary">
+                    <i class="fas fa-plus-circle"></i> Add to Dashboard
+                </button>
+                <button id="view-dashboard" class="btn btn-secondary">
+                    <i class="fas fa-chart-line"></i> View Dashboard
+                </button>
             </div>
         </div>
     </div>`;
     const host = document.createElement('div');
     host.innerHTML = tpl;
     document.body.appendChild(host.firstElementChild);
-    return document.getElementById('recipe-modal');
+
+    // Add tab switching functionality
+    const modal = document.getElementById('recipe-modal');
+    const tabs = modal.querySelectorAll('.recipe-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function () {
+            const targetTab = this.dataset.tab;
+
+            // Remove active class from all tabs and contents
+            modal.querySelectorAll('.recipe-tab').forEach(t => t.classList.remove('active'));
+            modal.querySelectorAll('.recipe-tab-content').forEach(c => c.classList.remove('active'));
+
+            // Add active class to clicked tab and corresponding content
+            this.classList.add('active');
+            modal.querySelector(`#tab-${targetTab}`).classList.add('active');
+        });
+    });
+
+    return modal;
 }
 
 function openModal() {
@@ -187,8 +251,13 @@ document.addEventListener('click', (e) => {
 });
 
 // Open recipe modal and fetch nutrition summary
-async function openRecipeModal(recipe) {
+async function openRecipeModal(recipe, source = 'explore') {
     const m = ensureRecipeModal();
+
+    // Store nutritionData at modal level for access by Add to Dashboard button
+    m._nutritionData = null;
+    m._source = source;
+
     const titleEl = m.querySelector('#recipe-modal-title');
     const ingEl = m.querySelector('#recipe-ingredients');
     const dirEl = m.querySelector('#recipe-directions');
@@ -205,6 +274,43 @@ async function openRecipeModal(recipe) {
         imgContainerEl.style.display = 'block';
     } else if (imgContainerEl) {
         imgContainerEl.style.display = 'none';
+    }
+
+    // Fill info cards
+    const cookTimeEl = m.querySelector('#cook-time-value');
+    const servingsEl = m.querySelector('#servings-value');
+    const categoryTagEl = m.querySelector('#recipe-category-tag');
+
+    if (cookTimeEl) {
+        const totalTime = recipe.cooking_time || recipe.cook_time || recipe.total_time || null;
+        cookTimeEl.textContent = totalTime ? (totalTime >= 60 ? `${Math.floor(totalTime / 60)} hrs ${totalTime % 60 ? (totalTime % 60) + ' mins' : ''}` : `${totalTime} mins`) : '-';
+    }
+
+    if (servingsEl) {
+        servingsEl.textContent = recipe.servings || recipe.yield || 4;
+    }
+
+    // Show seasonal ingredients tags (if available from seasonal-produce page)
+    if (categoryTagEl) {
+        if (typeof getRecipeSeasonalIngredients === 'function') {
+            const seasonalIngs = getRecipeSeasonalIngredients(recipe);
+            if (seasonalIngs && seasonalIngs.length > 0) {
+                categoryTagEl.innerHTML = seasonalIngs.map(ing =>
+                    `<span class="seasonal-tag-item">${ing}</span>`
+                ).join('');
+                categoryTagEl.style.display = 'block';
+            } else {
+                categoryTagEl.style.display = 'none';
+            }
+        } else {
+            // Fallback to category if not on seasonal page
+            if (recipe.categories && recipe.categories.length > 0) {
+                categoryTagEl.innerHTML = `<span class="seasonal-tag-item">${recipe.categories[0]}</span>`;
+                categoryTagEl.style.display = 'block';
+            } else {
+                categoryTagEl.style.display = 'none';
+            }
+        }
     }
 
     if (ingEl) {
@@ -265,27 +371,44 @@ async function openRecipeModal(recipe) {
             } else {
                 if (sumEl) {
                     sumEl.innerHTML = '';
+
+                    // Get servings for per-serving calculation
+                    const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+
                     const pairs = [
-                        { keys: ['calories', 'energy_kcal', 'energy'], unit: 'kcal', label: 'calories' },
-                        { keys: ['protein', 'protein_g'], unit: 'g', label: 'protein' },
-                        { keys: ['total_fat', 'fat', 'fat_g'], unit: 'g', label: 'fat' },
-                        { keys: ['carbohydrates', 'carbohydrate_g', 'carbohydrates_g'], unit: 'g', label: 'carbohydrates' },
-                        { keys: ['sodium', 'sodium_mg'], unit: 'mg', label: 'sodium' },
-                        { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], unit: 'g', label: 'sugars' },
-                        { keys: ['saturated_fats', 'saturated_fat', 'saturated_fats_g'], unit: 'g', label: 'saturated fats' }
+                        { keys: ['calories'], unit: 'kcal', label: 'calories' },
+                        { keys: ['protein'], unit: 'g', label: 'protein' },
+                        { keys: ['total_fat'], unit: 'g', label: 'fat' },
+                        { keys: ['carbohydrates'], unit: 'g', label: 'carbohydrates' },
+                        { keys: ['dietary_fiber'], unit: 'g', label: 'fiber' },
+                        { keys: ['total_sugars'], unit: 'g', label: 'sugars' },
+                        { keys: ['saturated_fats'], unit: 'g', label: 'saturated fats' },
+                        { keys: ['trans_fats'], unit: 'g', label: 'trans fats' },
+                        { keys: ['vitamin_d'], unit: 'IU', label: 'vitamin D' },
+                        { keys: ['calcium'], unit: 'mg', label: 'calcium' },
+                        { keys: ['iron'], unit: 'mg', label: 'iron' },
+                        { keys: ['potassium'], unit: 'mg', label: 'potassium' }
                     ];
                     pairs.forEach(p => {
                         const v = getAny(summary, p.keys);
                         if (v == null) return;
 
+                        // Divide by servings to get per-serving nutrition values
+                        const perServingValue = v / servings;
+
                         // Apply nutrition value validation before display
                         const labelForValidation = p.label.charAt(0).toUpperCase() + p.label.slice(1);
-                        const adjustedValue = adjustNutritionValue(v, labelForValidation);
+                        const adjustedValue = adjustNutritionValue(perServingValue, labelForValidation);
+
+                        // Store calories in modal for Add to Dashboard
+                        if (p.label === 'calories') {
+                            m._nutritionData = { calories: adjustedValue };
+                        }
 
                         const card = document.createElement('div'); card.className = 'card';
 
                         // Show indicator if value was adjusted
-                        const wasAdjusted = Math.abs(v - adjustedValue) > 0.1;
+                        const wasAdjusted = Math.abs(perServingValue - adjustedValue) > 0.1;
                         const prefix = wasAdjusted ? '~' : '';
 
                         card.innerHTML = `<div class="key">${p.label}</div><div class="val">${prefix}${fmt(adjustedValue)} ${p.unit}</div>`;
@@ -334,22 +457,21 @@ async function openRecipeModal(recipe) {
                 return;
             }
 
-            // Get nutrition summary, use calories if available, otherwise null
+            // Get nutrition data from stored modal data
             let calories = null;
-            const sumEl = m.querySelector('#nutrition-summary');
-            if (sumEl) {
-                const calCard = sumEl.querySelector('.card .key')?.textContent?.toLowerCase() === 'calories'
-                    ? sumEl.querySelector('.card .val')?.textContent
-                    : null;
-                if (calCard && !isNaN(Number(calCard))) calories = Number(calCard);
+            if (m._nutritionData && m._nutritionData.calories) {
+                calories = m._nutritionData.calories;
             }
+
             addToDashboard({
                 recipe_id: recipe.recipe_id,
                 title: recipe.title,
                 ingredients: recipe.ingredients || [],
+                servings: recipe.servings || recipe.yield || 4,
                 calories,
                 added_at: Date.now(),
-                day
+                day,
+                source: m._source || source
             });
 
             // Update button text with new count for this recipe
@@ -399,7 +521,8 @@ function addToDashboard(item) {
     // Add unique identifier to each dashboard entry
     const uniqueItem = {
         ...item,
-        dashboard_entry_id: Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+        dashboard_entry_id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        source: item.source || 'explore' // Default to 'explore' for backward compatibility
     };
     list.push(uniqueItem);
     writeDashboard(list);
@@ -429,43 +552,34 @@ function clearAllMealsForDay(day) {
 async function renderDashboardNutrition() {
     const dashDiv = document.getElementById('dashboard-nutrition');
     if (!dashDiv) return;
-    dashDiv.innerHTML = '<div style="text-align:center;color:#888;">Loading dashboard nutrition...</div>';
+    dashDiv.innerHTML = `
+        <div class="dashboard-loading">
+            <div class="spinner"></div>
+            <div class="loading-text">Loading nutrition data...</div>
+        </div>
+    `;
     // Main card hooks
     const caloriesCurrent = document.getElementById('calories-current');
     const caloriesGoal = document.getElementById('calories-goal');
     const proteinCurrent = document.getElementById('protein-current');
     const proteinGoal = document.getElementById('protein-goal');
-    const carbohydratesCurrent = document.getElementById('carbohydrates-current');
-    const carbohydratesGoal = document.getElementById('carbohydrates-goal');
-    const sodiumCurrent = document.getElementById('sodium-current');
-    const sodiumGoal = document.getElementById('sodium-goal');
+    const calciumCurrent = document.getElementById('calcium-current');
+    const calciumGoal = document.getElementById('calcium-goal');
+    const vitaminDCurrent = document.getElementById('vitamin_d-current');
+    const vitaminDGoal = document.getElementById('vitamin_d-goal');
     const overallProgress = document.getElementById('overall-progress');
     const overallProgressText = document.getElementById('overall-progress-text');
     // Progress bar
     const progressFill = document.querySelector('.progress-fill');
     let allIngredients = [];
 
-    /* 思考（要不要加）
-    // ====== Auto-reference recommended values ======
-    // 默认 female_51，可根据实际需求切换
-    const userType = window.localStorage.getItem('nss_user_type') || 'female_51';
-    const goals = NUTRIENT_GOALS[userType] || NUTRIENT_GOALS['female_51'];
-    // Map compact goals to DOM elements (if present)
-    if (caloriesGoal) caloriesGoal.textContent = goals.calories_kcal;
-    if (proteinGoal) proteinGoal.textContent = goals.protein_g;
-    if (fiberGoal) fiberGoal.textContent = goals.fiber_g;
-    // Optional goal elements: create or set sodium/calcium/vitD/vitB12 if present
-    const sodiumGoalEl = document.getElementById('sodium-goal');
-    if (sodiumGoalEl) sodiumGoalEl.textContent = goals.sodium_mg;
-    const calciumGoalEl = document.getElementById('calcium-goal');
-    if (calciumGoalEl) calciumGoalEl.textContent = goals.calcium_mg;
-    const potassiumGoalEl = document.getElementById('potassium-goal');
-    if (potassiumGoalEl) potassiumGoalEl.textContent = goals.potassium_mg;
-    const vitDGoalEl = document.getElementById('vitaminD-goal');
-    if (vitDGoalEl) vitDGoalEl.textContent = goals.vitaminD_IU;
-    const vitB12GoalEl = document.getElementById('vitaminB12-goal');
-    if (vitB12GoalEl) vitB12GoalEl.textContent = goals.vitaminB12_mcg;
-    */
+    // Set goal values from NUTRIENT_GOALS (default to male_51)
+    const userGoals = NUTRIENT_GOALS.male_51;
+    if (caloriesGoal) caloriesGoal.textContent = userGoals.calories_kcal;
+    if (proteinGoal) proteinGoal.textContent = userGoals.protein_g;
+    if (calciumGoal) calciumGoal.textContent = userGoals.calcium_mg;
+    if (vitaminDGoal) vitaminDGoal.textContent = userGoals.vitaminD_IU;
+
     try {
         // Read dashboard from localStorage
         let dashboard = [];
@@ -478,8 +592,8 @@ async function renderDashboardNutrition() {
             // Reset all nutrition values to zero when no meals
             if (caloriesCurrent) caloriesCurrent.textContent = '0';
             if (proteinCurrent) proteinCurrent.textContent = '0';
-            if (carbohydratesCurrent) carbohydratesCurrent.textContent = '0';
-            if (sodiumCurrent) sodiumCurrent.textContent = '0';
+            if (calciumCurrent) calciumCurrent.textContent = '0';
+            if (vitaminDCurrent) vitaminDCurrent.textContent = '0';
             if (overallProgress) overallProgress.textContent = '0%';
             if (overallProgressText) overallProgressText.textContent = '0%';
             if (progressFill) {
@@ -491,8 +605,8 @@ async function renderDashboardNutrition() {
             const cardFields = [
                 { curId: 'calories-current', goalId: 'calories-goal' },
                 { curId: 'protein-current', goalId: 'protein-goal' },
-                { curId: 'carbohydrates-current', goalId: 'carbohydrates-goal' },
-                { curId: 'sodium-current', goalId: 'sodium-goal' },
+                { curId: 'calcium-current', goalId: 'calcium-goal' },
+                { curId: 'vitamin_d-current', goalId: 'vitamin_d-goal' },
             ];
             cardFields.forEach(({ curId, goalId }) => {
                 const curEl = document.getElementById(curId);
@@ -516,7 +630,7 @@ async function renderDashboardNutrition() {
 
         // Calculate nutrition for each recipe separately and sum them up
         // This fixes the serving size calculation issue
-        let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalSodium = 0;
+        let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalFiber = 0, totalSugars = 0, totalSaturatedFat = 0, totalTransFat = 0, totalVitaminD = 0, totalCalcium = 0, totalIron = 0, totalPotassium = 0;
 
         for (const item of dashboard) {
             if (!Array.isArray(item.ingredients) || item.ingredients.length === 0) continue;
@@ -528,21 +642,22 @@ async function renderDashboardNutrition() {
                 // Get servings info - assume 1 serving per dashboard item since users add individual servings
                 const servings = 1; // Each dashboard item represents one serving
 
-                // DEBUG: Log dashboard nutrition calculation
-                console.log(`Dashboard Recipe Debug - ${item.title || 'Unknown'}:`, {
-                    ingredients: item.ingredients,
-                    raw_response: recipeSum,
-                    calculated_per_serving: {
-                        calories: getAny(recipeSum, ['calories', 'energy_kcal', 'energy']) / (item.servings || 4)
-                    }
-                });
+                // Calculate per-serving values for dashboard
 
                 // Add per-serving nutrition values to totals
                 const recipeServings = item.servings || item.yield || 4; // Default recipe serves 4
-                totalCalories += (getAny(recipeSum, ['calories', 'energy_kcal', 'energy']) || 0) / recipeServings;
-                totalProtein += (getAny(recipeSum, ['protein', 'protein_g']) || 0) / recipeServings;
-                totalCarbs += (getAny(recipeSum, ['carbohydrates', 'carbohydrate_g', 'carbohydrates_g']) || 0) / recipeServings;
-                totalSodium += (getAny(recipeSum, ['sodium', 'sodium_mg']) || 0) / recipeServings;
+                totalCalories += (getAny(recipeSum, ['calories']) || 0) / recipeServings;
+                totalProtein += (getAny(recipeSum, ['protein']) || 0) / recipeServings;
+                totalCarbs += (getAny(recipeSum, ['carbohydrates']) || 0) / recipeServings;
+                totalFat += (getAny(recipeSum, ['total_fat']) || 0) / recipeServings;
+                totalFiber += (getAny(recipeSum, ['dietary_fiber']) || 0) / recipeServings;
+                totalSugars += (getAny(recipeSum, ['total_sugars']) || 0) / recipeServings;
+                totalSaturatedFat += (getAny(recipeSum, ['saturated_fats']) || 0) / recipeServings;
+                totalTransFat += (getAny(recipeSum, ['trans_fats']) || 0) / recipeServings;
+                totalVitaminD += (getAny(recipeSum, ['vitamin_d']) || 0) / recipeServings;
+                totalCalcium += (getAny(recipeSum, ['calcium']) || 0) / recipeServings;
+                totalIron += (getAny(recipeSum, ['iron']) || 0) / recipeServings;
+                totalPotassium += (getAny(recipeSum, ['potassium']) || 0) / recipeServings;
 
             } catch (error) {
                 console.warn(`Failed to get nutrition for dashboard recipe:`, error);
@@ -552,34 +667,43 @@ async function renderDashboardNutrition() {
         // Use calculated totals instead of raw API response
         const sum = {
             calories: totalCalories,
-            protein_g: totalProtein,
-            carbohydrates_g: totalCarbs,
-            sodium_mg: totalSodium
+            protein: totalProtein,
+            carbohydrates: totalCarbs,
+            total_fat: totalFat,
+            dietary_fiber: totalFiber,
+            total_sugars: totalSugars,
+            saturated_fats: totalSaturatedFat,
+            trans_fats: totalTransFat,
+            vitamin_d: totalVitaminD,
+            calcium: totalCalcium,
+            iron: totalIron,
+            potassium: totalPotassium
         };
 
-        // Update main cards (use aliases to tolerate backend naming differences)
-        const caloriesVal = getAny(sum, ['calories', 'energy_kcal', 'energy']);
-        const proteinVal = getAny(sum, ['protein', 'protein_g']);
-        const carbVal = getAny(sum, ['carbohydrates', 'carbohydrate_g', 'carbohydrates_g']);
-        const sodiumVal = getAny(sum, ['sodium', 'sodium_mg']);
-        if (caloriesCurrent) caloriesCurrent.textContent = caloriesVal != null ? fmt(caloriesVal) : '-';
-        if (proteinCurrent) proteinCurrent.textContent = proteinVal != null ? fmt(proteinVal) : '-';
-        if (carbohydratesCurrent) carbohydratesCurrent.textContent = carbVal != null ? fmt(carbVal) : '-';
-        if (sodiumCurrent) sodiumCurrent.textContent = sodiumVal != null ? formatNutritionValue(sodiumVal, 'Sodium') : '-';
+        // Initialize details array (empty for dashboard summary)
+        const details = [];
+
+        // Main nutrition display is handled by the fields loop below
         // Goals (can be static or configurable)
         const calGoal = caloriesGoal ? Number(caloriesGoal.textContent) : 2200;
         const proGoal = proteinGoal ? Number(proteinGoal.textContent) : 56;
-        // Carbohydrates and sodium goals
-        const carbGoal = carbohydratesGoal ? Number(carbohydratesGoal.textContent) : 130;
-        const sodiumGoalVal = sodiumGoal ? Number(sodiumGoal.textContent) : 2300;
+        // Calcium and vitamin D goals
+        const calciumGoalVal = calciumGoal ? Number(calciumGoal.textContent) : 1200;
+        const vitaminDGoalVal = vitaminDGoal ? Number(vitaminDGoal.textContent) : 600;
+
+        // Set current nutrition values
+        if (caloriesCurrent) caloriesCurrent.textContent = Math.round(totalCalories);
+        if (proteinCurrent) proteinCurrent.textContent = Math.round(totalProtein);
+        if (calciumCurrent) calciumCurrent.textContent = Math.round(totalCalcium);
+        if (vitaminDCurrent) vitaminDCurrent.textContent = Math.round(totalVitaminD);
 
         // Progress calculation (simple average)
         let percent = 0;
         let count = 0;
-        if (caloriesVal != null) { percent += Math.min(caloriesVal / calGoal, 1); count++; }
-        if (proteinVal != null) { percent += Math.min(proteinVal / proGoal, 1); count++; }
-        if (carbVal != null) { percent += Math.min(carbVal / carbGoal, 1); count++; }
-        if (sodiumVal != null) { percent += Math.min(sodiumVal / sodiumGoalVal, 1); count++; }
+        if (totalCalories != null) { percent += Math.min(totalCalories / calGoal, 1); count++; }
+        if (totalProtein != null) { percent += Math.min(totalProtein / proGoal, 1); count++; }
+        if (totalCalcium != null) { percent += Math.min(totalCalcium / calciumGoalVal, 1); count++; }
+        if (totalVitaminD != null) { percent += Math.min(totalVitaminD / vitaminDGoalVal, 1); count++; }
         percent = count ? Math.round((percent / count) * 100) : 0;
         if (overallProgress) overallProgress.textContent = percent + '%';
         if (overallProgressText) overallProgressText.textContent = percent + '%';
@@ -600,8 +724,8 @@ async function renderDashboardNutrition() {
         const cardFields = [
             { curId: 'calories-current', goalId: 'calories-goal' },
             { curId: 'protein-current', goalId: 'protein-goal' },
-            { curId: 'carbohydrates-current', goalId: 'carbohydrates-goal' },
-            { curId: 'sodium-current', goalId: 'sodium-goal' },
+            { curId: 'calcium-current', goalId: 'calcium-goal' },
+            { curId: 'vitamin_d-current', goalId: 'vitamin_d-goal' },
         ];
         cardFields.forEach(({ curId, goalId }) => {
             const curEl = document.getElementById(curId);
@@ -629,16 +753,18 @@ async function renderDashboardNutrition() {
         });
         // Render dashboard summary below (extended nutrients)
         const fields = [
-            { keys: ['calories', 'energy_kcal', 'energy'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
-            { keys: ['protein', 'protein_g'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
-            { keys: ['total_fat', 'fat', 'fat_g'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
-            { keys: ['fiber', 'fiber_g', 'dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
-            { keys: ['potassium', 'potassium_mg'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
-            { keys: ['calcium', 'calcium_mg'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
-            { keys: ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
-            { keys: ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
-            { keys: ['sodium', 'sodium_mg'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
-            { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
+            { keys: ['calories'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
+            { keys: ['protein'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
+            { keys: ['total_fat'], label: 'Total Fat', icon: 'fa-bacon', unit: 'g' },
+            { keys: ['carbohydrates'], label: 'Carbs', icon: 'fa-bread-slice', unit: 'g' },
+            { keys: ['dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
+            { keys: ['total_sugars'], label: 'Sugars', icon: 'fa-cube', unit: 'g' },
+            { keys: ['saturated_fats'], label: 'Saturated Fat', icon: 'fa-cheese', unit: 'g' },
+            { keys: ['trans_fats'], label: 'Trans Fat', icon: 'fa-ban', unit: 'g' },
+            { keys: ['vitamin_d'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
+            { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+            { keys: ['iron'], label: 'Iron', icon: 'fa-magnet', unit: 'mg' },
+            { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
         ];
         let html = '<div class="nutrition-cards">';
         fields.forEach(f => {
@@ -655,18 +781,18 @@ async function renderDashboardNutrition() {
         if (details.length > 0) {
             html += '<h3 style="margin-top:2rem;">Ingredient Details</h3>';
             html += '<table class="nutrition-details-table" style="width:100%;margin-top:1rem;border-collapse:collapse;">';
-            html += '<thead><tr><th>Ingredient</th><th>Calories</th><th>Protein</th><th>Fat</th><th>Fiber</th><th>Potassium</th><th>Calcium</th><th>Vit D</th><th>Vit B12</th><th>Sodium</th><th>Sugar</th></tr></thead><tbody>';
+            html += '<thead><tr><th>Ingredient</th><th>Calories</th><th>Protein</th><th>Fat</th><th>Fiber</th><th>Potassium</th><th>Calcium</th><th>Vit D</th><th>Iron</th><th>Sugars</th><th>Sat Fat</th></tr></thead><tbody>';
             details.forEach(d => {
-                const rowCalories = getAny(d, ['calories', 'energy_kcal', 'energy']);
-                const rowProtein = getAny(d, ['protein', 'protein_g']);
-                const rowFat = getAny(d, ['total_fat', 'fat', 'fat_g']);
-                const rowFiber = getAny(d, ['fiber', 'fiber_g', 'dietary_fiber']);
-                const rowPotassium = getAny(d, ['potassium', 'potassium_mg']);
-                const rowCalcium = getAny(d, ['calcium', 'calcium_mg']);
-                const rowVitD = getAny(d, ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu']);
-                const rowVitB12 = getAny(d, ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg']);
-                const rowSodium = getAny(d, ['sodium', 'sodium_mg']);
-                const rowSugar = getAny(d, ['total_sugars', 'sugar', 'sugars', 'sugar_g']);
+                const rowCalories = getAny(d, ['calories']);
+                const rowProtein = getAny(d, ['protein']);
+                const rowFat = getAny(d, ['total_fat']);
+                const rowFiber = getAny(d, ['dietary_fiber']);
+                const rowPotassium = getAny(d, ['potassium']);
+                const rowCalcium = getAny(d, ['calcium']);
+                const rowVitD = getAny(d, ['vitamin_d']);
+                const rowIron = getAny(d, ['iron']);
+                const rowSugar = getAny(d, ['total_sugars']);
+                const rowSaturatedFat = getAny(d, ['saturated_fats']);
                 html += `<tr>
                     <td>${d.ingredient || '-'}</td>
                     <td>${rowCalories != null ? fmt(rowCalories) : '-'}</td>
@@ -676,9 +802,9 @@ async function renderDashboardNutrition() {
                     <td>${rowPotassium != null ? fmt(rowPotassium) + ' mg' : '-'}</td>
                     <td>${rowCalcium != null ? fmt(rowCalcium) + ' mg' : '-'}</td>
                     <td>${rowVitD != null ? fmt(rowVitD) + ' IU' : '-'}</td>
-                    <td>${rowVitB12 != null ? fmt(rowVitB12) + ' mcg' : '-'}</td>
-                    <td>${rowSodium != null ? fmt(rowSodium) : '-'}</td>
+                    <td>${rowIron != null ? fmt(rowIron) + ' mg' : '-'}</td>
                     <td>${rowSugar != null ? fmt(rowSugar) : '-'}</td>
+                    <td>${rowSaturatedFat != null ? fmt(rowSaturatedFat) : '-'}</td>
                 </tr>`;
             });
             html += '</tbody></table>';
@@ -882,23 +1008,31 @@ async function renderNutritionDashboard() {
             // Step 2: fetch nutrition summary
             const nutri = await fetchNutrition(ingredients);
             const sum = nutri.summary_100g_sum || {};
+
+            // Get servings for per-serving calculation
+            const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+
             const fields = [
-                { keys: ['calories', 'energy_kcal', 'energy'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
-                { keys: ['protein', 'protein_g'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
-                { keys: ['total_fat', 'fat', 'fat_g'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
-                { keys: ['fiber', 'fiber_g', 'dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
-                { keys: ['potassium', 'potassium_mg'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
-                { keys: ['calcium', 'calcium_mg'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
-                { keys: ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
-                { keys: ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
-                { keys: ['sodium', 'sodium_mg'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
-                { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
+                { keys: ['calories'], label: 'Calories', icon: 'fa-fire', unit: 'kcal', daily_male: 2200, daily_female: 1800 },
+                { keys: ['protein'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g', daily_male: 56, daily_female: 46 },
+                { keys: ['total_fat'], label: 'Total Fat', icon: 'fa-bacon', unit: 'g', daily_male: 73, daily_female: 60 },
+                { keys: ['carbohydrates'], label: 'Carbs', icon: 'fa-bread-slice', unit: 'g', daily_male: 130, daily_female: 130 },
+                { keys: ['dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g', daily_male: 28, daily_female: 22.4 },
+                { keys: ['total_sugars'], label: 'Sugars', icon: 'fa-cube', unit: 'g', daily_male: null, daily_female: null },
+                { keys: ['saturated_fats'], label: 'Saturated Fat', icon: 'fa-cheese', unit: 'g', daily_male: 24, daily_female: 20 },
+                { keys: ['trans_fats'], label: 'Trans Fat', icon: 'fa-ban', unit: 'g', daily_male: 0, daily_female: 0 },
+                { keys: ['vitamin_d'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU', daily_male: 600, daily_female: 600 },
+                { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg', daily_male: 1200, daily_female: 1200 },
+                { keys: ['iron'], label: 'Iron', icon: 'fa-magnet', unit: 'mg', daily_male: 8, daily_female: 8 },
+                { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg', daily_male: 4700, daily_female: 4700 },
             ];
             resultsDiv.innerHTML = '<div class="nutrition-cards"></div>';
             const cards = resultsDiv.querySelector('.nutrition-cards');
             fields.forEach(f => {
                 const raw = getAny(sum, f.keys);
-                const val = raw != null ? fmt(raw) : '-';
+                // Divide by servings to get per-serving nutrition values
+                const perServingValue = raw != null ? raw / servings : null;
+                const val = perServingValue != null ? fmt(perServingValue) : '-';
                 const card = document.createElement('div');
                 card.className = 'nutrition-card';
                 card.innerHTML = `
@@ -932,7 +1066,9 @@ if (window.location.pathname.includes('nutrition-dashboard')) {
 async function fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit = 10, nextToken = null }, retryCount = 0) {
     const maxRetries = 2;
     const params = new URLSearchParams();
-    if (keyword) params.append('title_prefix', keyword);
+    // DON'T use title_prefix - it doesn't work properly
+    // We'll filter client-side instead
+    // if (keyword) params.append('title_prefix', keyword);
     if (category && category !== 'all') params.append('category', category);
     if (habit && habit !== 'all') params.append('habit', habit);
     if (diet_type && diet_type !== 'all') params.append('diet_type', diet_type);
@@ -951,7 +1087,6 @@ async function fetchRecipes({ keyword, category, habit, diet_type, allergy_filte
         clearTimeout(timeout);
         if (e.name === 'AbortError') {
             if (retryCount < maxRetries) {
-                console.log(`Request timeout, retrying (${retryCount + 1}/${maxRetries + 1})...`);
                 await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Progressive delay
                 return fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit, nextToken }, retryCount + 1);
             }
@@ -964,7 +1099,6 @@ async function fetchRecipes({ keyword, category, habit, diet_type, allergy_filte
     if (!res.ok) {
         // Retry on 500 errors (server issues)
         if (res.status >= 500 && retryCount < maxRetries) {
-            console.log(`Server error ${res.status}, retrying (${retryCount + 1}/${maxRetries + 1})...`);
             await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Progressive delay
             return fetchRecipes({ keyword, category, habit, diet_type, allergy_filter, limit, nextToken }, retryCount + 1);
         }
@@ -1088,6 +1222,38 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Dashboard Tab Switching
+    const dashboardTabs = document.querySelectorAll('.dashboard-tab');
+    const dashboardTabPanels = document.querySelectorAll('.dashboard-tab-panel');
+
+    if (dashboardTabs.length > 0) {
+        dashboardTabs.forEach(tab => {
+            tab.addEventListener('click', function () {
+                const targetTab = this.getAttribute('data-tab');
+
+                // Remove active class from all tabs
+                dashboardTabs.forEach(t => t.classList.remove('active'));
+
+                // Remove active class from all panels
+                dashboardTabPanels.forEach(p => p.classList.remove('active'));
+
+                // Add active class to clicked tab
+                this.classList.add('active');
+
+                // Add active class to corresponding panel
+                const targetPanel = document.getElementById(targetTab);
+                if (targetPanel) {
+                    targetPanel.classList.add('active');
+
+                    // If switching to weekly plan tab, load the meal plan
+                    if (targetTab === 'weekly-plan') {
+                        loadWeeklyMealPlan();
+                    }
+                }
+            });
+        });
+    }
+
     // Features section routing
     const mealPlanning = document.getElementById('feature-meal-planning');
     const shoppingList = document.getElementById('feature-shopping-list');
@@ -1105,7 +1271,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalIngredients = modal ? modal.querySelector('.modal-ingredients') : null;
     const modalInstructions = modal ? modal.querySelector('.modal-instructions') : null;
     const modalNutrition = modal ? modal.querySelector('.modal-nutrition') : null;
-    const modalDashboardBtn = modal ? modal.querySelector('.modal-dashboard-btn') : null;
+    const modalDashboardBtn = modal ? modal.querySelector('#add-to-dashboard') : null;
 
     function openModal(recipe) {
         if (!modal) return;
@@ -1137,22 +1303,30 @@ document.addEventListener('DOMContentLoaded', function () {
                     modalNutrition.innerHTML = '<div style="color:#888;text-align:center;">No nutrition matches found for listed ingredients.</div>';
                     return;
                 }
+
+                // Get servings for per-serving calculation
+                const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
+
                 const fields = [
-                    { keys: ['calories', 'energy_kcal', 'energy'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
-                    { keys: ['protein', 'protein_g'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
-                    { keys: ['total_fat', 'fat', 'fat_g'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
-                    { keys: ['fiber', 'fiber_g', 'dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
-                    { keys: ['potassium', 'potassium_mg'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
-                    { keys: ['calcium', 'calcium_mg'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
-                    { keys: ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
-                    { keys: ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
-                    { keys: ['sodium', 'sodium_mg'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
-                    { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
+                    { keys: ['calories'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
+                    { keys: ['protein'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
+                    { keys: ['total_fat'], label: 'Total Fat', icon: 'fa-bacon', unit: 'g' },
+                    { keys: ['carbohydrates'], label: 'Carbs', icon: 'fa-bread-slice', unit: 'g' },
+                    { keys: ['dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
+                    { keys: ['total_sugars'], label: 'Sugars', icon: 'fa-cube', unit: 'g' },
+                    { keys: ['saturated_fats'], label: 'Saturated Fat', icon: 'fa-cheese', unit: 'g' },
+                    { keys: ['trans_fats'], label: 'Trans Fat', icon: 'fa-ban', unit: 'g' },
+                    { keys: ['vitamin_d'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
+                    { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+                    { keys: ['iron'], label: 'Iron', icon: 'fa-magnet', unit: 'mg' },
+                    { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
                 ];
                 let html = '<div class="nutrition-cards">';
                 fields.forEach(f => {
                     const raw = getAny(sum, f.keys);
-                    const val = raw != null ? fmt(raw) : '-';
+                    // Divide by servings to get per-serving nutrition values
+                    const perServingValue = raw != null ? raw / servings : null;
+                    const val = perServingValue != null ? fmt(perServingValue) : '-';
                     html += `<div class="nutrition-card">
                             <div class="nutrition-icon"><i class="fas ${f.icon}"></i></div>
                             <div class="nutrition-label">${f.label}</div>
@@ -1169,10 +1343,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (modalDashboardBtn) {
             modalDashboardBtn.onclick = function () {
                 let dashboard = [];
-                try { dashboard = JSON.parse(localStorage.getItem('nss_dashboard')) || []; } catch { }
+                try { dashboard = JSON.parse(localStorage.getItem(DASHBOARD_KEY)) || []; } catch { }
                 if (!dashboard.some(r => r.recipe_id === recipe.recipe_id)) {
                     dashboard.push(recipe);
-                    localStorage.setItem('nss_dashboard', JSON.stringify(dashboard));
+                    localStorage.setItem(DASHBOARD_KEY, JSON.stringify(dashboard));
                     modalDashboardBtn.textContent = 'Added!';
                     modalDashboardBtn.disabled = true;
                 } else {
@@ -1198,8 +1372,10 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
         // Reset button state
-        modalDashboardBtn.textContent = 'Add to Dashboard';
-        modalDashboardBtn.disabled = false;
+        if (modalDashboardBtn) {
+            modalDashboardBtn.textContent = 'Add to Nutrition Dashboard';
+            modalDashboardBtn.disabled = false;
+        }
     }
 
     if (modalCloseBtn) modalCloseBtn.onclick = closeModal;
@@ -1330,24 +1506,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 // DEBUG: Log modal nutrition data
-                console.log(`Modal Nutrition Debug for ${recipe.title}:`, {
-                    raw_response: sum,
-                    servings: recipe.servings || recipe.yield || 'unknown'
-                });
+                // Modal Nutrition Debug for ${recipe.title}
 
                 // Get servings for per-serving calculation
                 const servings = recipe.servings || recipe.yield || 4; // Default to 4 servings
                 const fields = [
-                    { keys: ['calories', 'energy_kcal', 'energy'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
-                    { keys: ['protein', 'protein_g'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
-                    { keys: ['total_fat', 'fat', 'fat_g'], label: 'Fat', icon: 'fa-bacon', unit: 'g' },
-                    { keys: ['fiber', 'fiber_g', 'dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
-                    { keys: ['potassium', 'potassium_mg'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
-                    { keys: ['calcium', 'calcium_mg'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
-                    { keys: ['vitaminD', 'vitaminD_IU', 'vitamin_d', 'vitamin_d_iu'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
-                    { keys: ['vitaminB12', 'vitaminB12_mcg', 'vitamin_b12', 'vitamin_b12_mcg'], label: 'Vitamin B12', icon: 'fa-pills', unit: 'mcg' },
-                    { keys: ['sodium', 'sodium_mg'], label: 'Sodium', icon: 'fa-flask', unit: 'mg' },
-                    { keys: ['total_sugars', 'sugar', 'sugars', 'sugar_g'], label: 'Sugar', icon: 'fa-cube', unit: 'g' },
+                    { keys: ['calories'], label: 'Calories', icon: 'fa-fire', unit: 'kcal' },
+                    { keys: ['protein'], label: 'Protein', icon: 'fa-drumstick-bite', unit: 'g' },
+                    { keys: ['total_fat'], label: 'Total Fat', icon: 'fa-bacon', unit: 'g' },
+                    { keys: ['carbohydrates'], label: 'Carbs', icon: 'fa-bread-slice', unit: 'g' },
+                    { keys: ['dietary_fiber'], label: 'Fiber', icon: 'fa-seedling', unit: 'g' },
+                    { keys: ['total_sugars'], label: 'Sugars', icon: 'fa-cube', unit: 'g' },
+                    { keys: ['saturated_fats'], label: 'Saturated Fat', icon: 'fa-cheese', unit: 'g' },
+                    { keys: ['trans_fats'], label: 'Trans Fat', icon: 'fa-ban', unit: 'g' },
+                    { keys: ['vitamin_d'], label: 'Vitamin D', icon: 'fa-sun', unit: 'IU' },
+                    { keys: ['calcium'], label: 'Calcium', icon: 'fa-bone', unit: 'mg' },
+                    { keys: ['iron'], label: 'Iron', icon: 'fa-magnet', unit: 'mg' },
+                    { keys: ['potassium'], label: 'Potassium', icon: 'fa-bolt', unit: 'mg' },
                 ];
                 nutritionResults.innerHTML = '<div class="nutrition-cards"></div>';
                 const cards = nutritionResults.querySelector('.nutrition-cards');
@@ -1396,6 +1571,207 @@ document.addEventListener('DOMContentLoaded', function () {
     let lastQuery = {};
     let displayedRecipeIds = new Set(); // Track displayed recipes to avoid duplicates
 
+    // Quick Filter Chips State
+    const CHIP_KEYWORDS = {
+        chicken: ['chicken', 'chicken breast', 'chicken thigh', 'chicken thighs', 'chicken wing', 'chicken wings', 'drumstick', 'rotisserie chicken', 'hen'],
+        beef: ['beef', 'ground beef', 'beef mince', 'minced beef', 'steak', 'sirloin', 'ribeye', 't-bone', 'brisket', 'chuck', 'short rib', 'oxtail'],
+        pork: ['pork', 'pork belly', 'ground pork', 'bacon', 'ham', 'prosciutto', 'pancetta', 'sausage', 'chorizo'],
+        fish: ['fish', 'salmon', 'tuna', 'cod', 'haddock', 'halibut', 'trout', 'snapper', 'tilapia', 'mackerel', 'sardine', 'anchovy', 'sea bass'],
+        shellfish: ['shrimp', 'shrimps', 'prawn', 'prawns', 'lobster', 'crab', 'crabmeat', 'oyster', 'oysters', 'mussel', 'mussels', 'clam', 'clams', 'scallop', 'scallops', 'scampi', 'crayfish']
+    };
+
+    const CHIPS_STORAGE_KEY = 'recipeChipsState';
+    let chipsState = loadChipsState();
+
+    function loadChipsState() {
+        try {
+            const stored = localStorage.getItem(CHIPS_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : { chicken: false, beef: false, pork: false, fish: false, shellfish: false };
+        } catch {
+            return { chicken: false, beef: false, pork: false, fish: false, shellfish: false };
+        }
+    }
+
+    function saveChipsState() {
+        try {
+            localStorage.setItem(CHIPS_STORAGE_KEY, JSON.stringify(chipsState));
+        } catch (e) {
+            console.error('Failed to save chips state:', e);
+        }
+    }
+
+    // Smart Filter Logic: Update Diet Type and Allergy filters based on active chips
+    function updateDietAndAllergyOptions() {
+        const dietTypeSelect = document.getElementById('diet-type');
+        const allergyFilterSelect = document.getElementById('allergy-filter');
+
+        if (!dietTypeSelect || !allergyFilterSelect) return;
+
+        // Determine active meat types
+        const hasMeat = chipsState.chicken || chipsState.beef || chipsState.pork;
+        const hasFish = chipsState.fish;
+        const hasShellfish = chipsState.shellfish;
+
+        // Diet Type Logic
+        const vegetarianOption = dietTypeSelect.querySelector('option[value="vegetarian"]');
+        const veganOption = dietTypeSelect.querySelector('option[value="vegan"]');
+
+        if (hasMeat || hasFish || hasShellfish) {
+            // Disable Vegetarian & Vegan if any animal protein is selected
+            if (vegetarianOption) {
+                vegetarianOption.disabled = true;
+                vegetarianOption.textContent = 'Vegetarian (unavailable with selected proteins)';
+            }
+            if (veganOption) {
+                veganOption.disabled = true;
+                veganOption.textContent = 'Vegan (unavailable with selected proteins)';
+            }
+
+            // Auto-reset to "All" if currently selected
+            if (dietTypeSelect.value === 'vegetarian' || dietTypeSelect.value === 'vegan') {
+                dietTypeSelect.value = 'all';
+            }
+        } else {
+            // Enable Vegetarian & Vegan if no animal protein
+            if (vegetarianOption) {
+                vegetarianOption.disabled = false;
+                vegetarianOption.textContent = 'Vegetarian';
+            }
+            if (veganOption) {
+                veganOption.disabled = false;
+                veganOption.textContent = 'Vegan';
+            }
+        }
+
+        // Allergy Filter Logic - Disable incompatible allergy filters
+        const shellfishFreeOption = allergyFilterSelect.querySelector('option[value="shellfish_free"]');
+        const fishFreeOption = allergyFilterSelect.querySelector('option[value="fish_free"]');
+
+        // Reset all allergy option texts and enabled state first
+        allergyFilterSelect.querySelectorAll('option').forEach(opt => {
+            const value = opt.value;
+            const originalTexts = {
+                'shellfish_free': 'Shellfish-Free',
+                'fish_free': 'Fish-Free',
+                'dairy_free': 'Dairy-Free',
+                'gluten_free': 'Gluten-Free',
+                'nut_free': 'Nut-Free',
+                'egg_free': 'Egg-Free',
+                'soy_free': 'Soy-Free'
+            };
+            if (originalTexts[value]) {
+                opt.textContent = originalTexts[value];
+                opt.disabled = false; // Re-enable all options first
+            }
+        });
+
+        // Disable incompatible allergy filters based on active chips
+        // If shellfish is selected, disable shellfish-free
+        if (hasShellfish && shellfishFreeOption) {
+            shellfishFreeOption.disabled = true;
+            shellfishFreeOption.textContent = 'Shellfish-Free (unavailable: shellfish selected)';
+
+            // Auto-reset if currently selected
+            if (allergyFilterSelect.value === 'shellfish_free') {
+                allergyFilterSelect.value = 'all';
+            }
+        }
+
+        // If fish is selected, disable fish-free
+        if (hasFish) {
+            if (fishFreeOption) {
+                fishFreeOption.disabled = true;
+                fishFreeOption.textContent = 'Fish-Free (unavailable: fish selected)';
+
+                // Auto-reset if currently selected
+                if (allergyFilterSelect.value === 'fish_free') {
+                    allergyFilterSelect.value = 'all';
+                }
+            }
+        }
+
+        // Apply visual styling to disabled options
+        applyDisabledOptionsStyle();
+    }
+
+    // Apply visual styling to disabled select options
+    function applyDisabledOptionsStyle() {
+        const dietTypeSelect = document.getElementById('diet-type');
+        const allergyFilterSelect = document.getElementById('allergy-filter');
+
+        // Style diet type select if it has disabled options
+        if (dietTypeSelect) {
+            const hasDisabled = Array.from(dietTypeSelect.options).some(opt => opt.disabled);
+            if (hasDisabled) {
+                dietTypeSelect.classList.add('has-disabled-options');
+            } else {
+                dietTypeSelect.classList.remove('has-disabled-options');
+            }
+        }
+
+        // Style allergy filter select if it has disabled options
+        if (allergyFilterSelect) {
+            const hasDisabled = Array.from(allergyFilterSelect.options).some(opt => opt.disabled);
+            if (hasDisabled) {
+                allergyFilterSelect.classList.add('has-disabled-options');
+            } else {
+                allergyFilterSelect.classList.remove('has-disabled-options');
+            }
+        }
+    }
+
+    // Seasonal data cache (preloaded for performance)
+    let seasonalData = null;
+    let currentSeason = '';
+
+    // Preload seasonal data on page load
+    async function loadSeasonalData() {
+        try {
+            const response = await fetch('data/season_food.json');
+            seasonalData = await response.json();
+
+            // Detect current season based on month (Southern Hemisphere - Australia)
+            const month = new Date().getMonth() + 1;
+            if ([12, 1, 2].includes(month)) currentSeason = 'summer';
+            else if ([3, 4, 5].includes(month)) currentSeason = 'autumn';
+            else if ([6, 7, 8].includes(month)) currentSeason = 'winter';
+            else if ([9, 10, 11].includes(month)) currentSeason = 'spring';
+
+            // Update hint text
+            const seasonHint = document.getElementById('current-season-hint');
+            if (seasonHint) {
+                const seasonEmoji = { spring: '🌸', summer: '☀️', autumn: '🍂', winter: '❄️' };
+                seasonHint.textContent = `(Fresh ingredients in season now - ${seasonEmoji[currentSeason]} ${currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1)})`;
+            }
+        } catch (error) {
+            console.error('Failed to load seasonal data:', error);
+        }
+    }
+
+    // Check if recipe contains seasonal ingredients
+    function isSeasonalRecipe(recipe) {
+        if (!seasonalData || !currentSeason || !recipe.ingredients) return false;
+
+        const ingredients = recipe.ingredients.map(ing =>
+            (typeof ing === 'string' ? ing : ing.ingredient || '').toLowerCase()
+        );
+
+        // Check all states for seasonal ingredients (more permissive)
+        for (const state of Object.values(seasonalData)) {
+            const allSeasonalItems = { ...state.fruits, ...state.vegetables };
+
+            for (const [itemName, seasons] of Object.entries(allSeasonalItems)) {
+                if (seasons.includes(currentSeason)) {
+                    // Check if this seasonal item appears in recipe ingredients
+                    if (ingredients.some(ing => ing.includes(itemName.toLowerCase()))) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     // Sort recipes by nutrition values
     async function sortRecipesByNutrition(recipes, sortBy) {
         if (sortBy === 'default' || !recipes.length) return recipes;
@@ -1408,13 +1784,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const sum = nutrition.summary_100g_sum || {};
 
                     // DEBUG: Log nutrition data for debugging
-                    console.log(`Nutrition Debug for ${recipe.title}:`, {
-                        ingredients: recipe.ingredients,
-                        raw_api_response: sum,
-                        calories_raw: getAny(sum, ['calories', 'energy_kcal', 'energy']),
-                        protein_raw: getAny(sum, ['protein', 'protein_g']),
-                        servings: recipe.servings || 'unknown'
-                    });
+                    // Nutrition Debug for ${recipe.title}
 
                     // NOTE: According to backend analysis, summary_100g_sum contains TOTAL recipe nutrition
                     // not per-100g values. The field name is misleading.
@@ -1424,16 +1794,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     return {
                         ...recipe,
                         nutritionData: {
-                            calories: Math.round((getAny(sum, ['calories', 'energy_kcal', 'energy']) || 0) / servings),
-                            protein: Math.round((getAny(sum, ['protein', 'protein_g']) || 0) / servings),
-                            fat: Math.round((getAny(sum, ['total_fat', 'fat', 'fat_g']) || 0) / servings),
-                            sodium: Math.round((getAny(sum, ['sodium', 'sodium_mg']) || 0) / servings)
+                            calories: Math.round((getAny(sum, ['calories']) || 0) / servings),
+                            protein: Math.round((getAny(sum, ['protein']) || 0) / servings),
+                            calcium: Math.round((getAny(sum, ['calcium']) || 0) / servings),
+                            vitamin_d: Math.round((getAny(sum, ['vitamin_d_iu', 'vitamin_d']) || 0) / servings)
                         }
                     };
                 } catch (error) {
                     return {
                         ...recipe,
-                        nutritionData: { calories: 0, protein: 0, fat: 0, sodium: 0 }
+                        nutritionData: { calories: 0, protein: 0, calcium: 0, vitamin_d: 0 }
                     };
                 }
             })
@@ -1453,14 +1823,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     return bNutrition.protein - aNutrition.protein;
                 case 'protein-low':
                     return aNutrition.protein - bNutrition.protein;
-                case 'fat-high':
-                    return bNutrition.fat - aNutrition.fat;
-                case 'fat-low':
-                    return aNutrition.fat - bNutrition.fat;
-                case 'sodium-high':
-                    return bNutrition.sodium - aNutrition.sodium;
-                case 'sodium-low':
-                    return aNutrition.sodium - bNutrition.sodium;
+                case 'calcium-high':
+                    return bNutrition.calcium - aNutrition.calcium;
+                case 'calcium-low':
+                    return aNutrition.calcium - bNutrition.calcium;
+                case 'vitamin_d-high':
+                    return bNutrition.vitamin_d - aNutrition.vitamin_d;
+                case 'vitamin_d-low':
+                    return aNutrition.vitamin_d - bNutrition.vitamin_d;
                 default:
                     return 0;
             }
@@ -1469,21 +1839,108 @@ document.addEventListener('DOMContentLoaded', function () {
         return sorted;
     }
 
+    // Helper function to create loading animation HTML
+    function createLoadingHTML(message, subtext = '') {
+        return `
+            <div class="recipe-loading-container">
+                <div class="recipe-loading-spinner"></div>
+                <div class="recipe-loading-text">${message}</div>
+                ${subtext ? `<div class="recipe-loading-subtext">${subtext}</div>` : ''}
+            </div>
+        `;
+    }
+
     async function updateRecipes(reset = true) {
         const keyword = searchInput ? searchInput.value.trim() : '';
         const category = recipeCategorySelect ? recipeCategorySelect.value : '';
         const diet_type = dietTypeSelect ? dietTypeSelect.value : '';
         const allergy_filter = allergyFilterSelect ? allergyFilterSelect.value : '';
         const sortBy = sortBySelect ? sortBySelect.value : 'default';
+        const seasonalFilter = document.getElementById('seasonal-filter')?.checked || false;
+
         if (reset) {
             nextToken = null;
-            lastQuery = { keyword, category, diet_type, allergy_filter, sortBy };
+            lastQuery = { keyword, category, diet_type, allergy_filter, sortBy, seasonalFilter };
             displayedRecipeIds.clear(); // Clear displayed recipes on new search
         }
-        if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading...</div>';
+        if (cardsContainer && reset) cardsContainer.innerHTML = createLoadingHTML('Loading Recipes', 'Finding the best recipes for you');
+        let inlineLoader = null;
+        const removeInlineLoader = () => {
+            if (inlineLoader && inlineLoader.parentNode) {
+                inlineLoader.parentNode.removeChild(inlineLoader);
+                inlineLoader = null;
+            }
+        };
+        if (!reset && cardsContainer) {
+            inlineLoader = document.createElement('div');
+            inlineLoader.className = 'recipe-inline-loader';
+            inlineLoader.innerHTML = createLoadingHTML('Loading more recipes', 'Fetching additional recipes for you...');
+            cardsContainer.appendChild(inlineLoader);
+        }
         try {
-            const { items = [], next_token } = await fetchRecipes({ keyword, category, diet_type, allergy_filter, nextToken: reset ? null : nextToken });
+            // Smart fetch: increase limit for keyword search to get more results for filtering
+            const hasKeyword = keyword && keyword.trim();
+            const fetchLimit = hasKeyword ? 100 : 10;
+
+            const { items = [], next_token } = await fetchRecipes({
+                keyword,
+                category,
+                diet_type,
+                allergy_filter,
+                limit: fetchLimit,
+                nextToken: reset ? null : nextToken
+            });
             let filteredItems = items;
+
+            // Client-side keyword filtering (because title_prefix API doesn't work)
+            if (hasKeyword) {
+                const searchLower = keyword.toLowerCase().trim();
+                filteredItems = filteredItems.filter(r => {
+                    const title = (r.title || '').toLowerCase();
+                    const description = (r.description || '').toLowerCase();
+                    const ingredients = Array.isArray(r.ingredients) ? r.ingredients.join(' ').toLowerCase() : '';
+                    return title.includes(searchLower) || description.includes(searchLower) || ingredients.includes(searchLower);
+                });
+
+                // Auto-fetch more if we don't have enough results
+                const MIN_RESULTS = 5;
+                let tempNextToken = next_token;
+                let fetchRound = 1;
+                const MAX_ROUNDS = 5;
+
+                while (filteredItems.length < MIN_RESULTS && tempNextToken && fetchRound < MAX_ROUNDS) {
+                    if (cardsContainer && reset) {
+                        cardsContainer.innerHTML = createLoadingHTML(
+                            'Searching More Recipes',
+                            `Found ${filteredItems.length} matches, looking for more...`
+                        );
+                    }
+
+                    const moreFetch = await fetchRecipes({
+                        keyword,
+                        category,
+                        diet_type,
+                        allergy_filter,
+                        limit: 100,
+                        nextToken: tempNextToken
+                    });
+
+                    const moreMatches = moreFetch.items.filter(r => {
+                        const title = (r.title || '').toLowerCase();
+                        const description = (r.description || '').toLowerCase();
+                        const ingredients = Array.isArray(r.ingredients) ? r.ingredients.join(' ').toLowerCase() : '';
+                        return title.includes(searchLower) || description.includes(searchLower) || ingredients.includes(searchLower);
+                    });
+
+                    filteredItems.push(...moreMatches);
+                    tempNextToken = moreFetch.next_token;
+                    fetchRound++;
+                }
+
+                nextToken = tempNextToken;
+            } else {
+                nextToken = next_token;
+            }
 
             // Remove duplicates and already displayed recipes
             const originalCount = filteredItems.length;
@@ -1495,7 +1952,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             const duplicatesFiltered = originalCount - filteredItems.length;
             if (duplicatesFiltered > 0) {
-                console.log(`Filtered out ${duplicatesFiltered} duplicate recipes. Showing ${filteredItems.length} new recipes.`);
             }
 
             // Strict category match: only show recipes whose categories exactly match the selected category
@@ -1503,15 +1959,38 @@ document.addEventListener('DOMContentLoaded', function () {
                 filteredItems = filteredItems.filter(r => Array.isArray(r.categories) && r.categories.includes(category));
             }
 
+            // Apply seasonal filter (client-side, no API call)
+            if (seasonalFilter && seasonalData) {
+                filteredItems = filteredItems.filter(r => isSeasonalRecipe(r));
+            }
+
+            // Apply quick filter chips (ingredient-based filtering)
+            const activeChips = Object.entries(chipsState).filter(([_, isActive]) => isActive).map(([chipType, _]) => chipType);
+            if (activeChips.length > 0) {
+                filteredItems = filteredItems.filter(recipe => {
+                    if (!recipe.ingredients || !Array.isArray(recipe.ingredients)) return false;
+
+                    // Convert ingredients to lowercase string for matching
+                    const ingredientsText = recipe.ingredients
+                        .map(ing => (typeof ing === 'string' ? ing : ing.ingredient || '').toLowerCase())
+                        .join(' ');
+
+                    // Check if recipe matches ANY of the active chips
+                    return activeChips.some(chipType => {
+                        const keywords = CHIP_KEYWORDS[chipType] || [];
+                        return keywords.some(keyword => ingredientsText.includes(keyword.toLowerCase()));
+                    });
+                });
+            }
+
             // Apply sorting by nutrition values or default quality sorting
             if (sortBy !== 'default') {
-                if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Loading nutrition data for sorting...</div>';
+                if (cardsContainer && reset) cardsContainer.innerHTML = createLoadingHTML('Analyzing Nutrition', 'Calculating nutritional values for each recipe');
                 filteredItems = await sortRecipesByNutrition(filteredItems, sortBy);
             } else {
                 // For default sorting, prioritize recipes with better nutrition data quality
-                if (cardsContainer && reset) cardsContainer.innerHTML = '<div style="text-align:center;color:#888;">Analyzing recipe quality...</div>';
+                if (cardsContainer && reset) cardsContainer.innerHTML = createLoadingHTML('Analyzing Recipes', 'Sorting by quality and nutritional value');
                 filteredItems = sortRecipesByNutritionQuality(filteredItems);
-                console.log('Applied nutrition quality sorting for default view');
             }
             if (cardsContainer) {
                 if (reset) cardsContainer.innerHTML = '';
@@ -1523,7 +2002,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         displayedRecipeIds.add(r.recipe_id);
 
                         const card = document.createElement('div');
-                        card.className = 'recipe-card';
+                        // Use different card class based on whether nutrition data is present
+                        card.className = r.nutritionData ? 'recipe-card recipe-card-with-nutrition' : 'recipe-card';
                         card.tabIndex = 0;
                         card.style.cursor = 'pointer';
                         card.setAttribute('data-id', r.recipe_id || r.id || '');
@@ -1539,13 +2019,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Add nutrition info if available from sorting
                         let nutritionInfo = '';
                         if (r.nutritionData) {
-                            // From sorting functionality
+                            // From sorting functionality - show 4 senior-friendly nutrients
                             const data = r.nutritionData;
                             nutritionInfo = `<div class="recipe-nutrition-info">
                                 <span class="nutrition-item">🔥 ${formatNutritionNumber(data.calories)} kcal</span>
                                 <span class="nutrition-item">💪 ${formatNutritionNumber(data.protein, 'g')} protein</span>
-                                <span class="nutrition-item">🥑 ${formatNutritionNumber(data.fat, 'g')} fat</span>
-                                <span class="nutrition-item">🧂 ${formatNutritionNumber(data.sodium, 'mg')} sodium</span>
+                                <span class="nutrition-item">🦴 ${formatNutritionNumber(data.calcium, 'mg')} calcium</span>
+                                <span class="nutrition-item">☀️ ${formatNutritionNumber(data.vitamin_d, 'IU')} vitamin D</span>
                             </div>`;
                         }
 
@@ -1561,7 +2041,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         const cookingTimeHtml = cookingTime ? `<span class="recipe-info-item"><i class="fas fa-clock"></i> Time: ${cookingTime}</span>` : '';
                         const difficultyHtml = difficulty ? `<span class="recipe-info-item"><i class="fas fa-chart-bar"></i> Difficulty: ${difficulty}</span>` : '';
 
+                        // Check if recipe is seasonal and filter is active
+                        const isSeasonal = seasonalFilter && isSeasonalRecipe(r);
+                        const seasonalBadge = isSeasonal ? `<div class="seasonal-badge"><i class="fas fa-leaf"></i> Seasonal</div>` : '';
+
                         card.innerHTML = `
+                            ${seasonalBadge}
                             ${imageHtml}
                             <div class="recipe-content">
                                 <div class="recipe-title">${r.title || ''}</div>
@@ -1576,7 +2061,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 }
             }
+            removeInlineLoader();
             nextToken = next_token || null;
+
+            // Auto-continue loading if no new results were displayed in Load More scenario
+            if (!reset && filteredItems.length === 0 && nextToken) {
+                // No new results after filtering, but more data available - auto-load next batch
+                console.log('Auto-continuing load: no new results found, fetching next batch...');
+                updateRecipes(false); // Recursively call to load more
+                return; // Exit early to avoid showing Load More button prematurely
+            }
+
             // Pagination button
             let loadMoreBtn = document.getElementById('load-more-btn');
             if (loadMoreBtn) loadMoreBtn.remove();
@@ -1607,6 +2102,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 resultsHeader.textContent = `${total} Recipe${total !== 1 ? 's' : ''} Found`;
             }
         } catch (e) {
+            removeInlineLoader();
             // If server error 5xx try a graceful fallback (no title_prefix) once
             if (e && e.status && String(e.status).startsWith('5')) {
                 try {
@@ -1676,6 +2172,69 @@ document.addEventListener('DOMContentLoaded', function () {
             if (e.key === 'Enter') updateRecipes(true);
         });
     }
+
+    // Initialize quick filter chips
+    const filterChips = document.querySelectorAll('.filter-chip');
+    const clearChipsBtn = document.getElementById('clear-chips');
+
+    // Restore chip states from localStorage
+    filterChips.forEach(chip => {
+        const chipType = chip.dataset.chip;
+        if (chipsState[chipType]) {
+            chip.setAttribute('aria-pressed', 'true');
+        }
+    });
+
+    // Initialize diet and allergy options based on restored chip state
+    updateDietAndAllergyOptions();
+
+    // Add click event listeners to chips
+    filterChips.forEach(chip => {
+        chip.addEventListener('click', function () {
+            const chipType = this.dataset.chip;
+            const isPressed = this.getAttribute('aria-pressed') === 'true';
+
+            // Toggle state
+            this.setAttribute('aria-pressed', !isPressed);
+            chipsState[chipType] = !isPressed;
+
+            // Save state to localStorage
+            saveChipsState();
+
+            // Update diet type and allergy filter options based on active chips
+            updateDietAndAllergyOptions();
+
+            // Auto-apply filters when chip is clicked
+            updateRecipes(true);
+        });
+    });
+
+    // Clear chips button handler
+    if (clearChipsBtn) {
+        clearChipsBtn.addEventListener('click', function () {
+            // Reset all chip states
+            filterChips.forEach(chip => {
+                chip.setAttribute('aria-pressed', 'false');
+                const chipType = chip.dataset.chip;
+                chipsState[chipType] = false;
+            });
+
+            // Save state
+            saveChipsState();
+
+            // Update diet type and allergy filter options
+            updateDietAndAllergyOptions();
+
+            // Auto-apply filters
+            updateRecipes(true);
+        });
+    }
+
+    // Load seasonal data on page load (async, no blocking)
+    if (document.getElementById('seasonal-filter')) {
+        loadSeasonalData().catch(err => console.error('Failed to load seasonal data:', err));
+    }
+
     // Optionally: fetch once on page load
     updateRecipes(true);
 });
@@ -1724,37 +2283,78 @@ function renderMealsAddedList() {
         }
     }
 
-    // Group recipes by recipe_id and title
-    const groupedRecipes = {};
+    // Group recipes by source first, then by recipe_id and title
+    const sourceGroups = {
+        explore: [],
+        seasonal: [],
+        planning: []
+    };
+
     todays.forEach(item => {
-        const key = `${item.recipe_id}_${item.title}`;
-        if (!groupedRecipes[key]) {
-            groupedRecipes[key] = {
-                recipe_id: item.recipe_id,
-                title: item.title,
-                day: item.day,
-                entries: [],
-                totalCalories: 0
-            };
-        }
-        groupedRecipes[key].entries.push(item);
-        if (typeof item.calories === 'number' && !Number.isNaN(item.calories)) {
-            groupedRecipes[key].totalCalories += item.calories;
-        }
+        const source = item.source || 'explore';
+        if (!sourceGroups[source]) sourceGroups[source] = [];
+        sourceGroups[source].push(item);
     });
 
-    // Render grouped recipes
-    Object.values(groupedRecipes).forEach(group => {
-        const li = document.createElement('li');
-        li.className = 'meal-item';
-        li.dataset.recipeId = group.recipe_id;
-        li.dataset.day = group.day;
+    // Define source display config
+    const sourceConfig = {
+        explore: { title: 'Explore Recipes', icon: 'fa-search', color: '#3498db' },
+        seasonal: { title: 'Seasonal Recipes', icon: 'fa-leaf', color: '#27ae60' },
+        planning: { title: 'Meal Planning', icon: 'fa-calendar-alt', color: '#e67e22' }
+    };
 
-        const count = group.entries.length;
-        const displayTitle = count > 1 ? `${group.title} ×${count}` : group.title;
-        const totalKcal = group.totalCalories > 0 ? `${group.totalCalories.toFixed(0)} kcal` : '-';
+    // Render each source group
+    Object.keys(sourceGroups).forEach(sourceKey => {
+        const sourceItems = sourceGroups[sourceKey];
+        if (sourceItems.length === 0) return;
 
-        li.innerHTML = `
+        const config = sourceConfig[sourceKey];
+
+        // Group recipes within this source by recipe_id and title
+        const groupedRecipes = {};
+        let sourceTotalCalories = 0;
+
+        sourceItems.forEach(item => {
+            const key = `${item.recipe_id}_${item.title}`;
+            if (!groupedRecipes[key]) {
+                groupedRecipes[key] = {
+                    recipe_id: item.recipe_id,
+                    title: item.title,
+                    day: item.day,
+                    source: item.source,
+                    entries: [],
+                    totalCalories: 0
+                };
+            }
+            groupedRecipes[key].entries.push(item);
+            if (typeof item.calories === 'number' && !Number.isNaN(item.calories)) {
+                groupedRecipes[key].totalCalories += item.calories;
+                sourceTotalCalories += item.calories;
+            }
+        });
+
+        // Create source group header
+        const sourceHeader = document.createElement('li');
+        sourceHeader.className = 'source-group-header';
+        sourceHeader.innerHTML = `
+            <i class="fas ${config.icon}" style="color: ${config.color}"></i>
+            <strong>${config.title}</strong>
+            <span class="source-summary">(${sourceItems.length} items, ${sourceTotalCalories.toFixed(0)} kcal)</span>
+        `;
+        ul.appendChild(sourceHeader);
+
+        // Render recipes in this source group
+        Object.values(groupedRecipes).forEach(group => {
+            const li = document.createElement('li');
+            li.className = 'meal-item';
+            li.dataset.recipeId = group.recipe_id;
+            li.dataset.day = group.day;
+
+            const count = group.entries.length;
+            const displayTitle = count > 1 ? `${group.title} ×${count}` : group.title;
+            const totalKcal = group.totalCalories > 0 ? `${group.totalCalories.toFixed(0)} kcal` : '-';
+
+            li.innerHTML = `
       <div class="meal-left">
         <div class="meal-name">${displayTitle}</div>
         <div class="meal-meta">Added today</div>
@@ -1772,9 +2372,10 @@ function renderMealsAddedList() {
       </div>
     `;
 
-        // Store entries data for deletion
-        li._entries = group.entries;
-        ul.appendChild(li);
+            // Store entries data for deletion
+            li._entries = group.entries;
+            ul.appendChild(li);
+        });
     });
 
     // Bind add/remove events
@@ -1794,7 +2395,8 @@ function renderMealsAddedList() {
                 ingredients: template.ingredients || [],
                 calories: template.calories,
                 added_at: Date.now(),
-                day: template.day
+                day: template.day,
+                source: template.source || 'explore'
             });
 
             renderMealsAddedList(); // refresh list
@@ -1876,8 +2478,8 @@ function getNutritionName(elementId) {
     const names = {
         'calories-current': 'Calories',
         'protein-current': 'Protein',
-        'carbohydrates-current': 'Carbohydrates',
-        'sodium-current': 'Sodium'
+        'calcium-current': 'Calcium',
+        'vitamin_d-current': 'Vitamin D'
     };
     return names[elementId] || elementId.replace('-current', '');
 }
@@ -1894,20 +2496,20 @@ function addNutritionCardTip(currentElement, severity, nutritionName, percentage
         'light': {
             'Calories': '💡 Goal reached! Maintain balanced eating',
             'Protein': '💡 Protein sufficient! Add more vegetables',
-            'Carbohydrates': '💡 Carbs on target! Choose whole grains',
-            'Sodium': '💡 Goal reached! Choose low-salt options'
+            'Calcium': '💡 Calcium on target! Keep up dairy/leafy greens',
+            'Vitamin D': '💡 Vitamin D sufficient! Great for bone health'
         },
         'warning': {
             'Calories': '⚠️ High calories - choose lighter foods',
             'Protein': '⚠️ Excess protein - reduce meat intake',
-            'Carbohydrates': '⚠️ Too many carbs - reduce starches',
-            'Sodium': '⚠️ High sodium - avoid processed foods'
+            'Calcium': '⚠️ Calcium high - balance with other nutrients',
+            'Vitamin D': '⚠️ Vitamin D high - check supplement dosage'
         },
         'severe': {
             'Calories': '🚨 Calories severely high! Adjust diet now',
             'Protein': '🚨 Protein too high! Consult nutritionist',
-            'Carbohydrates': '🚨 Carbs severely high! Reduce sugars',
-            'Sodium': '🚨 Sodium too high! Choose fresh foods'
+            'Calcium': '🚨 Calcium severely high! Check supplement intake',
+            'Vitamin D': '🚨 Vitamin D too high! Stop supplements temporarily'
         }
     };
 
@@ -1989,3 +2591,162 @@ function clearAllNutritionAlerts() {
 // Make functions available globally
 window.closeNutritionAlert = closeNutritionAlert;
 window.clearAllNutritionAlerts = clearAllNutritionAlerts;
+
+// Weekly Meal Plan Functions
+function loadWeeklyMealPlan() {
+    const weeklyPlanContent = document.getElementById('weekly-plan-content');
+    if (!weeklyPlanContent) return;
+
+    // Get meal plan from localStorage
+    const mealPlanData = localStorage.getItem('weeklyMealPlanForDashboard');
+
+    if (!mealPlanData) {
+        // Show empty state
+        weeklyPlanContent.innerHTML = `
+            <div class="weekly-plan-empty">
+                <div class="empty-icon">
+                    <i class="fas fa-calendar-times"></i>
+                </div>
+                <h3>No Meal Plan Yet</h3>
+                <p>Create a 7-day meal plan to see it here!</p>
+                <a href="meal-planning.html" class="btn btn-primary btn-large">
+                    <i class="fas fa-utensils"></i> Go to Meal Planning
+                </a>
+            </div>
+        `;
+        return;
+    }
+
+    try {
+        const planData = JSON.parse(mealPlanData);
+        const { mealPlan, createdAt, preferences } = planData;
+
+        // Calculate days ago
+        const daysAgo = Math.floor((Date.now() - createdAt) / (1000 * 60 * 60 * 24));
+        const isOutdated = daysAgo > 7;
+
+        // Render meal plan
+        let html = `
+            <div class="weekly-plan-header">
+                <div class="plan-info">
+                    <h3><i class="fas fa-calendar-week"></i> Your 7-Day Meal Plan</h3>
+                    <div class="plan-meta">
+                        <span class="plan-date">
+                            <i class="fas fa-calendar"></i>
+                            Created: ${new Date(createdAt).toLocaleDateString('en-AU', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        })}
+                        </span>
+                        <span class="plan-updated ${isOutdated ? 'outdated' : ''}">
+                            <i class="fas fa-clock"></i>
+                            ${daysAgo === 0 ? 'Just now' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`}
+                        </span>
+                    </div>
+                </div>
+                ${isOutdated ? `
+                    <div class="plan-outdated-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Your meal plan may be outdated
+                        <a href="meal-planning.html" class="btn btn-secondary btn-small">
+                            Create New Plan
+                        </a>
+                    </div>
+                ` : ''}
+            </div>
+
+            <div class="weekly-plan-days">
+        `;
+
+        // Get today's date for highlighting
+        const today = new Date();
+        const startDate = new Date(createdAt);
+
+        // Render each day
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        days.forEach((dayName, index) => {
+            const dayMealsObj = mealPlan[dayName] || {};
+            const dayDate = new Date(startDate);
+            dayDate.setDate(startDate.getDate() + index);
+
+            const isToday = dayDate.toDateString() === today.toDateString();
+
+            // Convert meals object to array
+            const dayMeals = Object.entries(dayMealsObj).map(([mealType, recipe]) => ({
+                meal_type: mealType,
+                ...recipe
+            }));
+
+            // Calculate total nutrition for the day
+            let totalCalories = 0;
+            let totalProtein = 0;
+            let totalCalcium = 0;
+            let totalVitaminD = 0;
+
+            dayMeals.forEach(meal => {
+                if (meal.nutrition) {
+                    totalCalories += meal.nutrition.calories || 0;
+                    totalProtein += meal.nutrition.protein || meal.nutrition.protein_g || 0;
+                    totalCalcium += meal.nutrition.calcium_mg || meal.nutrition.calcium || 0;
+                    totalVitaminD += meal.nutrition.vitamin_d_iu || meal.nutrition.vitamin_d || 0;
+                }
+            });
+
+            html += `
+                <div class="weekly-day-card ${isToday ? 'today' : ''}">
+                    <div class="day-header">
+                        <h4>
+                            ${dayName}
+                            ${isToday ? '<span class="today-badge">Today</span>' : ''}
+                        </h4>
+                        <span class="day-date">${dayDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })}</span>
+                    </div>
+
+                    <div class="day-meals">
+                        ${dayMeals.length > 0 ? dayMeals.map(meal => `
+                            <div class="day-meal-item">
+                                <span class="meal-type-badge">${meal.meal_type}</span>
+                                <span class="meal-title">${meal.title}</span>
+                                <span class="meal-calories">${meal.nutrition?.calories ? Math.round(meal.nutrition.calories) + ' kcal' : ''}</span>
+                            </div>
+                        `).join('') : '<p class="no-meals">No meals planned</p>'}
+                    </div>
+
+                    <div class="day-nutrition-summary">
+                        <div class="nutrition-item">
+                            <i class="fas fa-fire"></i>
+                            <span>${Math.round(totalCalories)} kcal</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <i class="fas fa-drumstick-bite"></i>
+                            <span>${Math.round(totalProtein)}g protein</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <i class="fas fa-bone"></i>
+                            <span>${Math.round(totalCalcium)}mg calcium</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <i class="fas fa-sun"></i>
+                            <span>${totalVitaminD.toFixed(1)}IU vit D</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+            </div>
+        `;
+
+        weeklyPlanContent.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading weekly meal plan:', error);
+        weeklyPlanContent.innerHTML = `
+            <div class="weekly-plan-error">
+                <i class="fas fa-exclamation-circle"></i>
+                <p>Error loading meal plan. Please try creating a new one.</p>
+                <a href="meal-planning.html" class="btn btn-primary">Go to Meal Planning</a>
+            </div>
+        `;
+    }
+}

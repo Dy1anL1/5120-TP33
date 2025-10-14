@@ -1,0 +1,941 @@
+[
+  {
+    "text": "Wash your hands often-because germs are invisible ninjas.",
+    "category": "hygiene",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Get regular check-ups-because WebMD is not a real doctor.",
+    "category": "general",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Stretch every morning-it's the closest thing to a reboot button for your body.",
+    "category": "wellness",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "breakfast"
+    ]
+  },
+  {
+    "text": "Drink plenty of water-your body loves hydration more than you love coffee!",
+    "category": "hydration",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Swap soda for water-your future self will high-five you.",
+    "category": "hydration",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Meditate daily-even if it's just hiding from responsibilities for 5 minutes.",
+    "category": "general",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "nuts"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Keep your posture straight-slouching doesn't make you look cool, just uncomfortable.",
+    "category": "wellness",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Practice deep breathing-because hyperventilating over small things isn't productive.",
+    "category": "general",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Take the stairs whenever possible-your heart will thank you (even if your legs complain).",
+    "category": "heart_health",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Eat fiber-rich foods-because digestion is a journey, not a race.",
+    "category": "fiber",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Practice gratitude-it's a workout for your happiness muscles.",
+    "category": "protein",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Eat a rainbow of fruits and veggies-no, Skittles don't count.",
+    "category": "antioxidants",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "vegetarian"
+    ],
+    "allergy_block": [
+      "eggs"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Avoid processed food-if it can survive an apocalypse, it's probably not good for you.",
+    "category": "general",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Get at least 7-8 hours of sleep. No, binge-watching doesn't count as 'resting your eyes.'",
+    "category": "wellness",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Sunshine is great-just don't turn into a lobster.",
+    "category": "vitaminD",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "shellfish"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Don't skip breakfast-your stomach needs a good morning greeting too.",
+    "category": "general",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "breakfast"
+    ]
+  },
+  {
+    "text": "Move every hour-your chair isn't your best friend.",
+    "category": "general",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Laugh daily-it's like cardio for your soul.",
+    "category": "general",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Listen to your body-unless it's telling you to eat an entire pizza alone.",
+    "category": "general",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Limit sugar intake-your pancreas isn't thrilled with that extra donut.",
+    "category": "general",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish",
+      "low_sugar"
+    ],
+    "allergy_block": [
+      "nuts"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Follow a balanced diet that includes a mix of carbohydrates, proteins, healthy fats, vitamins, and minerals. Include plenty of fruits, vegetables, whole grains, lean proteins, and dairy or dairy alternatives.",
+    "category": "calcium",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "keto",
+      "vegetarian"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Breakfast is crucial as it kick-starts your metabolism and provides the energy needed for the day. Opt for a balanced breakfast that includes whole grains (like oats or whole wheat bread), proteins (like eggs or yogurt), and fruits.",
+    "category": "calcium",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "keto"
+    ],
+    "allergy_block": [
+      "dairy",
+      "eggs",
+      "gluten"
+    ],
+    "meal_types": [
+      "breakfast"
+    ]
+  },
+  {
+    "text": "Foods rich in omega-3 fatty acids (like fish, walnuts, and flaxseeds), antioxidants (like berries and dark chocolate), and vitamins (like leafy greens, nuts, and seeds) can help improve brain function and memory.",
+    "category": "potassium",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "fish",
+      "nuts"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Aim to drink at least 8-10 glasses of water a day. Staying hydrated is crucial for maintaining concentration and overall health.",
+    "category": "hydration",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Avoid foods high in sugar and unhealthy fats, such as sugary snacks, fried foods, and processed foods. These can cause energy crashes and affect concentration.",
+    "category": "iron",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "keto"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "snack"
+    ]
+  },
+  {
+    "text": "Keep healthy snacks on hand, such as fruits, nuts, yogurt, or whole grain crackers. Plan your snacks and meals ahead of time to avoid reaching for unhealthy options.",
+    "category": "calcium",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "dairy",
+      "gluten",
+      "nuts"
+    ],
+    "meal_types": [
+      "snack"
+    ]
+  },
+  {
+    "text": "Aim to have three balanced meals and two healthy snacks each day. Eating at regular intervals helps maintain energy levels and prevents overeating.",
+    "category": "iron",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "snack"
+    ]
+  },
+  {
+    "text": "It's best to get nutrients from a balanced diet. However, if you have specific deficiencies, a doctor or nutritionist might recommend supplements. Avoid taking supplements without professional advice.",
+    "category": "balanced_diet",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "nuts"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Stress can lead to overeating or undereating. Manage stress with regular physical activity, relaxation techniques, and a structured routine. Plan balanced meals and snacks to avoid impulsive eating.",
+    "category": "mental_health",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "snack"
+    ]
+  },
+  {
+    "text": "Foods rich in magnesium (like leafy greens, nuts, seeds, and whole grains), vitamin C (like citrus fruits and berries), and omega-3 fatty acids (like fish and flaxseeds) can help reduce stress levels.",
+    "category": "fiber",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "fish",
+      "nuts"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Eat small, balanced meals and snacks at regular intervals. Include complex carbohydrates (like whole grains) for sustained energy, and proteins (like nuts, yogurt, or lean meats) to keep you feeling full and focused.",
+    "category": "calcium",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "dairy",
+      "nuts"
+    ],
+    "meal_types": [
+      "snack"
+    ]
+  },
+  {
+    "text": "Eat a variety of foods, including plenty of fruits and vegetables, whole grains, lean proteins, and dairy or dairy alternatives. Each food group provides different essential nutrients. If you are concerned about specific deficiencies, consult a healthcare provider.",
+    "category": "calcium",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "vegetarian"
+    ],
+    "allergy_block": [
+      "nuts"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Eat complex carbohydrates (like whole grains), lean proteins, and healthy fats (like avocados, nuts, and seeds). Avoid sugary snacks that cause energy spikes and crashes. Stay hydrated, as dehydration can lead to fatigue.",
+    "category": "hydration",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "keto"
+    ],
+    "allergy_block": [
+      "nuts"
+    ],
+    "meal_types": [
+      "snack"
+    ]
+  },
+  {
+    "text": "Eat smaller, frequent meals rather than large ones to avoid overloading your digestive system. Include fiber-rich foods like fruits, vegetables, and whole grains to aid digestion. Stay hydrated and avoid eating too quickly.",
+    "category": "hydration",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "vegetarian"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Yes, foods rich in omega-3 fatty acids (like fatty fish and flaxseeds), complex carbohydrates (like whole grains), and antioxidants (like berries and dark chocolate) can help improve mood. Avoid excessive caffeine and sugar, which can lead to mood swings.",
+    "category": "fiber",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "fish"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "To stay alert, prioritize light meals and snacks rich in complex carbohydrates and protein. Take short breaks to stretch and move around, and stay hydrated with water or herbal teas to avoid caffeine-induced crashes.",
+    "category": "hydration",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "snack"
+    ]
+  },
+  {
+    "text": "Opt for snacks like nuts, yogurt, fruits, or whole-grain crackers with cheese. These choices provide sustained energy and essential nutrients without causing a sugar crash.",
+    "category": "calcium",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "keto"
+    ],
+    "allergy_block": [
+      "dairy",
+      "gluten",
+      "nuts"
+    ],
+    "meal_types": [
+      "snack"
+    ]
+  },
+  {
+    "text": "Establish a consistent bedtime routine, including winding down with relaxation techniques like deep breathing or gentle stretching. Avoid screens and heavy meals close to bedtime to promote better sleep.",
+    "category": "mental_health",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Plan shorter study sessions with breaks, prioritize quality over quantity, and ensure you're getting adequate nutrition throughout the day to sustain energy levels. A short nap during the day can also help recharge.",
+    "category": "iron",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "nuts"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Prioritize balanced meals throughout the day to maintain energy levels. Limit caffeine intake in the evening and practice relaxation techniques before bed to ensure adequate sleep quality.",
+    "category": "iron",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Staying hydrated is crucial as dehydration can lead to fatigue and difficulty concentrating. Drink water regularly and consider herbal teas or diluted fruit juices as alternatives.",
+    "category": "hydration",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "side"
+    ]
+  },
+  {
+    "text": "Short breaks help maintain focus and prevent burnout. Use breaks to stretch, walk, or engage in relaxing activities like listening to music or meditating.",
+    "category": "metabolism",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Practice stress-reduction techniques such as deep breathing exercises, mindfulness, or yoga. Prioritize self-care activities and seek support from friends, family, or counselors if needed.",
+    "category": "mental_health",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "It's recommended to drink at least 8-10 glasses of water daily. Staying hydrated helps maintain focus and energy levels.",
+    "category": "hydration",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Healthy snacks like nuts, fruits, yogurt, and whole grain crackers provide sustained energy and help maintain concentration.",
+    "category": "calcium",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "dairy",
+      "gluten",
+      "nuts"
+    ],
+    "meal_types": [
+      "snack"
+    ]
+  },
+  {
+    "text": "Foods rich in omega-3 fatty acids like fish, walnuts, and flaxseeds, as well as antioxidants found in berries, can help improve memory and cognitive function.",
+    "category": "protein",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "fish",
+      "nuts"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Eating a balanced diet rich in fruits, vegetables, whole grains, and lean proteins can help manage stress. Avoiding excessive caffeine and sugar also helps in reducing stress levels.",
+    "category": "fiber",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "vegetarian"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Quick and healthy meals include salads with lean proteins, whole grain wraps, vegetable stir-fries, and smoothies with fruits and yogurt.",
+    "category": "calcium",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "vegetarian"
+    ],
+    "allergy_block": [
+      "dairy"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "While moderate coffee consumption can help with alertness, it's best not to rely on it excessively. Too much caffeine can lead to anxiety and disrupt sleep.",
+    "category": "mental_health",
+    "type": "lifestyle",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Prepare healthy snacks in advance and keep them accessible. Choose nutrient-dense options like fruits, nuts, and yogurt to satisfy hunger without unhealthy ingredients.",
+    "category": "calcium",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "dairy",
+      "nuts"
+    ],
+    "meal_types": [
+      "snack"
+    ]
+  },
+  {
+    "text": "While some supplements can support overall health, it's best to focus on a balanced diet for optimal nutrition. Consult with a healthcare provider before taking any supplements.",
+    "category": "balanced_diet",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "nuts"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Eating breakfast improves concentration, memory, and overall cognitive performance. It provides essential nutrients and energy needed to start the day.",
+    "category": "iron",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "nuts"
+    ],
+    "meal_types": [
+      "breakfast"
+    ]
+  },
+  {
+    "text": "Add vegetables to soups, stews, and salads. You can also include them in smoothies, wraps, and stir-fries to increase your vegetable intake.",
+    "category": "fiber",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "vegetarian"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Good sources of protein for vegetarians include beans, lentils, tofu, tempeh, quinoa, nuts, seeds, and dairy products like yogurt and cheese.",
+    "category": "calcium",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "keto",
+      "vegetarian"
+    ],
+    "allergy_block": [
+      "dairy",
+      "nuts",
+      "soy"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Occasional indulgence in junk food is fine, but it's important to maintain a balanced diet for overall health and sustained energy levels.",
+    "category": "iron",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Opt for healthier sweet options like fruits, dark chocolate, and homemade treats with natural sweeteners. Balance your diet with plenty of vegetables, lean proteins, and whole grains.",
+    "category": "fiber",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "vegetarian"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Fish, especially fatty fish like salmon and mackerel, are rich in omega-3 fatty acids, which are essential for brain health and can improve cognitive function.",
+    "category": "protein",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "fish"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Eat smaller, balanced meals that include complex carbohydrates, proteins, and healthy fats. Avoid heavy, high-fat meals that can cause drowsiness.",
+    "category": "protein",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "keto"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Boost energy levels with regular exercise, staying hydrated, eating balanced meals, and getting adequate sleep. Snacks like nuts, fruits, and yogurt can also provide a natural energy boost.",
+    "category": "hydration",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "dairy",
+      "nuts"
+    ],
+    "meal_types": [
+      "snack"
+    ]
+  },
+  {
+    "text": "Maintaining a regular meal schedule helps keep energy levels stable, improves concentration, and prevents overeating. Consistent eating habits support overall health and academic performance.",
+    "category": "iron",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Yes, dehydration can lead to fatigue, headaches, and reduced concentration. Drinking enough water is essential for optimal cognitive function and overall well-being.",
+    "category": "hydration",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Avoid foods high in sugar, unhealthy fats, and refined carbohydrates, such as sugary snacks, fast food, and soda. These can lead to energy crashes and reduced concentration.",
+    "category": "iron",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "keto"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "snack"
+    ]
+  },
+  {
+    "text": "Improve digestion by eating a high-fiber diet, staying hydrated, eating slowly, and including probiotic-rich foods like yogurt and fermented vegetables in your diet.",
+    "category": "hydration",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "vegetarian"
+    ],
+    "allergy_block": [
+      "dairy"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Nuts and seeds are rich in healthy fats, antioxidants, and vitamins that support brain health, improve memory, and enhance cognitive function.",
+    "category": "heart_health",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "keto"
+    ],
+    "allergy_block": [
+      "nuts"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "It's best to avoid relying on energy drinks, as they contain high levels of caffeine and sugar, which can lead to energy crashes and negative health effects. Opt for healthier alternatives like herbal teas.",
+    "category": "hydration",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Regular exercise improves blood flow to the brain, enhances memory and concentration, reduces stress, and boosts overall mood and energy levels.",
+    "category": "iron",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Plan meals to include a balance of proteins, carbohydrates, healthy fats, fruits, and vegetables. Use meal planning tools or consult a nutritionist to ensure you're meeting your nutritional needs.",
+    "category": "fiber",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "keto",
+      "vegetarian"
+    ],
+    "allergy_block": [
+      "nuts"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  },
+  {
+    "text": "Healthy breakfast ideas include oatmeal with fruits and nuts, whole grain toast with avocado and eggs, smoothies with spinach and berries, and yogurt with granola and fruits.",
+    "category": "calcium",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish",
+      "keto"
+    ],
+    "allergy_block": [
+      "dairy",
+      "eggs",
+      "nuts"
+    ],
+    "meal_types": [
+      "breakfast"
+    ]
+  },
+  {
+    "text": "Reduce cravings by eating balanced meals, staying hydrated, and having healthy snacks available. Manage stress through exercise and adequate sleep, as stress can often trigger cravings.",
+    "category": "hydration",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [],
+    "meal_types": [
+      "snack"
+    ]
+  },
+  {
+    "text": "Whole grains provide steady energy, are rich in fiber, and contain essential nutrients like B vitamins that support brain health and cognitive function.",
+    "category": "fiber",
+    "type": "nutrition",
+    "diet_ok": [
+      "healthyish"
+    ],
+    "allergy_block": [
+      "nuts"
+    ],
+    "meal_types": [
+      "any"
+    ]
+  }
+]

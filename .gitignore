@@ -4,3 +4,5 @@ dist/
 .vscode/
 *.log
 backend/functions/**/function.zip
+# Local Netlify folder
+.netlify
