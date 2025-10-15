@@ -132,14 +132,18 @@
                     <h2><i class="fas fa-calendar-check"></i> Your Weekly Meal Plan</h2>
                     <p class="plan-subtitle">Personalized nutrition for healthy aging</p>
                 </div>
-                <div class="plan-actions-header">
-                    <button class="btn-icon" onclick="regeneratePlan()" title="Generate New Plan">
-                        <i class="fas fa-refresh"></i>
-                    </button>
-                    <button class="btn-icon" onclick="updatePreferences()" title="Update Preferences">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                </div>
+            </div>
+
+            <!-- Main Action Buttons for Easy Access -->
+            <div class="main-action-buttons">
+                <button class="btn btn-large btn-regenerate" onclick="regeneratePlan()">
+                    <i class="fas fa-refresh"></i>
+                    <span>Generate New Plan</span>
+                </button>
+                <button class="btn btn-large btn-preferences" onclick="updatePreferences()">
+                    <i class="fas fa-cog"></i>
+                    <span>Update Preferences</span>
+                </button>
             </div>
 
             <!-- Plan Info Bar -->
