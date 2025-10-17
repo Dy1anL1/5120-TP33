@@ -15,7 +15,7 @@
     <!-- Navigation Bar -->
     <nav class="navbar">
         <div class="nav-container">
-            <a href="home.html" class="nav-logo">
+            <a href="index.html" class="nav-logo">
                 <div class="logo-icon">
                     <img src="SliverSpoonSociety_Logo.jpg" alt="Silver Spoon Society Logo" class="custom-logo">
                 </div>
@@ -25,7 +25,7 @@
             </a>
             
             <div class="nav-links">
-                <a href="home.html" class="nav-link">
+                <a href="index.html" class="nav-link">
                     <i class="fas fa-home"></i>
                     <span>Home</span>
                 </a>
@@ -94,11 +94,21 @@
             <div class="section-container">
                 <h1 class="page-title"><i class="fas fa-chart-line"></i> Nutrition Dashboard</h1>
                 <p class="page-subtitle">Track your daily nutrition intake and monitor your health goals</p>
+
+                <!-- Tab Navigation at the top -->
+                <div class="dashboard-tabs-top">
+                    <button class="dashboard-tab active" data-tab="daily-tracking">
+                        <i class="fas fa-calendar-day"></i> Daily Tracking
+                    </button>
+                    <button class="dashboard-tab" data-tab="weekly-plan">
+                        <i class="fas fa-calendar-week"></i> Weekly Meal Plan
+                    </button>
+                </div>
             </div>
         </section>
 
-        <!-- Overall Progress Section -->
-        <section class="overall-progress-section">
+        <!-- Overall Progress Section (only visible in Daily Tracking) -->
+        <section class="overall-progress-section" id="overall-progress-section">
             <div class="section-container">
                 <div class="progress-box">
                     <div class="progress-header">
@@ -120,8 +130,8 @@
             </div>
         </section>
 
-        <!-- Nutrition Cards Section -->
-        <section class="nutrition-cards-section">
+        <!-- Nutrition Cards Section (only visible in Daily Tracking) -->
+        <section class="nutrition-cards-section" id="nutrition-cards-section">
             <div class="section-container">
                 <div class="nutrition-cards-container">
                     <div class="nutrition-card">
@@ -223,34 +233,17 @@
             </div>
         </section>
 
-        <!-- Today's Goals Section -->
-        <section class="goals-section">
+        <!-- Daily Tracking Content Section -->
+        <section class="goals-section" id="daily-tracking-section">
             <div class="section-container">
                 <div class="goals-container">
                     <div class="goals-header">
-                        <h2><i class="fas fa-bullseye"></i> Nutrition Dashboard</h2>
+                        <h2><i class="fas fa-bullseye"></i> Today's Goals</h2>
                     </div>
 
-                    <!-- Tab Navigation -->
-                    <div class="dashboard-tabs">
-                        <button class="dashboard-tab active" data-tab="daily-tracking">
-                            <i class="fas fa-calendar-day"></i> Daily Tracking
-                        </button>
-                        <button class="dashboard-tab" data-tab="weekly-plan">
-                            <i class="fas fa-calendar-week"></i> Weekly Meal Plan
-                        </button>
-                    </div>
-
-                    <!-- Tab Content Container -->
-                    <div class="dashboard-tab-content">
-                        <!-- Tab 1: Daily Tracking -->
-                        <div id="daily-tracking" class="dashboard-tab-panel active">
-                            <div class="tab-panel-header">
-                                <h3><i class="fas fa-bullseye"></i> Today's Goals</h3>
-                            </div>
-
-                            <!-- Left: goals-list, Right: meals-added-section -->
-                            <div class="goals-row">
+                    <!-- Daily Tracking Content -->
+                    <!-- Left: goals-list, Right: meals-added-section -->
+                    <div class="goals-row">
                         <div class="goals-list">
                             <section>
                                 <div class="section-container">
@@ -275,21 +268,22 @@
                             </div>
                         </aside>
                     </div>
-                        </div>
-                        <!-- End Tab 1: Daily Tracking -->
-
-                        <!-- Tab 2: Weekly Meal Plan -->
-                        <div id="weekly-plan" class="dashboard-tab-panel">
-                            <div id="weekly-plan-content">
-                                <!-- Will be populated by JavaScript -->
-                            </div>
-                        </div>
-                        <!-- End Tab 2: Weekly Meal Plan -->
-                    </div>
-                    <!-- End Tab Content Container -->
                 </div>
+            </div>
+        </section>
 
-                <!-- Today's Health Tip (moved outside goals-container) -->
+        <!-- Weekly Meal Plan Section -->
+        <section class="weekly-plan-section" id="weekly-plan-section" style="display: none;">
+            <div class="section-container">
+                <div id="weekly-plan-content">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Health Tip Section -->
+        <section class="health-tip-section">
+            <div class="section-container">
                 <div class="health-tip-container">
                     <div class="health-tip-header">
                         <h2><i class="fas fa-heart"></i> Today's Health Tip</h2>

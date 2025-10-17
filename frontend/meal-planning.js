@@ -1123,7 +1123,7 @@ async function generateMealPlan() {
         await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UX
 
         // Generate plan for each day (Full week)
-        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']; // Full week
+        const days = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7']; // Full week
         const mealPlan = {};
         const selectedMealTypes = userPreferences.meal_preferences || ['breakfast', 'lunch', 'dinner'];
         const totalSteps = days.length * selectedMealTypes.length + 2; // +2 for init and finalize
@@ -2486,7 +2486,7 @@ function saveMealPlanToDashboard() {
         'Meal Plan Added Successfully!',
         'Your 7-day meal plan is now in the dashboard.',
         () => {
-            window.location.href = 'nutrition-dashboard.html';
+            window.location.href = 'nutrition-dashboard.html?tab=weekly-plan';
         }
     );
 }

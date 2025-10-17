@@ -1224,34 +1224,58 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Dashboard Tab Switching
     const dashboardTabs = document.querySelectorAll('.dashboard-tab');
-    const dashboardTabPanels = document.querySelectorAll('.dashboard-tab-panel');
+
+    // Get sections to show/hide
+    const overallProgressSection = document.getElementById('overall-progress-section');
+    const nutritionCardsSection = document.getElementById('nutrition-cards-section');
+    const dailyTrackingSection = document.getElementById('daily-tracking-section');
+    const weeklyPlanSection = document.getElementById('weekly-plan-section');
+
+    // Function to switch tabs
+    function switchToTab(targetTab) {
+        // Remove active class from all tabs
+        dashboardTabs.forEach(t => t.classList.remove('active'));
+
+        // Find and activate the target tab
+        const targetTabButton = document.querySelector(`.dashboard-tab[data-tab="${targetTab}"]`);
+        if (targetTabButton) {
+            targetTabButton.classList.add('active');
+        }
+
+        // Show/hide sections based on selected tab
+        if (targetTab === 'daily-tracking') {
+            // Show Daily Tracking sections
+            if (overallProgressSection) overallProgressSection.style.display = 'block';
+            if (nutritionCardsSection) nutritionCardsSection.style.display = 'block';
+            if (dailyTrackingSection) dailyTrackingSection.style.display = 'block';
+            if (weeklyPlanSection) weeklyPlanSection.style.display = 'none';
+        } else if (targetTab === 'weekly-plan') {
+            // Show Weekly Meal Plan section only
+            if (overallProgressSection) overallProgressSection.style.display = 'none';
+            if (nutritionCardsSection) nutritionCardsSection.style.display = 'none';
+            if (dailyTrackingSection) dailyTrackingSection.style.display = 'none';
+            if (weeklyPlanSection) weeklyPlanSection.style.display = 'block';
+
+            // Load weekly meal plan
+            loadWeeklyMealPlan();
+        }
+    }
 
     if (dashboardTabs.length > 0) {
         dashboardTabs.forEach(tab => {
             tab.addEventListener('click', function () {
                 const targetTab = this.getAttribute('data-tab');
-
-                // Remove active class from all tabs
-                dashboardTabs.forEach(t => t.classList.remove('active'));
-
-                // Remove active class from all panels
-                dashboardTabPanels.forEach(p => p.classList.remove('active'));
-
-                // Add active class to clicked tab
-                this.classList.add('active');
-
-                // Add active class to corresponding panel
-                const targetPanel = document.getElementById(targetTab);
-                if (targetPanel) {
-                    targetPanel.classList.add('active');
-
-                    // If switching to weekly plan tab, load the meal plan
-                    if (targetTab === 'weekly-plan') {
-                        loadWeeklyMealPlan();
-                    }
-                }
+                switchToTab(targetTab);
             });
         });
+
+        // Check URL parameters on page load
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        if (tabParam === 'weekly-plan') {
+            // Switch to weekly plan tab if URL parameter is present
+            switchToTab('weekly-plan');
+        }
     }
 
     // Features section routing
@@ -2662,7 +2686,7 @@ function loadWeeklyMealPlan() {
         const startDate = new Date(createdAt);
 
         // Render each day
-        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const days = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
         days.forEach((dayName, index) => {
             const dayMealsObj = mealPlan[dayName] || {};
             const dayDate = new Date(startDate);
