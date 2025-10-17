@@ -11,6 +11,17 @@
 [build.environment]
   # Set any environment variables here
   NODE_VERSION = "18"
+  NPM_VERSION = "9"
+
+# Site information
+[context.production]
+  command = "echo 'No build step required for static site'"
+
+[context.deploy-preview]
+  command = "echo 'No build step required for static site'"
+
+[context.branch-deploy]
+  command = "echo 'No build step required for static site'"
 
 # Redirect rules for single-page application
 [[redirects]]
@@ -31,6 +42,8 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
 
 # Cache static assets
 [[headers]]
