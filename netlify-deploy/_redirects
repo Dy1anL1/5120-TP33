@@ -1,8 +1,8 @@
 # Netlify redirects file for Silver Spoon Society
 # This ensures proper routing for the website
 
-# Handle root route by serving cta.html (landing page)
-/    /cta.html   200
+# Handle root route by serving index.html (main landing page)
+/    /index.html   200
 
 # Handle all other routes by serving index.html
 /*    /index.html   200

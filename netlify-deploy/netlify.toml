@@ -15,7 +15,7 @@
 # Redirect rules for single-page application
 [[redirects]]
   from = "/"
-  to = "/cta.html"
+  to = "/index.html"
   status = 200
 
 [[redirects]]

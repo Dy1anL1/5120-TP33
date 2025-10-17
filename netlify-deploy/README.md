@@ -1,58 +1,82 @@
-# Silver Spoon Society 前端
+# Silver Spoon Society Frontend
 
-这是 Silver Spoon Society 网站的前端部分，专为健康衰老和营养管理设计，采用现代响应式布局和交互。
+This is the frontend part of the Silver Spoon Society website, designed for healthy aging and nutrition management, featuring modern responsive layout and interactive elements.
 
-## 主要功能
+## Main Features
 
-- 首页、菜谱搜索、每日推荐、营养仪表盘、购物清单等页面
-- 响应式设计，支持桌面、平板、移动端
-- 动态渲染菜谱卡片，支持弹窗查看详情和营养信息
-- 营养仪表盘可自动统计每日营养摄入
-- 支持本地存储（localStorage）记录用户菜单
+- Home page, recipe search, daily recommendations, nutrition dashboard, shopping list, and other pages
+- Responsive design supporting desktop, tablet, and mobile devices
+- Dynamic recipe card rendering with popup details and nutrition information
+- Nutrition dashboard automatically tracks daily nutrition intake
+- Local storage (localStorage) support for user menu records
+- Password protection system for secure access
 
-## 文件结构
+## File Structure
 
 ```
-frontend/
-├── index.html                  # CTA页
-├── home.html                   # 首页
-├── explore-recipes.html        # 菜谱搜索页
-├── daily-recommendations.html  # 每日推荐
-├── nutrition-dashboard.html    # 营养数据表
-├── shopping-list.html          # 购物清单
-├── styles.css                  # 全站样式
-├── script.js                   # 主 JS 逻辑（动态渲染、API 调用、仪表盘等）
-├── assets/                     # 图片和静态资源
-└── README.md                   # 前端说明文档
+netlify-deploy/
+├── index.html                  # Main landing page
+├── login.html                  # Password protection page
+├── explore-recipes.html        # Recipe search page
+├── daily-recommendations.html  # Daily recommendations
+├── nutrition-dashboard.html    # Nutrition data dashboard
+├── shopping-list.html          # Shopping list
+├── meal-planning.html          # Meal planning
+├── seasonal-produce.html       # Seasonal produce
+├── styles.css                  # Site-wide styles
+├── script.js                   # Main JS logic (dynamic rendering, API calls, dashboard)
+├── config.js                   # API configuration
+├── password-protection.js      # Authentication system
+├── netlify.toml               # Netlify deployment configuration
+├── _redirects                  # URL routing rules
+├── assets/                     # Images and static resources
+└── README.md                   # Frontend documentation
 ```
 
-## 使用方法
+## Usage Instructions
 
-1. 直接打开 `index.html` 或其他页面即可浏览（推荐本地服务器）
-2. 推荐用 Python/Node.js 本地服务器：
+1. **Direct Deployment**: Simply drag this entire folder to Netlify for instant deployment
+2. **Local Testing**: Open `index.html` or other pages directly (recommended with local server)
+3. **Recommended Local Server**:
     ```bash
     python3 -m http.server 8000
-    # 或
+    # or
     npx serve .
     ```
-3. 在线部署：支持 GitHub Pages、Netlify、Vercel 等静态托管
+4. **Online Deployment**: Supports GitHub Pages, Netlify, Vercel, and other static hosting platforms
 
-## 技术栈
+## Technology Stack
 
 - HTML5 / CSS3 / JavaScript (ES6+)
-- Font Awesome 图标库
-- 响应式设计（Flexbox、Grid、媒体查询）
-- 动态 API 调用（与后端 Serverless API 对接）
+- Font Awesome icon library
+- Responsive design (Flexbox, Grid, media queries)
+- Dynamic API calls (integrated with backend Serverless API)
+- Netlify deployment optimization
 
-## 自定义与扩展
+## Customization and Extension
 
-- 可在 `styles.css` 修改主题色和样式
-- 可在 `script.js` 增加新功能或对接更多 API
-- 页面内容和结构可自由调整
+- Modify theme colors and styles in `styles.css`
+- Add new features or integrate more APIs in `script.js`
+- Page content and structure can be freely adjusted
+- Password protection can be customized in `login.html`
 
-## 许可证
+## Deployment Features
 
-MIT License，欢迎自由使用和修改。
+- **Netlify Ready**: Optimized configuration for instant deployment
+- **Performance**: Caching headers and compression configured
+- **Security**: Security headers and password protection
+- **Mobile**: Fully responsive design
+- **SEO**: Proper meta tags and structure
+
+## Access Information
+
+- **Default Password**: `tp33`
+- **Login Page**: `/login.html`
+- **Main Platform**: Accessible after authentication
+
+## License
+
+MIT License, free to use and modify.
 
 ---
-如有问题请联系项目维护者。
+For questions, please contact the project maintainer.
