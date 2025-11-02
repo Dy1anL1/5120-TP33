@@ -2,6 +2,8 @@
 
 Silver Spoon Society is a holistic nutrition and wellness companion tailored for adults aged 55-65. The application blends healthy recipe discovery, personalized meal planning, smart shopping, and daily health guidance in a single, senior-friendly experience.
 
+Website: https://silver-spoon-society.live/
+
 ## Table of Contents
 
 1. [Key Features](#key-features)
